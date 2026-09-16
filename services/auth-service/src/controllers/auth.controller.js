@@ -46,7 +46,7 @@ const logout = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-const verifyToken = async (req, res, next) => {
+const verifyToken = (req, res, next) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     const decoded = authService.verifyToken(token);
