@@ -1,0 +1,135 @@
+name: Auth Service CI
+
+# ─── Trigger ──────────────────────────────────────────────────────────────────
+# Chỉ chạy khi có thay đổi liên quan đến auth-service hoặc chính file CI này
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - "services/auth-service/**"
+      - ".github/workflows/auth-service-ci.yml"
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - "services/auth-service/**"
+      - ".github/workflows/auth-service-ci.yml"
+
+# Minimal permissions theo nguyên tắc least-privilege
+permissions:
+  contents: read
+
+# ─── Jobs ─────────────────────────────────────────────────────────────────────
+jobs:
+
+  # ┌─────────────────────────────────────────────────────────────────────────┐
+  # │  JOB 1 — test                                                           │
+  # │  Lint → Unit tests → Integration tests → Coverage → Security audit      │
+  # └─────────────────────────────────────────────────────────────────────────┘
+  test:
+    name: Test & Security
+    runs-on: ubuntu-latest
+
+    # Đặt working directory mặc định cho tất cả run steps trong job này
+    defaults:
+      run:
+        working-directory: services/auth-service
+
+    # Biến môi trường cho Jest (khớp với tests/setup/env.js nhưng CI cần
+    # khai báo rõ ràng để không phụ thuộc file .env)
+    env:
+      NODE_ENV: test
+      JWT_SECRET: ci-jwt-secret-not-used-in-production
+      JWT_RESET_SECRET: ci-jwt-reset-secret-not-used-in-production
+      JWT_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_DAYS: 30
+      BCRYPT_ROUNDS: 1
+      EMAIL_USER: ci@trekvn.com
+
+    steps:
+      # ── 1. Checkout code ───────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── 2. Setup Node.js với cache npm ─────────────────────────────────────
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20          # Khớp với node:20-alpine trong Dockerfile
+          cache: npm
+          cache-dependency-path: services/auth-service/package-lock.json
+
+      # ── 3. Cài dependencies (dùng ci để đảm bảo lock file) ────────────────
+      - name: Install dependencies
+        run: npm ci
+
+      # ── 4. ESLint — kiểm tra code quality ─────────────────────────────────
+      - name: ESLint
+        run: npm run lint
+
+      # ── 5. Unit tests — service & otp logic (không cần DB) ────────────────
+      - name: Unit tests
+        run: npm run test:unit
+
+      # ── 6. Integration tests — REST API với mongodb-memory-server ──────────
+      - name: Integration tests
+        run: npm run test:integration
+
+      # ── 7. Coverage report — upload artifact để xem lại nếu cần ───────────
+      - name: Test coverage
+        run: npm run test:coverage
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()                # Upload dù test pass hay fail
+        with:
+          name: coverage-report
+          path: services/auth-service/coverage/
+          retention-days: 7
+
+      # ── 8. npm audit — kiểm tra CVE trong dependencies ─────────────────────
+      - name: Dependency security audit
+        run: npm audit --audit-level=high
+
+  # ┌─────────────────────────────────────────────────────────────────────────┐
+  # │  JOB 2 — docker                                                         │
+  # │  Build Docker image → Scan với Trivy (CRITICAL + HIGH CVEs)             │
+  # │  Chạy sau khi job test pass để không waste CI minutes                   │
+  # └─────────────────────────────────────────────────────────────────────────┘
+  docker:
+    name: Docker Security
+    runs-on: ubuntu-latest
+    needs:
+      - test             # Chỉ build Docker khi test xanh
+
+    steps:
+      # ── 1. Checkout code ───────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── 2. Setup Docker Buildx (hỗ trợ cache layer) ───────────────────────
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ── 3. Build image — tag bằng git SHA để trace được build nào ─────────
+      - name: Build Docker image
+        run: |
+          docker build \
+            --tag trekvn-auth-service:${{ github.sha }} \
+            --tag trekvn-auth-service:latest \
+            services/auth-service
+
+      # ── 4. Trivy — quét image tìm CVE CRITICAL và HIGH ────────────────────
+      # exit-code: "1" → CI fail nếu tìm thấy lỗ hổng nghiêm trọng
+      # ignore-unfixed: true → bỏ qua CVE chưa có bản vá (không actionable)
+      - name: Scan Docker image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: trekvn-auth-service:${{ github.sha }}
+          format: table
+          exit-code: "1"
+          severity: "CRITICAL,HIGH"
+          ignore-unfixed: true
