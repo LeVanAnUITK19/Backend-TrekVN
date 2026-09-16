@@ -1,0 +1,19 @@
+name: Trekking Service CI
+
+# ─── Trigger ──────────────────────────────────────────────────────────────────
+# Chỉ chạy khi có thay đổi liên quan đến auth-service hoặc chính file CI này
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - "services/trekking-service/**"
+      - ".github/workflows/trekking-service-ci.yml"
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - "services/trekking-service/**"
+      - ".github/workflows/trekking-service-ci.yml"

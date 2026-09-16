@@ -1,0 +1,19 @@
+name: Community Service CI
+
+# ─── Trigger ──────────────────────────────────────────────────────────────────
+# Chỉ chạy khi có thay đổi liên quan đến auth-service hoặc chính file CI này
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - "services/community-service/**"
+      - ".github/workflows/community-service-ci.yml"
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - "services/community-service/**"
+      - ".github/workflows/community-service-ci.yml"

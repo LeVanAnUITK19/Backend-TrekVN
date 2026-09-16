@@ -1,7 +1,7 @@
 # ════════════════════════════════════════════════════════
 #  Stage 1 — deps: cài production dependencies
 # ════════════════════════════════════════════════════════
-FROM node:20-alpine AS deps
+FROM node:20-alpine3.21 AS deps
 
 WORKDIR /app
 
@@ -14,10 +14,11 @@ RUN npm ci --omit=dev --ignore-scripts
 # ════════════════════════════════════════════════════════
 #  Stage 2 — runner: image production cuối cùng
 # ════════════════════════════════════════════════════════
-FROM node:20-alpine AS runner
+FROM node:20-alpine3.21 AS runner
 
 # Cài dumb-init để xử lý signal đúng (SIGTERM → graceful shutdown)
-RUN apk add --no-cache dumb-init
+# apk upgrade để patch các CVE trong OS packages (libssl, libcrypto, v.v.)
+RUN apk add --no-cache dumb-init && apk upgrade --no-cache
 
 WORKDIR /app
 
