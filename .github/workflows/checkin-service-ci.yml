@@ -1,0 +1,19 @@
+name: Checkin Service CI
+
+# ─── Trigger ──────────────────────────────────────────────────────────────────
+# Chỉ chạy khi có thay đổi liên quan đến auth-service hoặc chính file CI này
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - "services/checkin-service/**"
+      - ".github/workflows/checkin-service-ci.yml"
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - "services/checkin-service/**"
+      - ".github/workflows/checkin-service-ci.yml"
