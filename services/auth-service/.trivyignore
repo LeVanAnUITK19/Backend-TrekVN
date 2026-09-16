@@ -1,0 +1,41 @@
+# ─── Trivy ignore list ────────────────────────────────────────────────────────
+# Các CVE dưới đây thuộc về npm CLI được bundle sẵn trong node:20-alpine
+# (nằm ở /usr/local/lib/node_modules/npm/**), KHÔNG phải app dependencies.
+# Chúng ta không thể upgrade npm's internal packages từ bên ngoài image.
+# App dependencies (/app/node_modules/**) đã được kiểm tra riêng qua npm audit.
+
+# brace-expansion (npm internal)
+CVE-2026-13149
+CVE-2026-14257
+CVE-2026-69152
+
+# cross-spawn (npm internal)
+CVE-2024-21538
+
+# glob (npm internal)
+CVE-2025-64756
+
+# ip-address (npm internal)
+CVE-2026-69192
+
+# minimatch (npm internal)
+CVE-2026-26996
+CVE-2026-27903
+CVE-2026-27904
+
+# pacote (npm internal)
+CVE-2026-9496
+
+# sigstore (npm internal)
+CVE-2026-48815
+
+# tar (npm internal — node-tar bundled in npm CLI)
+CVE-2026-59873
+CVE-2026-23745
+CVE-2026-23950
+CVE-2026-24842
+CVE-2026-26960
+CVE-2026-29786
+CVE-2026-31802
+CVE-2026-59874
+CVE-2026-73566

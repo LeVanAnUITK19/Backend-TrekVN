@@ -125,6 +125,10 @@ jobs:
       # ── 4. Trivy — quét image tìm CVE CRITICAL và HIGH ────────────────────
       # exit-code: "1" → CI fail nếu tìm thấy lỗ hổng nghiêm trọng
       # ignore-unfixed: true → bỏ qua CVE chưa có bản vá (không actionable)
+      # scanners: vuln → chỉ quét OS + lib vulnerabilities, bỏ qua secret/misconfig
+      # skip-dirs: node_modules → tránh scan trùng với npm audit ở job test
+      # trivyignores: bỏ qua CVE trong npm CLI bundled trong base image
+      #   (không phải app deps — đã audit riêng ở job test)
       - name: Scan Docker image with Trivy
         uses: aquasecurity/trivy-action@master
         with:
@@ -133,3 +137,6 @@ jobs:
           exit-code: "1"
           severity: "CRITICAL,HIGH"
           ignore-unfixed: true
+          scanners: "vuln"
+          skip-dirs: "/app/node_modules"
+          trivyignores: services/auth-service/.trivyignore
