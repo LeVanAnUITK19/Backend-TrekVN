@@ -5,7 +5,7 @@
 const request = require('supertest');
 const db = require('../setup/db');
 const createApp = require('../../src/app');
-const { createActiveUser, createSettings } = require('../helpers/factory');
+const { createActiveUser } = require('../helpers/factory');
 
 jest.mock('../../src/config/mailer', () => ({
   sendMail: jest.fn().mockResolvedValue({ messageId: 'test-msg-id' }),

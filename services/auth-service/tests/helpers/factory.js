@@ -6,21 +6,19 @@ const bcrypt = require('bcryptjs');
 const User = require('../../src/models/User');
 const UserSettings = require('../../src/models/UserSettings');
 const OtpVerification = require('../../src/models/OtpVerification');
-const RefreshToken = require('../../src/models/RefreshToken');
-
 /**
  * Tạo user ACTIVE trong DB (đã xác minh email)
  */
 const createActiveUser = async (overrides = {}) => {
-  const passwordHash = await bcrypt.hash(overrides.password || 'Password@123', 1);
+  const hash = await bcrypt.hash(overrides.password || 'Password@123', 1);
+  const { password: _password, ...rest } = overrides;
   const user = await User.create({
-    email: overrides.email || 'test@example.com',
-    passwordHash,
-    displayName: overrides.displayName || 'Test User',
+    email: rest.email || 'test@example.com',
+    passwordHash: hash,
+    displayName: rest.displayName || 'Test User',
     status: 'ACTIVE',
     emailVerifiedAt: new Date(),
-    ...overrides,
-    passwordHash, // đảm bảo hash luôn đúng
+    ...rest,
   });
   return user;
 };
@@ -29,14 +27,14 @@ const createActiveUser = async (overrides = {}) => {
  * Tạo user PENDING_VERIFICATION trong DB
  */
 const createPendingUser = async (overrides = {}) => {
-  const passwordHash = await bcrypt.hash(overrides.password || 'Password@123', 1);
+  const hash = await bcrypt.hash(overrides.password || 'Password@123', 1);
+  const { password: _password, ...rest } = overrides;
   return User.create({
-    email: overrides.email || 'pending@example.com',
-    passwordHash,
-    displayName: overrides.displayName || 'Pending User',
+    email: rest.email || 'pending@example.com',
+    passwordHash: hash,
+    displayName: rest.displayName || 'Pending User',
     status: 'PENDING_VERIFICATION',
-    ...overrides,
-    passwordHash,
+    ...rest,
   });
 };
 

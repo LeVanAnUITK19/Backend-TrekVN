@@ -29,7 +29,7 @@ const issueRefreshToken = async (userId) => {
   const days = parseInt(process.env.JWT_REFRESH_EXPIRES_DAYS) || 30;
   const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
   await refreshTokenRepository.create(userId, tokenHash, expiresAt);
-  return token; // raw token gửi về client
+  return token;
 };
 
 const sanitizeUser = (user) => (user.toJSON ? user.toJSON() : user);
@@ -58,7 +58,9 @@ const verifyEmail = async ({ email, otp }) => {
   await otpService.verifyOtp(email, 'REGISTER', otp);
 
   const user = await userRepository.findByEmail(email);
-  if (!user) throw new NotFoundError('Người dùng không tồn tại');
+  if (!user) {
+    throw new NotFoundError('Người dùng không tồn tại');
+  }
 
   const updatedUser = await userRepository.updateById(user._id, {
     status: 'ACTIVE',
@@ -67,7 +69,9 @@ const verifyEmail = async ({ email, otp }) => {
 
   // Tạo settings mặc định
   const existingSettings = await userRepository.findSettingsByUserId(user._id);
-  if (!existingSettings) await userRepository.createSettings(user._id);
+  if (!existingSettings) {
+    await userRepository.createSettings(user._id);
+  }
 
   const accessToken = generateAccessToken(updatedUser);
   const refreshToken = await issueRefreshToken(updatedUser._id);
@@ -79,8 +83,12 @@ const verifyEmail = async ({ email, otp }) => {
 
 const resendVerificationOtp = async ({ email }) => {
   const user = await userRepository.findByEmail(email);
-  if (!user) throw new NotFoundError('Email không tồn tại trong hệ thống');
-  if (user.status === 'ACTIVE') throw new BadRequestError('Email đã được xác minh');
+  if (!user) {
+    throw new NotFoundError('Email không tồn tại trong hệ thống');
+  }
+  if (user.status === 'ACTIVE') {
+    throw new BadRequestError('Email đã được xác minh');
+  }
 
   const { expiresAt } = await otpService.sendOtp(email, 'REGISTER');
   return { message: 'OTP đã được gửi lại', expiresAt };
@@ -90,7 +98,9 @@ const resendVerificationOtp = async ({ email }) => {
 
 const login = async ({ email, password }) => {
   const user = await userRepository.findByEmail(email);
-  if (!user) throw new UnauthorizedError('Email hoặc mật khẩu không đúng');
+  if (!user) {
+    throw new UnauthorizedError('Email hoặc mật khẩu không đúng');
+  }
 
   if (user.status === 'PENDING_VERIFICATION') {
     throw new ForbiddenError('Tài khoản chưa được xác minh email');
@@ -100,7 +110,9 @@ const login = async ({ email, password }) => {
   }
 
   const match = await bcrypt.compare(password, user.passwordHash);
-  if (!match) throw new UnauthorizedError('Email hoặc mật khẩu không đúng');
+  if (!match) {
+    throw new UnauthorizedError('Email hoặc mật khẩu không đúng');
+  }
 
   const accessToken = generateAccessToken(user);
   const refreshToken = await issueRefreshToken(user._id);
@@ -111,16 +123,22 @@ const login = async ({ email, password }) => {
 // ─── Refresh Token ────────────────────────────────────────────────────────────
 
 const refresh = async (rawToken) => {
-  if (!rawToken) throw new UnauthorizedError('Refresh token bắt buộc');
+  if (!rawToken) {
+    throw new UnauthorizedError('Refresh token bắt buộc');
+  }
 
   const tokenHash = hashToken(rawToken);
   const record = await refreshTokenRepository.findByHash(tokenHash);
-  if (!record) throw new UnauthorizedError('Refresh token không hợp lệ hoặc đã hết hạn');
+  if (!record) {
+    throw new UnauthorizedError('Refresh token không hợp lệ hoặc đã hết hạn');
+  }
 
   // Rotate: revoke cũ, cấp mới
   await refreshTokenRepository.revokeByHash(tokenHash);
   const user = await userRepository.findById(record.userId);
-  if (!user || user.status !== 'ACTIVE') throw new UnauthorizedError('Tài khoản không hợp lệ');
+  if (!user || user.status !== 'ACTIVE') {
+    throw new UnauthorizedError('Tài khoản không hợp lệ');
+  }
 
   const accessToken = generateAccessToken(user);
   const newRefreshToken = await issueRefreshToken(user._id);
@@ -143,7 +161,9 @@ const logout = async (userId, rawRefreshToken) => {
 // ─── Verify Token (dùng bởi API Gateway) ──────────────────────────────────────
 
 const verifyToken = (token) => {
-  if (!token) throw new UnauthorizedError('Token bắt buộc');
+  if (!token) {
+    throw new UnauthorizedError('Token bắt buộc');
+  }
   try {
     return jwt.verify(token, process.env.JWT_SECRET);
   } catch {
@@ -197,7 +217,9 @@ const resetPassword = async ({ resetToken, newPassword }) => {
   }
 
   const user = await userRepository.findByEmail(decoded.email);
-  if (!user) throw new NotFoundError('Người dùng không tồn tại');
+  if (!user) {
+    throw new NotFoundError('Người dùng không tồn tại');
+  }
 
   const rounds = parseInt(process.env.BCRYPT_ROUNDS) || 12;
   const passwordHash = await bcrypt.hash(newPassword, rounds);
@@ -214,10 +236,14 @@ const resetPassword = async ({ resetToken, newPassword }) => {
 
 const changePassword = async (userId, { currentPassword, newPassword }) => {
   const user = await userRepository.findById(userId);
-  if (!user) throw new NotFoundError('Người dùng không tồn tại');
+  if (!user) {
+    throw new NotFoundError('Người dùng không tồn tại');
+  }
 
   const match = await bcrypt.compare(currentPassword, user.passwordHash);
-  if (!match) throw new BadRequestError('Mật khẩu hiện tại không đúng');
+  if (!match) {
+    throw new BadRequestError('Mật khẩu hiện tại không đúng');
+  }
 
   if (currentPassword === newPassword) {
     throw new BadRequestError('Mật khẩu mới phải khác mật khẩu hiện tại');
@@ -238,18 +264,28 @@ const changePassword = async (userId, { currentPassword, newPassword }) => {
 
 const getProfile = async (userId) => {
   const user = await userRepository.findById(userId);
-  if (!user) throw new NotFoundError('Người dùng không tồn tại');
+  if (!user) {
+    throw new NotFoundError('Người dùng không tồn tại');
+  }
   return sanitizeUser(user);
 };
 
 const updateProfile = async (userId, data) => {
   const allowed = {};
-  if (data.displayName !== undefined) allowed.displayName = data.displayName;
-  if (data.avatarUrl !== undefined) allowed.avatarUrl = data.avatarUrl;
-  if (data.bio !== undefined) allowed.bio = data.bio;
+  if (data.displayName !== undefined) {
+    allowed.displayName = data.displayName;
+  }
+  if (data.avatarUrl !== undefined) {
+    allowed.avatarUrl = data.avatarUrl;
+  }
+  if (data.bio !== undefined) {
+    allowed.bio = data.bio;
+  }
 
   const user = await userRepository.updateById(userId, allowed);
-  if (!user) throw new NotFoundError('Người dùng không tồn tại');
+  if (!user) {
+    throw new NotFoundError('Người dùng không tồn tại');
+  }
   return sanitizeUser(user);
 };
 
@@ -257,7 +293,9 @@ const updateProfile = async (userId, data) => {
 
 const getSettings = async (userId) => {
   let settings = await userRepository.findSettingsByUserId(userId);
-  if (!settings) settings = await userRepository.createSettings(userId);
+  if (!settings) {
+    settings = await userRepository.createSettings(userId);
+  }
   return settings;
 };
 
