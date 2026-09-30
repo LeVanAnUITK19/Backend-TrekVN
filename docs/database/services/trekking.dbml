@@ -1,0 +1,563 @@
+// ======================================================
+// TREKVIET - TREKKING SERVICE
+// ======================================================
+//
+// Main trekking domain:
+// - Places
+// - Routes
+// - Official milestones
+// - Journeys
+// - User-created journey markers
+// - Route/place contributions
+// - Badges
+//
+// Cross-service references nằm trong ../server.dbml
+//
+// ======================================================
+
+
+// ======================================================
+// TREKKING PLACES
+// ======================================================
+
+Table trekking_places {
+  trekkingPlaceId varchar [pk]
+
+  name varchar [not null]
+  slug varchar [unique]
+
+  provinceId varchar [not null]
+
+  address varchar
+
+  // GeoJSON Point
+  location json [not null]
+
+  description text
+
+  difficulty varchar
+
+  // phút
+  averageDurationMinutes int
+
+  // Danh sách URL ảnh
+  images json
+
+  // Ví dụ:
+  // ["mountain", "camping", "cloud-hunting"]
+  tags json
+
+  ratingAverage double [default: 0]
+  ratingCount int [default: 0]
+
+  status varchar [default: 'ACTIVE']
+
+  createdAt timestamp
+  updatedAt timestamp
+}
+
+
+// ======================================================
+// PLACE REVIEWS
+// ======================================================
+
+Table detail_evaluates {
+  detailEvaluateId varchar [pk]
+
+  trekkingPlaceId varchar [not null]
+  userId varchar [not null]
+
+  // 1 -> 5
+  point int [not null]
+
+  content text
+
+  imagesUrl json
+  videoUrl json
+
+  deleted boolean [default: false]
+
+  createdAt timestamp
+  updatedAt timestamp
+
+  indexes {
+    (trekkingPlaceId, userId)
+  }
+}
+
+
+// ======================================================
+// TREKKING ROUTES
+// ======================================================
+
+Table trekking_routes {
+  trekkingRouteId varchar [pk]
+
+  trekkingPlaceId varchar [not null]
+
+  name varchar [not null]
+  description text
+
+  difficulty varchar
+
+  // mét
+  distanceMeters int
+
+  // phút
+  estimatedDurationMinutes int
+
+  // mét
+  elevationGain int
+  maxElevation int
+
+  // GeoJSON Point
+  startLocation json
+
+  // GeoJSON Point
+  endLocation json
+
+  // GeoJSON LineString
+  path json
+
+  // Ví dụ:
+  // {
+  //   "available": true,
+  //   "version": 1,
+  //   "sizeBytes": 48000000,
+  //   "downloadUrl": "..."
+  // }
+  offlineMap json
+
+  status varchar [default: 'ACTIVE']
+
+  createdAt timestamp
+  updatedAt timestamp
+}
+
+
+// ======================================================
+// OFFICIAL MILESTONES
+// ======================================================
+
+Table milestones {
+  milestoneId varchar [pk]
+
+  trekkingRouteId varchar [not null]
+
+  name varchar [not null]
+  description text
+
+  // START
+  // CHECKPOINT
+  // VIEWPOINT
+  // REST_POINT
+  // WATER_POINT
+  // CAMP
+  // SUMMIT
+  // FINISH
+  type varchar [not null]
+
+  sequence int [not null]
+
+  // GeoJSON Point
+  location json [not null]
+
+  altitude int
+
+  // mét
+  checkinRadiusMeters int [default: 50]
+
+  required boolean [default: true]
+
+  imageUrl varchar
+
+  createdAt timestamp
+  updatedAt timestamp
+
+  indexes {
+    (trekkingRouteId, sequence) [unique]
+  }
+}
+
+
+// ======================================================
+// JOURNEYS
+// ======================================================
+
+Table journeys {
+  journeyId varchar [pk]
+
+  userId varchar [not null]
+
+  trekkingPlaceId varchar [not null]
+  trekkingRouteId varchar [not null]
+
+  provinceId varchar
+
+  name varchar [not null]
+
+  // PLANNED
+  // ACTIVE
+  // PAUSED
+  // COMPLETED
+  // CANCELLED
+  status varchar [default: 'PLANNED']
+
+  plannedStartAt timestamp
+
+  startedAt timestamp
+  completedAt timestamp
+
+  // {
+  //   "distanceMeters": 12840,
+  //   "durationSeconds": 18400,
+  //   "elevationGain": 870,
+  //   "maxAltitude": 2167,
+  //   "averageSpeed": 2.5
+  // }
+  statistics json
+
+  // Không lưu hàng nghìn GPS points trên server.
+  //
+  // Sau khi hoàn thành:
+  // {
+  //   "encodedPolyline": "..."
+  // }
+  track json
+
+  checkinCount int [default: 0]
+  markerCount int [default: 0]
+
+  createdAt timestamp
+  updatedAt timestamp
+
+  indexes {
+    userId
+    trekkingRouteId
+    status
+  }
+}
+
+
+// ======================================================
+// USER-CREATED JOURNEY MARKERS
+// ======================================================
+
+Table journey_markers {
+  journeyMarkerId varchar [pk]
+
+  journeyId varchar [not null]
+
+  userId varchar [not null]
+
+  name varchar [not null]
+
+  type varchar [not null]
+
+  note text
+
+  // GeoJSON Point
+  location json [not null]
+
+  altitude double
+
+  accuracyMeters double
+
+  // URL ảnh đã upload
+  images json
+
+  markedAt timestamp [not null]
+
+  // USER_CREATED
+  source varchar [default: 'USER_CREATED']
+
+  // Client generated ID dùng cho idempotency
+  clientMarkerId varchar
+
+  createdAt timestamp
+  updatedAt timestamp
+
+  indexes {
+    journeyId
+    userId
+    (journeyId, markedAt)
+    clientMarkerId
+  }
+}
+
+
+// ======================================================
+// ROUTE SUBMISSIONS
+// ======================================================
+
+Table route_submissions {
+  routeSubmissionId varchar [pk]
+
+  userId varchar [not null]
+
+  sourceJourneyId varchar [not null]
+
+  trekkingPlaceId varchar
+
+  proposedName varchar
+
+  description text
+  notes text
+
+  encodedPolyline text
+  gpxUrl varchar
+
+  statistics json
+
+  images json
+
+  // DRAFT
+  // PENDING_REVIEW
+  // NEEDS_REVISION
+  // APPROVED
+  // REJECTED
+  // CANCELLED
+  status varchar [not null, default: 'PENDING_REVIEW']
+
+  reviewedBy varchar
+  reviewedAt timestamp
+
+  adminNote text
+
+  resultingRouteId varchar
+
+  clientOperationId varchar [unique]
+
+  createdAt timestamp
+  updatedAt timestamp
+
+  indexes {
+    userId
+    sourceJourneyId
+    status
+    createdAt
+  }
+}
+
+
+// ======================================================
+// ROUTE SUBMISSION MARKERS
+// ======================================================
+
+Table route_submission_markers {
+  routeSubmissionMarkerId varchar [pk]
+
+  routeSubmissionId varchar [not null]
+
+  // Marker ban đầu của journey
+  sourceJourneyMarkerId varchar
+
+  name varchar [not null]
+
+  type varchar [not null]
+
+  description text
+
+  // GeoJSON Point
+  location json [not null]
+
+  altitude double
+
+  images json
+
+  // Thứ tự dọc route
+  sequence int
+
+  // PENDING
+  // APPROVED
+  // REJECTED
+  reviewStatus varchar [default: 'PENDING']
+
+  adminNote text
+
+  // Nếu admin convert thành official milestone
+  resultingMilestoneId varchar
+
+  createdAt timestamp
+  updatedAt timestamp
+
+  indexes {
+    routeSubmissionId
+    reviewStatus
+    sequence
+  }
+}
+
+
+// ======================================================
+// PLACE SUGGESTIONS
+// ======================================================
+
+Table place_suggestions {
+  placeSuggestionId varchar [pk]
+
+  userId varchar [not null]
+
+  provinceId varchar [not null]
+
+  proposedName varchar [not null]
+
+  address varchar
+
+  location json [not null]
+
+  description text [not null]
+
+  difficulty varchar
+
+  tags json
+  images json
+
+  // DRAFT
+  // PENDING_REVIEW
+  // NEEDS_REVISION
+  // APPROVED
+  // REJECTED
+  // CANCELLED
+  status varchar [not null, default: 'PENDING_REVIEW']
+
+  reviewedBy varchar
+  reviewedAt timestamp
+
+  adminNote text
+
+  resultingPlaceId varchar
+
+  clientOperationId varchar [unique]
+
+  createdAt timestamp
+  updatedAt timestamp
+
+  indexes {
+    userId
+    provinceId
+    status
+    createdAt
+  }
+}
+
+
+// ======================================================
+// BADGES
+// ======================================================
+
+Table badges {
+  badgeId varchar [pk]
+
+  code varchar [not null, unique]
+
+  name varchar [not null]
+  description text
+
+  iconUrl varchar
+
+  // TREKKING
+  // EXPLORATION
+  // DISTANCE
+  // PROVINCE
+  category varchar
+
+  // COMMON
+  // RARE
+  // EPIC
+  // LEGENDARY
+  rarity varchar
+
+  // {
+  //   "type": "ALTITUDE_REACHED",
+  //   "value": 2000
+  // }
+  condition json
+
+  status varchar [default: 'ACTIVE']
+
+  createdAt timestamp
+  updatedAt timestamp
+}
+
+
+// ======================================================
+// USER BADGES
+// ======================================================
+
+Table user_badges {
+  userBadgeId varchar [pk]
+
+  userId varchar [not null]
+
+  badgeId varchar [not null]
+
+  // Journey giúp user đạt badge
+  journeyId varchar
+
+  earnedAt timestamp [not null]
+
+  createdAt timestamp
+  updatedAt timestamp
+
+  indexes {
+    (userId, badgeId) [unique]
+  }
+}
+
+
+// ======================================================
+// INTERNAL RELATIONSHIPS
+// ======================================================
+
+Ref: trekking_routes.trekkingPlaceId > trekking_places.trekkingPlaceId
+
+Ref: detail_evaluates.trekkingPlaceId > trekking_places.trekkingPlaceId
+
+Ref: milestones.trekkingRouteId > trekking_routes.trekkingRouteId
+
+Ref: journeys.trekkingPlaceId > trekking_places.trekkingPlaceId
+
+Ref: journeys.trekkingRouteId > trekking_routes.trekkingRouteId
+
+Ref: journey_markers.journeyId > journeys.journeyId
+
+Ref: route_submission_markers.routeSubmissionId >
+     route_submissions.routeSubmissionId
+
+Ref: route_submission_markers.sourceJourneyMarkerId >
+     journey_markers.journeyMarkerId
+
+Ref: route_submission_markers.resultingMilestoneId >
+     milestones.milestoneId
+
+Ref: route_submissions.sourceJourneyId > journeys.journeyId
+
+Ref: route_submissions.trekkingPlaceId > trekking_places.trekkingPlaceId
+
+Ref: route_submissions.resultingRouteId > trekking_routes.trekkingRouteId
+
+Ref: place_suggestions.resultingPlaceId > trekking_places.trekkingPlaceId
+
+Ref: user_badges.badgeId > badges.badgeId
+
+Ref: user_badges.journeyId > journeys.journeyId
+
+
+// ======================================================
+// VISUAL GROUP
+// ======================================================
+
+TableGroup trekking_service {
+  trekking_places
+  detail_evaluates
+  trekking_routes
+  milestones
+  journeys
+  journey_markers
+  route_submissions
+  route_submission_markers
+  place_suggestions
+  badges
+  user_badges
+}

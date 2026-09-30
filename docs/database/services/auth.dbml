@@ -1,0 +1,190 @@
+// ======================================================
+// TREKVIET - AUTH SERVICE
+// ======================================================
+//
+// MongoDB logical database / service.
+//
+// Cross-service references are defined in:
+// ../server.dbml
+//
+// ======================================================
+
+
+// ======================================================
+// USERS
+// ======================================================
+
+Table users {
+  userId varchar [pk]
+
+  email varchar [not null, unique]
+  displayName varchar [not null]
+
+  avatarUrl varchar
+  bio text
+
+  // USER | ADMIN
+  role varchar [not null, default: 'USER']
+
+  // PENDING_VERIFICATION | ACTIVE | BLOCKED
+  status varchar [not null, default: 'PENDING_VERIFICATION']
+
+  emailVerifiedAt timestamp
+
+  createdAt timestamp
+  updatedAt timestamp
+}
+
+
+// ======================================================
+// AUTH IDENTITIES
+// ======================================================
+
+Table auth_identities {
+  authIdentityId varchar [pk]
+
+  userId varchar [not null]
+
+  // LOCAL | GOOGLE
+  provider varchar [not null]
+
+  // Google sub nếu provider = GOOGLE.
+  // Null nếu provider = LOCAL.
+  providerUserId varchar
+
+  // Có giá trị nếu provider = LOCAL.
+  passwordHash varchar
+
+  createdAt timestamp
+  updatedAt timestamp
+
+  indexes {
+    (userId, provider) [unique]
+    (provider, providerUserId) [unique]
+  }
+}
+
+
+// ======================================================
+// USER SETTINGS
+// ======================================================
+
+Table user_settings {
+  userSettingId varchar [pk]
+
+  userId varchar [not null, unique]
+
+  language varchar [default: 'vi']
+  theme varchar [default: 'dark']
+  distanceUnit varchar [default: 'km']
+
+  notificationEnabled boolean [default: true]
+
+  createdAt timestamp
+  updatedAt timestamp
+}
+
+
+// ======================================================
+// OTP
+// ======================================================
+
+Table otp_verifications {
+  otpVerificationId varchar [pk]
+
+  userId varchar
+  email varchar [not null]
+
+  // REGISTER | RESET_PASSWORD
+  purpose varchar [not null]
+
+  otpHash varchar [not null]
+
+  expiresAt timestamp [not null]
+
+  // PENDING | VERIFIED | EXPIRED | USED
+  status varchar [not null, default: 'PENDING']
+
+  attempts int [not null, default: 0]
+
+  createdAt timestamp
+  verifiedAt timestamp
+}
+
+
+// ======================================================
+// REFRESH TOKEN
+// ======================================================
+
+Table refresh_tokens {
+  refreshTokenId varchar [pk]
+
+  userId varchar [not null]
+
+  tokenHash varchar [not null, unique]
+
+  expiresAt timestamp [not null]
+  revokedAt timestamp
+
+  createdAt timestamp
+}
+
+
+// ======================================================
+// AUDIT LOG
+// ======================================================
+
+Table audit_logs {
+  auditLogId varchar [pk]
+
+  adminId varchar [not null]
+
+  action varchar [not null]
+
+  entityType varchar [not null]
+  entityId varchar
+
+  oldData json
+  newData json
+
+  ipAddress varchar
+  userAgent varchar
+
+  createdAt timestamp [not null]
+
+  indexes {
+    adminId
+    entityType
+    entityId
+    createdAt
+  }
+}
+
+
+// ======================================================
+// INTERNAL RELATIONSHIPS
+// ======================================================
+
+Ref: auth_identities.userId > users.userId
+
+Ref: user_settings.userId > users.userId
+
+Ref: otp_verifications.userId > users.userId
+
+Ref: refresh_tokens.userId > users.userId
+
+Ref: audit_logs.adminId > users.userId
+
+
+// ======================================================
+// VISUAL GROUP
+// ======================================================
+
+TableGroup auth_service {
+  users
+  auth_identities
+  user_settings
+  otp_verifications
+  refresh_tokens
+  audit_logs
+}

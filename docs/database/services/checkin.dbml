@@ -1,0 +1,166 @@
+// ======================================================
+// TREKVIET - CHECK-IN SERVICE
+// ======================================================
+//
+// Các ID thuộc service khác chỉ là logical references.
+// Cross-service relationships nằm trong ../server.dbml
+//
+// ======================================================
+
+
+// ======================================================
+// PROVINCES
+// ======================================================
+
+Table provinces {
+  provinceId varchar [pk]
+
+  code varchar [not null, unique]
+  name varchar [not null]
+
+  region varchar
+
+  // File GeoJSON / MapLibre feature mapping
+  mapAsset varchar
+  mapFeatureId varchar
+
+  // GeoJSON Point
+  // {
+  //   "type": "Point",
+  //   "coordinates": [108.458, 11.940]
+  // }
+  center json
+
+  createdAt timestamp
+  updatedAt timestamp
+}
+
+
+// ======================================================
+// PROVINCE VISITS
+// ======================================================
+
+Table province_visits {
+  provinceVisitId varchar [pk]
+
+  userId varchar [not null]
+  provinceId varchar [not null]
+
+  firstVisitedAt timestamp
+  lastVisitedAt timestamp
+
+  firstJourneyId varchar
+
+  visitCount int [default: 1]
+
+  // Ví dụ:
+  // {
+  //   "type": "TREKKING_CHECKIN",
+  //   "verified": true
+  // }
+  verification json
+
+  createdAt timestamp
+  updatedAt timestamp
+
+  indexes {
+    (userId, provinceId) [unique]
+  }
+}
+
+
+// ======================================================
+// PLACE VISITS
+// ======================================================
+
+Table place_visits {
+  placeVisitId varchar [pk]
+
+  userId varchar [not null]
+
+  trekkingPlaceId varchar [not null]
+  provinceId varchar [not null]
+
+  firstVisitedAt timestamp [not null]
+  lastVisitedAt timestamp [not null]
+
+  firstJourneyId varchar
+  lastJourneyId varchar
+  lastCheckinId varchar
+
+  visitCount int [default: 1]
+
+  // VERIFIED
+  verificationStatus varchar [default: 'VERIFIED']
+
+  // CHECKIN
+  source varchar [default: 'CHECKIN']
+
+  createdAt timestamp
+  updatedAt timestamp
+
+  indexes {
+    (userId, trekkingPlaceId) [unique]
+    (userId, lastVisitedAt)
+    trekkingPlaceId
+    provinceId
+  }
+}
+
+
+// ======================================================
+// MILESTONE CHECK-INS
+// ======================================================
+
+Table milestone_checkins {
+  milestoneCheckinId varchar [pk]
+
+  journeyId varchar [not null]
+  userId varchar [not null]
+
+  trekkingRouteId varchar [not null]
+  milestoneId varchar [not null]
+
+  // GeoJSON Point
+  location json [not null]
+
+  accuracyMeters double
+  distanceToMilestoneMeters double
+
+  // Ví dụ:
+  // {
+  //   "method": "GPS",
+  //   "status": "VERIFIED"
+  // }
+  verification json
+
+  syncSource varchar [default: 'ONLINE']
+
+  checkedAt timestamp [not null]
+
+  createdAt timestamp
+  updatedAt timestamp
+
+  indexes {
+    (journeyId, milestoneId, userId) [unique]
+  }
+}
+
+
+// ======================================================
+// INTERNAL RELATIONSHIPS
+// ======================================================
+
+Ref: province_visits.provinceId > provinces.provinceId
+
+
+// ======================================================
+// VISUAL GROUP
+// ======================================================
+
+TableGroup checkin_service {
+  provinces
+  province_visits
+  place_visits
+  milestone_checkins
+}
