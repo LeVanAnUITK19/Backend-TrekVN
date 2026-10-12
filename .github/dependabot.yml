@@ -6,23 +6,32 @@ updates:
       interval: weekly
 
   - package-ecosystem: npm
-    directory: /services/auth-service
+    directory: /backend/services/auth-service
     schedule:
       interval: weekly
   - package-ecosystem: npm
-    directory: /services/checkin-service
+    directory: /backend/services/checkin-service
     schedule:
       interval: weekly
   - package-ecosystem: npm
-    directory: /services/trekking-service
+    directory: /backend/services/trekking-service
     schedule:
       interval: weekly
   - package-ecosystem: npm
-    directory: /services/api-gateway
+    directory: /backend/services/api-gateway
     schedule:
       interval: weekly
 
   - package-ecosystem: pip
-    directory: /services/agent-service
+    directory: /backend/services/agent-service
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: terraform
+    directory: /backend/infrastructure/terraform/environments/dev
+    schedule:
+      interval: weekly
+  - package-ecosystem: terraform
+    directory: /backend/infrastructure/terraform/bootstrap-state
     schedule:
       interval: weekly

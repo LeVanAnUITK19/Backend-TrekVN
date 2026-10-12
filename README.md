@@ -18,7 +18,7 @@
 
 ## 📖 Giới thiệu
 
-**Cập nhật theo code ngày 12/10/2026:** [Services hiện có](docs/services.md), [API/Swagger inventory](docs/api-route-inventory.md), [database runtime](docs/database/README.md), [báo cáo trước khi push](docs/pre-push-audit-2026-10-12.md).
+**Cấu trúc thư mục cập nhật ngày 13/10/2026; API/database được review ngày 12/10/2026:** [Services hiện có](backend/docs/services.md), [API/Swagger inventory](backend/docs/api-route-inventory.md), [database runtime](backend/docs/database/README.md), [báo cáo trước khi push](backend/docs/pre-push-audit-2026-10-12.md).
 
 **TrekViệt** là ứng dụng mobile hỗ trợ người dùng khám phá, lên kế hoạch và theo dõi các hành trình trekking trên khắp lãnh thổ Việt Nam — từ những cung đường đèo hùng vĩ ở Tây Bắc đến các cánh rừng nguyên sinh ở Tây Nguyên.
 
@@ -87,20 +87,18 @@ Flutter App
 
 ```
 Backend-TrekVN/
-│
-├── 📂 services/
-│   ├── api-gateway/          # Reverse proxy, routing, rate limiting
-│   ├── auth-service/         # Đăng ký, đăng nhập, JWT, OTP
-│   ├── trekking-service/     # Địa điểm, cung đường, hành trình, GPS
-│   ├── checkin-service/      # Check-in milestone, đồng bộ offline
-│   ├── community-service/    # Bài viết, bình luận, chia sẻ thành tích
-│   └── agent-service/        # 🤖 AI Assistant, Place Builder, Map Builder
-│
-├── 📂 docs/                  # API documentation (Swagger/Markdown)
-│   └── agent/                # Agent Service docs
-├── 📂 deployment/            # Docker Compose, Kubernetes manifests
-├── 📂 infrastructure/        # Terraform, cloud configs
-└── 📂 .github/workflows/     # CI/CD pipelines (GitHub Actions)
+├── backend/
+│   ├── services/             # Auth, checkin, trekking, gateway, agent; community placeholder
+│   ├── docs/                 # API, Swagger and database documentation
+│   ├── scripts/              # Contract export and secret scanning
+│   ├── deployment/           # Deployment placeholder
+│   └── infrastructure/
+│       └── terraform/        # AWS bootstrap, dev environment and reusable modules
+├── gitops/                   # Argo CD/Helm skeleton, not yet deployable
+│   ├── argocd/
+│   ├── charts/
+│   └── environments/
+└── .github/workflows/        # CI pipelines
 ```
 
 ### Auth Service — cấu trúc chi tiết
@@ -205,7 +203,7 @@ checkin-service/
 
 ```bash
 git clone https://github.com/your-org/Backend-TrekVN.git
-cd Backend-TrekVN/services/auth-service
+cd Backend-TrekVN/backend/services/auth-service
 
 npm install
 ```
@@ -288,7 +286,7 @@ Push / Pull Request
 | `PATCH`| `/api/v1/users/me` | Cập nhật hồ sơ |
 | `GET`  | `/health` | Health check |
 
-> 📄 Tài liệu đầy đủ: [`docs/auth-service-api.md`](docs/auth-service-api.md) hoặc Swagger UI tại `/api-docs`
+> 📄 Tài liệu đầy đủ: [`docs/auth-service-api.md`](backend/docs/auth-service-api.md) hoặc Swagger UI tại `/api-docs`
 
 ---
 
@@ -307,7 +305,7 @@ Push / Pull Request
 | `GET`  | `/api/v1/visits/places/me/recent` | Địa điểm đến gần đây (Home screen) |
 | `GET`  | `/health` | Health check |
 
-> 📄 Tài liệu đầy đủ: [`docs/checkin-service-api.md`](docs/checkin-service-api.md) hoặc Swagger UI tại `http://localhost:3002/api-docs`
+> 📄 Tài liệu đầy đủ: [`docs/checkin-service-api.md`](backend/docs/checkin-service-api.md) hoặc Swagger UI tại `http://localhost:3002/api-docs`
 
 ---
 

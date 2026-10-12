@@ -60,4 +60,46 @@ Thumbs.db
 *.swp
 *.swo
 
+# Terraform: local providers, state, saved plans and environment configuration
+.terraform/
+.terraform.d/
+.terragrunt-cache/
+*.tfstate
+*.tfstate.*
+.terraform.tfstate.lock.info
+*.tfplan
+*.tfplan.*
+*.plan
+tfplan
+tfplan.*
+plan.out
+/backend/infrastructure/terraform/**/plan*.json
+*.tfvars
+*.tfvars.json
+!*.example.tfvars
+!*.example.tfvars.json
+backend.hcl
+backend.local.hcl
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+credentials.tfrc.json
+terraform.exe
+
+# Local AWS/Kubernetes credentials and deployment secrets
+.aws/
+.kube/
+kubeconfig
+kubeconfig.*
+!kubeconfig.example
+*.kubeconfig
+*.secret.yaml
+*.secret.yml
+secrets.local.*
+
 # .dockerignore and lockfiles are source configuration; keep them tracked.

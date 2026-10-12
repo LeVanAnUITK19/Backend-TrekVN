@@ -1,0 +1,7 @@
+# Copy to backend.hcl (ignored by Git). This bucket must already exist.
+# The region here is the state bucket's region, not necessarily the EC2 region.
+bucket       = "your-existing-terraform-state-bucket"
+key          = "trekvn/dev/terraform.tfstate"
+region       = "ap-southeast-1"
+encrypt      = true
+use_lockfile = true
