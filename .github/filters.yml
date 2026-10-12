@@ -1,0 +1,31 @@
+# A change to shared CI/IaC runs all service pipelines.
+auth:
+  - 'services/auth-service/**'
+  - '.github/workflows/**'
+  - '.github/filters.yml'
+  - 'ci/**'
+  - 'shared/**'
+checkin:
+  - 'services/checkin-service/**'
+  - '.github/workflows/**'
+  - '.github/filters.yml'
+  - 'ci/**'
+  - 'shared/**'
+trekking:
+  - 'services/trekking-service/**'
+  - '.github/workflows/**'
+  - '.github/filters.yml'
+  - 'ci/**'
+  - 'shared/**'
+gateway:
+  - 'services/api-gateway/**'
+  - '.github/workflows/**'
+  - '.github/filters.yml'
+  - 'ci/**'
+  - 'shared/**'
+agent:
+  - 'services/agent-service/**'
+  - '.github/workflows/**'
+  - '.github/filters.yml'
+  - 'ci/**'
+  - 'shared/**'

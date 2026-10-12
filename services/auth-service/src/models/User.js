@@ -9,9 +9,10 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
+    // Nullable: null khi user chỉ đăng nhập bằng Google (không có LOCAL password)
     passwordHash: {
       type: String,
-      required: true,
+      default: null,
     },
     displayName: {
       type: String,
@@ -28,19 +29,21 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['USER', 'GUIDE', 'ADMIN'],
+      enum: ['USER', 'ADMIN'],
       default: 'USER',
     },
-    // PENDING_VERIFICATION → ACTIVE → SUSPENDED | DISABLED
+    // PENDING_VERIFICATION → ACTIVE → BLOCKED (DB v3.1)
     status: {
       type: String,
-      enum: ['PENDING_VERIFICATION', 'ACTIVE', 'SUSPENDED', 'DISABLED'],
+      enum: ['PENDING_VERIFICATION', 'ACTIVE', 'BLOCKED'],
       default: 'PENDING_VERIFICATION',
     },
     emailVerifiedAt: {
       type: Date,
       default: null,
     },
+    lastLoginAt: { type: Date, default: null },
+    tokenVersion: { type: Number, default: 0 },
   },
   {
     timestamps: true,
@@ -50,6 +53,7 @@ const userSchema = new mongoose.Schema(
         delete ret._id;
         delete ret.__v;
         delete ret.passwordHash;
+        delete ret.tokenVersion;
       },
     },
   }

@@ -2,7 +2,11 @@ const { Router } = require('express');
 const { authenticate } = require('../middlewares/auth');
 const { validate } = require('../middlewares/validate');
 const visitController = require('../controllers/visit.controller');
-const { manualMarkSchema } = require('../validators/checkin.validator');
+const {
+  manualMarkSchema,
+  provinceSchema,
+  updateProvinceSchema,
+} = require('../validators/checkin.validator');
 
 const router = Router();
 
@@ -554,5 +558,97 @@ router.get('/places/me', authenticate, visitController.getMyPlaceVisits);
  *             schema: { $ref: '#/components/schemas/ErrorResponse' }
  */
 router.get('/places/me/:placeId', authenticate, visitController.getPlaceVisitDetail);
+
+// ─── Province Management ──────────────────────────────────────────────────────
+
+/**
+ * @swagger
+ * /api/v1/visits/provinces:
+ *   post:
+ *     summary: Thêm tỉnh mới vào hệ thống
+ *     tags: [Visits]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [code, name]
+ *             properties:
+ *               code:
+ *                 type: string
+ *                 example: "lam_dong"
+ *               name:
+ *                 type: string
+ *                 example: "Lâm Đồng"
+ *               description:
+ *                 type: string
+ *               region:
+ *                 type: string
+ *                 enum: [NORTH, CENTRAL, SOUTH]
+ *               mapFeatureId:
+ *                 type: string
+ *                 example: "VN-LD"
+ *               center:
+ *                 type: object
+ *                 properties:
+ *                   coordinates:
+ *                     type: array
+ *                     items:
+ *                       type: number
+ *                     example: [108.4419, 11.9465]
+ *     responses:
+ *       201:
+ *         description: Tỉnh mới được tạo
+ *       400:
+ *         description: Validation lỗi hoặc code đã tồn tại
+ *
+ * /api/v1/visits/provinces/{provinceId}:
+ *   patch:
+ *     summary: Cập nhật thông tin tỉnh
+ *     tags: [Visits]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: provinceId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               code:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               region:
+ *                 type: string
+ *                 enum: [NORTH, CENTRAL, SOUTH]
+ *               mapFeatureId:
+ *                 type: string
+ *               center:
+ *                 type: object
+ *                 properties:
+ *                   coordinates:
+ *                     type: array
+ *                     items:
+ *                       type: number
+ *     responses:
+ *       200:
+ *         description: Cập nhật thành công
+ *       404:
+ *         description: Không tìm thấy tỉnh
+ */
+router.post('/provinces', authenticate, validate(provinceSchema), visitController.addProvince);
+router.patch('/provinces/:provinceId', authenticate, validate(updateProvinceSchema), visitController.updateProvince);
 
 module.exports = router;

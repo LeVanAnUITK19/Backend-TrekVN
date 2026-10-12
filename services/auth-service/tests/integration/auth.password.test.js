@@ -119,7 +119,10 @@ describe('POST /api/v1/auth/reset-password', () => {
 
   it('resetToken hợp lệ + mật khẩu mới → 200', async () => {
     await createActiveUser({ email: 'resetpw@example.com', password: 'OldPass@123' });
-    const resetToken = generateResetToken('resetpw@example.com');
+    const { accessToken } = await loginAs('resetpw@example.com', 'OldPass@123');
+    const { plainOtp } = await createOtpRecord({ email: 'resetpw@example.com', purpose: 'RESET_PASSWORD' });
+    const verified = await request(app).post('/api/v1/auth/verify-reset-otp').send({ email: 'resetpw@example.com', otp: plainOtp });
+    const resetToken = verified.body.data.resetToken;
 
     const res = await request(app)
       .post('/api/v1/auth/reset-password')
@@ -127,12 +130,16 @@ describe('POST /api/v1/auth/reset-password', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.message).toMatch(/thành công/i);
+    const oldSession = await request(app).get('/api/v1/auth/verify').set('Authorization', `Bearer ${accessToken}`);
+    expect(oldSession.status).toBe(401);
 
     // Đăng nhập bằng mật khẩu mới
     const loginRes = await request(app)
       .post('/api/v1/auth/login')
       .send({ email: 'resetpw@example.com', password: 'NewPass@456' });
     expect(loginRes.status).toBe(200);
+    const replay = await request(app).post('/api/v1/auth/reset-password').send({ resetToken, newPassword: 'OtherPass@123' });
+    expect(replay.status).toBe(401);
   });
 
   it('resetToken hết hạn → 401', async () => {

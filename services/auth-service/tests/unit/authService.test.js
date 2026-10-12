@@ -120,12 +120,12 @@ describe('authService.refresh', () => {
   });
 
   it('token không tìm thấy trong DB → UnauthorizedError', async () => {
-    refreshTokenRepo.findByHash.mockResolvedValue(null);
+    refreshTokenRepo.consumeByHash.mockResolvedValue(null);
     await expect(authService.refresh('fake-raw-token')).rejects.toBeInstanceOf(UnauthorizedError);
   });
 
   it('user bị SUSPENDED → UnauthorizedError', async () => {
-    refreshTokenRepo.findByHash.mockResolvedValue({ userId: 'uid' });
+    refreshTokenRepo.consumeByHash.mockResolvedValue({ userId: 'uid' });
     refreshTokenRepo.revokeByHash.mockResolvedValue(null);
     userRepo.findById.mockResolvedValue(makeUser({ status: 'SUSPENDED' }));
 

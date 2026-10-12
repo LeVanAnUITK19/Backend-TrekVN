@@ -52,6 +52,20 @@ const updateSettingsSchema = Joi.object({
   notificationEnabled: Joi.boolean(),
 }).min(1);
 
+const updateBioSchema = Joi.object({
+  bio: Joi.string().max(500).allow(null, '').required().messages({
+    'any.required': 'bio là bắt buộc',
+    'string.max': 'Bio không được quá 500 ký tự',
+  }),
+});
+
+const googleSignInSchema = Joi.object({
+  idToken: Joi.string().required().messages({
+    'any.required': 'idToken là bắt buộc',
+    'string.empty': 'idToken không được để trống',
+  }),
+});
+
 module.exports = {
   registerSchema,
   verifyEmailSchema,
@@ -63,4 +77,6 @@ module.exports = {
   changePasswordSchema,
   updateProfileSchema,
   updateSettingsSchema,
+  updateBioSchema,
+  googleSignInSchema,
 };

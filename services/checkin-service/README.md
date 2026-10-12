@@ -170,7 +170,7 @@ PORT=3002
 NODE_ENV=development
 
 # MongoDB — phải dùng database riêng, không dùng chung với auth-service
-MONGODB_URI=mongodb+srv://<user>:<pass>@cluster0.xxx.mongodb.net/checkIn-service-trekVN
+MONGODB_URI=mongodb://localhost:27017/trekviet
 
 # JWT — PHẢI khớp với JWT_SECRET của auth-service
 JWT_SECRET=your-shared-secret
@@ -179,7 +179,8 @@ JWT_SECRET=your-shared-secret
 CHECKIN_MAX_GPS_ACCURACY_METERS=50
 
 # Trekking Provider
-TREKKING_PROVIDER=mock
+TREKKING_PROVIDER=http
+TREKKING_SERVICE_URL=http://localhost:3003
 ```
 
 ### 3. Chạy development
@@ -209,8 +210,8 @@ docker run -p 3002:3002 --env-file .env trekvn-checkin-service
 | `MONGODB_URI` | ✅ | — | MongoDB connection string |
 | `JWT_SECRET` | ✅ | — | Khớp với auth-service để verify JWT |
 | `CHECKIN_MAX_GPS_ACCURACY_METERS` | — | `50` | Ngưỡng GPS accuracy tối đa (mét) |
-| `TREKKING_PROVIDER` | — | `mock` | `mock` \| `http` |
-| `TREKKING_SERVICE_URL` | khi `http` | — | URL của trekking-service |
+| `TREKKING_PROVIDER` | — | `http` | `mock` (test/demo) \| `http` |
+| `TREKKING_SERVICE_URL` | khi `http` | `http://localhost:3003` | URL của trekking-service; với Docker dùng `http://trekking-service:3003` |
 | `TREKKING_HTTP_TIMEOUT_MS` | — | `5000` | Timeout HTTP call đến trekking-service (ms) |
 | `LOG_LEVEL` | — | `info` | Winston log level |
 
@@ -303,15 +304,15 @@ Tests:       45 passed, 45 total
 
 ## 🔌 Mock vs HTTP TrekkingProvider
 
-CheckIn Service cần metadata của milestone (location, bán kính, placeId...) từ trekking-service, nhưng trekking-service **chưa được triển khai**. Service dùng abstraction layer để giải quyết vấn đề này.
+CheckIn Service lấy metadata của milestone (location, bán kính, placeId...) từ trekking-service qua HTTP để tra cùng dữ liệu mà ứng dụng hiển thị. Sau khi đổi cấu hình provider, khởi động lại checkin-service.
 
-### Hiện tại: MockTrekkingProvider (mặc định)
+### Test/demo: MockTrekkingProvider (phải bật rõ ràng)
 
 ```env
 TREKKING_PROVIDER=mock
 ```
 
-Đọc dữ liệu từ `src/mocks/milestones.json`. Không cần network call. Thích hợp cho development và test.
+Đọc dữ liệu từ `src/mocks/milestones.json`. Không cần network call. Chỉ thích hợp cho test/demo; ID milestone thật sẽ không có trong dữ liệu mock.
 
 **Thêm milestone mới vào mock:**
 
@@ -335,7 +336,7 @@ TREKKING_PROVIDER=mock
 ]
 ```
 
-### Khi trekking-service sẵn sàng: HttpTrekkingProvider
+### Development/production: HttpTrekkingProvider (mặc định)
 
 ```env
 TREKKING_PROVIDER=http

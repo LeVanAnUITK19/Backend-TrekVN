@@ -1,0 +1,4856 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "trekking-service",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3003"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      },
+      "serviceToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Service-Token"
+      }
+    }
+  },
+  "paths": {
+    "/api/v1/places": {
+      "get": {
+        "tags": [
+          "Places"
+        ],
+        "summary": "Danh sách địa điểm (chỉ ACTIVE)",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "provinceId",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "region",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "NORTH",
+                "CENTRAL",
+                "SOUTH",
+                "HIGHLAND",
+                "NORTHEAST",
+                "NORTHWEST"
+              ]
+            },
+            "description": "Lọc theo vùng địa lý (gọi checkin-service lấy provinceIds)"
+          },
+          {
+            "in": "query",
+            "name": "difficulty",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "EASY",
+                "MODERATE",
+                "HARD",
+                "EXPERT"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "tags",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công"
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/places/{placeId}": {
+      "get": {
+        "tags": [
+          "Places"
+        ],
+        "summary": "Chi tiết địa điểm",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "parameters": [
+          {
+            "name": "placeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/places/{placeId}/routes": {
+      "get": {
+        "tags": [
+          "Places"
+        ],
+        "summary": "Danh sách tuyến đường của địa điểm",
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "security": [],
+        "parameters": [
+          {
+            "name": "placeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/places/{placeId}/offline-package": {
+      "get": {
+        "tags": [
+          "Offline"
+        ],
+        "summary": "Gói dữ liệu offline cấp địa điểm (place + routes + map manifest)",
+        "description": "Trả về place metadata, danh sách routes ACTIVE và offline map manifest.\nKHÔNG proxy file map lớn — client tải trực tiếp từ `mapManifest.downloadUrl` (R2/CDN).\n`downloadUrl` được build runtime từ R2_PUBLIC_BASE_URL + objectKey.\n",
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "security": [],
+        "parameters": [
+          {
+            "name": "placeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/places/{placeId}/offline-package/check": {
+      "get": {
+        "tags": [
+          "Offline"
+        ],
+        "summary": "Kiểm tra version offline package cấp địa điểm",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "version",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Version client đang có"
+          },
+          {
+            "name": "placeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trạng thái version",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "status": "UP_TO_DATE",
+                    "serverVersion": 2,
+                    "available": true,
+                    "downloadUrl": "https://pub-xxx.r2.dev/maps/nui-ba-den/v2/map.zip",
+                    "checksum": "sha256..."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/places/{placeId}/reviews": {
+      "get": {
+        "tags": [
+          "Reviews"
+        ],
+        "summary": "Danh sách đánh giá",
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "security": [],
+        "parameters": [
+          {
+            "name": "placeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Reviews"
+        ],
+        "summary": "Tạo/cập nhật đánh giá",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "point": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  "isAnonymous": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "content": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 5000
+                  },
+                  "imagesUrl": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "maxItems": 10
+                  },
+                  "videoUrl": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "maxItems": 3
+                  }
+                },
+                "required": [
+                  "point"
+                ]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "placeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/places/{placeId}/reviews/eligibility": {
+      "get": {
+        "summary": "GET /api/v1/places/{placeId}/reviews/eligibility",
+        "description": "Implemented in services/trekking-service/src/routes/place.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "placeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/places/{placeId}/reviews/me": {
+      "get": {
+        "tags": [
+          "Reviews"
+        ],
+        "summary": "Đánh giá của tôi cho địa điểm này",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "parameters": [
+          {
+            "name": "placeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/places/{placeId}/reviews/{reviewId}": {
+      "put": {
+        "tags": [
+          "Reviews"
+        ],
+        "summary": "Cập nhật đánh giá của tôi",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "point": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  "isAnonymous": {
+                    "type": "boolean"
+                  },
+                  "content": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 5000
+                  },
+                  "imagesUrl": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "maxItems": 10
+                  },
+                  "videoUrl": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "maxItems": 3
+                  }
+                },
+                "minimum": 1
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "placeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reviewId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Reviews"
+        ],
+        "summary": "Xóa đánh giá của tôi (soft delete)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "parameters": [
+          {
+            "name": "placeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reviewId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/routes/{routeId}": {
+      "get": {
+        "tags": [
+          "Routes"
+        ],
+        "summary": "Chi tiết tuyến đường (chỉ ACTIVE)",
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "security": [],
+        "parameters": [
+          {
+            "name": "routeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/routes/{routeId}/milestones": {
+      "get": {
+        "tags": [
+          "Routes"
+        ],
+        "summary": "Danh sách cột mốc (sorted by sequence)",
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "security": [],
+        "parameters": [
+          {
+            "name": "routeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/routes/{routeId}/offline-package": {
+      "get": {
+        "tags": [
+          "Offline"
+        ],
+        "summary": "Gói dữ liệu offline (place + route + milestones + map manifest)",
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "security": [],
+        "parameters": [
+          {
+            "name": "routeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/routes/{routeId}/offline-package/check": {
+      "get": {
+        "tags": [
+          "Offline"
+        ],
+        "summary": "Kiểm tra version offline package",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "version",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "routeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/journeys": {
+      "get": {
+        "tags": [
+          "Journeys"
+        ],
+        "summary": "Danh sách hành trình của tôi",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PLANNED",
+                "ACTIVE",
+                "PAUSED",
+                "COMPLETED",
+                "CANCELLED"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "type": "string",
+              "default": "-createdAt"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Journeys"
+        ],
+        "summary": "Tạo hành trình mới",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Key để chống duplicate khi offline retry"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "trekkingPlaceId": {
+                    "type": "string"
+                  },
+                  "trekkingRouteId": {
+                    "type": "string"
+                  },
+                  "provinceId": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "clientJourneyId": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 100
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "note": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 2000
+                  },
+                  "participantCount": {
+                    "type": "integer",
+                    "default": 1,
+                    "minimum": 1
+                  },
+                  "plannedStartAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true
+                  },
+                  "plannedEndAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "trekkingPlaceId",
+                  "trekkingRouteId",
+                  "name"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/journeys/statistics": {
+      "get": {
+        "tags": [
+          "Journeys"
+        ],
+        "summary": "Thống kê hành trình của tôi",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        }
+      }
+    },
+    "/api/v1/journeys/{journeyId}": {
+      "get": {
+        "tags": [
+          "Journeys"
+        ],
+        "summary": "Chi tiết hành trình",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "parameters": [
+          {
+            "name": "journeyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/journeys/{journeyId}/start": {
+      "post": {
+        "tags": [
+          "Journeys"
+        ],
+        "summary": "Bắt đầu hành trình (PLANNED → ACTIVE)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "startedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "journeyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/journeys/{journeyId}/pause": {
+      "post": {
+        "tags": [
+          "Journeys"
+        ],
+        "summary": "Tạm dừng hành trình (ACTIVE → PAUSED)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "parameters": [
+          {
+            "name": "journeyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/journeys/{journeyId}/resume": {
+      "post": {
+        "tags": [
+          "Journeys"
+        ],
+        "summary": "Tiếp tục hành trình (PAUSED → ACTIVE)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "parameters": [
+          {
+            "name": "journeyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/journeys/{journeyId}/complete": {
+      "post": {
+        "tags": [
+          "Journeys"
+        ],
+        "summary": "Hoàn thành hành trình (ACTIVE → COMPLETED)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "journeyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "completedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true
+                  },
+                  "statistics": {
+                    "type": "object",
+                    "properties": {
+                      "distanceMeters": {
+                        "type": "number",
+                        "nullable": true,
+                        "minimum": 0
+                      },
+                      "durationSeconds": {
+                        "type": "number",
+                        "nullable": true,
+                        "minimum": 0
+                      },
+                      "elevationGain": {
+                        "type": "number",
+                        "nullable": true,
+                        "minimum": 0
+                      },
+                      "maxAltitude": {
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "averageSpeed": {
+                        "type": "number",
+                        "nullable": true,
+                        "minimum": 0
+                      }
+                    },
+                    "nullable": true
+                  },
+                  "track": {
+                    "type": "object",
+                    "properties": {
+                      "encodedPolyline": {
+                        "type": "string",
+                        "nullable": true
+                      }
+                    },
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/journeys/{journeyId}/cancel": {
+      "post": {
+        "tags": [
+          "Journeys"
+        ],
+        "summary": "Hủy hành trình",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "parameters": [
+          {
+            "name": "journeyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/journeys/{journeyId}/markers": {
+      "get": {
+        "tags": [
+          "Journey Markers"
+        ],
+        "summary": "Danh sách markers của hành trình",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "parameters": [
+          {
+            "name": "journeyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Journey Markers"
+        ],
+        "summary": "Tạo Journey Marker",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "clientMarkerId": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 100
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "VIEWPOINT",
+                      "REST_POINT",
+                      "WATER_POINT",
+                      "DANGER",
+                      "INTERSECTION",
+                      "CAMP",
+                      "PHOTO_SPOT",
+                      "LANDMARK",
+                      "SUMMIT",
+                      "OTHER",
+                      "WATER_SOURCE",
+                      "JUNCTION",
+                      "CAMPING"
+                    ]
+                  },
+                  "note": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 2000
+                  },
+                  "location": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "Point"
+                        ]
+                      },
+                      "coordinates": {
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        },
+                        "maxItems": 2,
+                        "minItems": 2
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "coordinates"
+                    ]
+                  },
+                  "altitude": {
+                    "type": "number",
+                    "nullable": true
+                  },
+                  "accuracyMeters": {
+                    "type": "number",
+                    "nullable": true,
+                    "minimum": 0
+                  },
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "maxItems": 10
+                  },
+                  "markedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "name",
+                  "type",
+                  "location"
+                ]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "journeyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/journeys/{journeyId}/markers/{markerId}": {
+      "put": {
+        "tags": [
+          "Journey Markers"
+        ],
+        "summary": "Cập nhật Journey Marker",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "VIEWPOINT",
+                      "REST_POINT",
+                      "WATER_POINT",
+                      "DANGER",
+                      "INTERSECTION",
+                      "CAMP",
+                      "PHOTO_SPOT",
+                      "LANDMARK",
+                      "SUMMIT",
+                      "OTHER",
+                      "WATER_SOURCE",
+                      "JUNCTION",
+                      "CAMPING"
+                    ]
+                  },
+                  "note": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 2000
+                  },
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "maxItems": 10
+                  },
+                  "location": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "Point"
+                        ]
+                      },
+                      "coordinates": {
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        },
+                        "maxItems": 2,
+                        "minItems": 2
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "coordinates"
+                    ]
+                  },
+                  "altitude": {
+                    "type": "number",
+                    "nullable": true
+                  }
+                },
+                "minimum": 1
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "journeyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "markerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Journey Markers"
+        ],
+        "summary": "Xóa Journey Marker",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "parameters": [
+          {
+            "name": "journeyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "markerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/contributions/routes": {
+      "post": {
+        "tags": [
+          "Contributions"
+        ],
+        "summary": "Gửi route contribution từ Journey COMPLETED",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "contributionKind": {
+                    "type": "string",
+                    "enum": [
+                      "ROUTE",
+                      "MARKERS"
+                    ],
+                    "default": "ROUTE"
+                  },
+                  "clientOperationId": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 100
+                  },
+                  "sourceJourneyId": {
+                    "type": "string"
+                  },
+                  "trekkingPlaceId": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "proposedName": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 200
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 5000
+                  },
+                  "notes": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 2000
+                  },
+                  "encodedPolyline": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "gpxUrl": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "uri"
+                  },
+                  "statistics": {
+                    "type": "object",
+                    "properties": {
+                      "distanceMeters": {
+                        "type": "number",
+                        "nullable": true,
+                        "minimum": 0
+                      },
+                      "durationSeconds": {
+                        "type": "number",
+                        "nullable": true,
+                        "minimum": 0
+                      },
+                      "elevationGain": {
+                        "type": "number",
+                        "nullable": true,
+                        "minimum": 0
+                      },
+                      "maxAltitude": {
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "averageSpeed": {
+                        "type": "number",
+                        "nullable": true,
+                        "minimum": 0
+                      }
+                    },
+                    "nullable": true
+                  },
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "maxItems": 20
+                  },
+                  "markerIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "maxItems": 100
+                  }
+                },
+                "required": [
+                  "sourceJourneyId"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/contributions/places": {
+      "post": {
+        "tags": [
+          "Contributions"
+        ],
+        "summary": "Gửi đề xuất địa điểm mới",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "clientOperationId": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 100
+                  },
+                  "provinceId": {
+                    "type": "string"
+                  },
+                  "proposedName": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 200
+                  },
+                  "address": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 500
+                  },
+                  "location": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "Point"
+                        ]
+                      },
+                      "coordinates": {
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        },
+                        "maxItems": 2,
+                        "minItems": 2
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "coordinates"
+                    ]
+                  },
+                  "description": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 5000
+                  },
+                  "difficulty": {
+                    "type": "string",
+                    "enum": [
+                      "EASY",
+                      "MODERATE",
+                      "HARD",
+                      "EXPERT"
+                    ],
+                    "nullable": true
+                  },
+                  "tags": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 50
+                    },
+                    "maxItems": 20
+                  },
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "maxItems": 20
+                  }
+                },
+                "required": [
+                  "provinceId",
+                  "proposedName",
+                  "location",
+                  "description"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/contributions/me": {
+      "get": {
+        "tags": [
+          "Contributions"
+        ],
+        "summary": "Lịch sử đóng góp của tôi",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        }
+      }
+    },
+    "/api/v1/contributions/me/{id}": {
+      "get": {
+        "tags": [
+          "Contributions"
+        ],
+        "summary": "Chi tiết đóng góp của tôi",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/contributions/me/{id}/resubmit": {
+      "post": {
+        "tags": [
+          "Contributions"
+        ],
+        "summary": "Gửi lại contribution (NEEDS_REVISION → PENDING_REVIEW)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/contributions/me/{id}/cancel": {
+      "post": {
+        "tags": [
+          "Contributions"
+        ],
+        "summary": "Hủy contribution",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/badges": {
+      "get": {
+        "tags": [
+          "Badges"
+        ],
+        "summary": "Danh sách badges (ACTIVE)",
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/badges/me": {
+      "get": {
+        "tags": [
+          "Badges"
+        ],
+        "summary": "Badges của tôi",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        }
+      }
+    },
+    "/api/v1/uploads/presign": {
+      "post": {
+        "tags": [
+          "Uploads"
+        ],
+        "summary": "Lấy presigned upload params từ Cloudinary",
+        "description": "Client dùng `uploadUrl` + `uploadParams` để upload trực tiếp lên Cloudinary.\nSau khi upload xong, lấy `publicUrl` và gửi về server để cập nhật marker/review/contribution.\n\n**Purpose** quyết định folder và giới hạn file:\n- `JOURNEY_MARKER` — ảnh marker, tối đa 10MB\n- `PLACE_REVIEW`   — ảnh đánh giá, tối đa 10MB\n- `ROUTE_CONTRIBUTION` — ảnh cung đường, tối đa 20MB\n- `PLACE_SUGGESTION`   — ảnh đề xuất địa điểm, tối đa 20MB\n- `GPX`            — file GPX/XML, tối đa 50MB\n\n**Security:**\n- `objectKey` (public_id) do backend sinh — client không tự chọn path\n- Signature hết hạn sau 15 phút\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "purpose",
+                  "fileName",
+                  "contentType",
+                  "fileSizeBytes"
+                ],
+                "properties": {
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "JOURNEY_MARKER",
+                      "PLACE_REVIEW",
+                      "ROUTE_CONTRIBUTION",
+                      "PLACE_SUGGESTION",
+                      "GPX"
+                    ],
+                    "example": "JOURNEY_MARKER"
+                  },
+                  "fileName": {
+                    "type": "string",
+                    "example": "marker_photo.jpg"
+                  },
+                  "contentType": {
+                    "type": "string",
+                    "example": "image/jpeg"
+                  },
+                  "fileSizeBytes": {
+                    "type": "integer",
+                    "example": 2048000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Upload credentials",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "uploadUrl": "https://api.cloudinary.com/v1_1/mycloud/image/upload",
+                    "objectKey": "trekvn/markers/userId/1234_marker_photo.jpg",
+                    "publicUrl": "https://res.cloudinary.com/mycloud/image/upload/trekvn/markers/...",
+                    "expiresIn": 900,
+                    "uploadParams": {
+                      "api_key": "659664438156848",
+                      "timestamp": 1700000000,
+                      "signature": "abc123...",
+                      "folder": "trekvn/markers",
+                      "public_id": "trekvn/markers/userId/1234_marker_photo.jpg"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error, invalid purpose, or file too large"
+          },
+          "401": {
+            "description": "Chưa xác thực"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/trekking/places": {
+      "post": {
+        "summary": "POST /api/v1/admin/trekking/places",
+        "description": "Implemented in services/trekking-service/src/routes/admin.trekking.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 200
+                  },
+                  "provinceId": {
+                    "type": "string"
+                  },
+                  "address": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 500
+                  },
+                  "location": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "Point"
+                        ]
+                      },
+                      "coordinates": {
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        },
+                        "maxItems": 2,
+                        "minItems": 2
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "coordinates"
+                    ]
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 5000
+                  },
+                  "difficulty": {
+                    "type": "string",
+                    "enum": [
+                      "EASY",
+                      "MODERATE",
+                      "HARD",
+                      "EXPERT"
+                    ],
+                    "nullable": true
+                  },
+                  "averageDurationMinutes": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 0
+                  },
+                  "elevationMeters": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 0
+                  },
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "maxItems": 20
+                  },
+                  "imageMapUrl": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "uri"
+                  },
+                  "tags": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 50
+                    },
+                    "maxItems": 20
+                  },
+                  "dataOrigin": {
+                    "type": "string",
+                    "enum": [
+                      "MANUAL",
+                      "USER_CONTRIBUTION",
+                      "AI_AGENT"
+                    ],
+                    "default": "MANUAL"
+                  },
+                  "externalRefs": {
+                    "type": "object",
+                    "nullable": true
+                  },
+                  "lastVerifiedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true
+                  },
+                  "offlineMap": {
+                    "type": "object",
+                    "properties": {
+                      "available": {
+                        "type": "boolean"
+                      },
+                      "version": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "objectKey": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "sizeBytes": {
+                        "type": "integer",
+                        "nullable": true,
+                        "minimum": 0
+                      },
+                      "checksum": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "minZoom": {
+                        "type": "integer",
+                        "nullable": true,
+                        "minimum": 0,
+                        "maximum": 22
+                      },
+                      "maxZoom": {
+                        "type": "integer",
+                        "nullable": true,
+                        "minimum": 0,
+                        "maximum": 22
+                      },
+                      "bounds": {
+                        "type": "object",
+                        "properties": {
+                          "minLat": {
+                            "type": "number",
+                            "minimum": -90,
+                            "maximum": 90
+                          },
+                          "minLon": {
+                            "type": "number",
+                            "minimum": -180,
+                            "maximum": 180
+                          },
+                          "maxLat": {
+                            "type": "number",
+                            "minimum": -90,
+                            "maximum": 90
+                          },
+                          "maxLon": {
+                            "type": "number",
+                            "minimum": -180,
+                            "maximum": 180
+                          }
+                        },
+                        "nullable": true
+                      }
+                    },
+                    "required": [
+                      "available",
+                      "version"
+                    ],
+                    "nullable": true
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "ACTIVE",
+                      "INACTIVE",
+                      "DISABLED"
+                    ],
+                    "default": "ACTIVE"
+                  }
+                },
+                "required": [
+                  "name",
+                  "provinceId",
+                  "location"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "GET /api/v1/admin/trekking/places",
+        "description": "Implemented in services/trekking-service/src/routes/admin.trekking.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/trekking/places/{id}": {
+      "put": {
+        "summary": "PUT /api/v1/admin/trekking/places/{id}",
+        "description": "Implemented in services/trekking-service/src/routes/admin.trekking.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 200
+                  },
+                  "provinceId": {
+                    "type": "string"
+                  },
+                  "address": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 500
+                  },
+                  "location": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "Point"
+                        ]
+                      },
+                      "coordinates": {
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        },
+                        "maxItems": 2,
+                        "minItems": 2
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "coordinates"
+                    ]
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 5000
+                  },
+                  "difficulty": {
+                    "type": "string",
+                    "enum": [
+                      "EASY",
+                      "MODERATE",
+                      "HARD",
+                      "EXPERT"
+                    ],
+                    "nullable": true
+                  },
+                  "averageDurationMinutes": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 0
+                  },
+                  "elevationMeters": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 0
+                  },
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "maxItems": 20
+                  },
+                  "imageMapUrl": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "uri"
+                  },
+                  "tags": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 50
+                    },
+                    "maxItems": 20
+                  },
+                  "dataOrigin": {
+                    "type": "string",
+                    "enum": [
+                      "MANUAL",
+                      "USER_CONTRIBUTION",
+                      "AI_AGENT"
+                    ]
+                  },
+                  "externalRefs": {
+                    "type": "object",
+                    "nullable": true
+                  },
+                  "lastVerifiedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true
+                  },
+                  "offlineMap": {
+                    "type": "object",
+                    "properties": {
+                      "available": {
+                        "type": "boolean"
+                      },
+                      "version": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "objectKey": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "sizeBytes": {
+                        "type": "integer",
+                        "nullable": true,
+                        "minimum": 0
+                      },
+                      "checksum": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "minZoom": {
+                        "type": "integer",
+                        "nullable": true,
+                        "minimum": 0,
+                        "maximum": 22
+                      },
+                      "maxZoom": {
+                        "type": "integer",
+                        "nullable": true,
+                        "minimum": 0,
+                        "maximum": 22
+                      },
+                      "bounds": {
+                        "type": "object",
+                        "properties": {
+                          "minLat": {
+                            "type": "number",
+                            "minimum": -90,
+                            "maximum": 90
+                          },
+                          "minLon": {
+                            "type": "number",
+                            "minimum": -180,
+                            "maximum": 180
+                          },
+                          "maxLat": {
+                            "type": "number",
+                            "minimum": -90,
+                            "maximum": 90
+                          },
+                          "maxLon": {
+                            "type": "number",
+                            "minimum": -180,
+                            "maximum": 180
+                          }
+                        },
+                        "nullable": true
+                      }
+                    },
+                    "required": [
+                      "available",
+                      "version"
+                    ],
+                    "nullable": true
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "ACTIVE",
+                      "INACTIVE",
+                      "DISABLED"
+                    ]
+                  }
+                },
+                "minimum": 1
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "get": {
+        "summary": "GET /api/v1/admin/trekking/places/{id}",
+        "description": "Implemented in services/trekking-service/src/routes/admin.trekking.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "delete": {
+        "summary": "DELETE /api/v1/admin/trekking/places/{id}",
+        "description": "Implemented in services/trekking-service/src/routes/admin.trekking.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/trekking/places/{id}/offline-map": {
+      "put": {
+        "summary": "PUT /api/v1/admin/trekking/places/{id}/offline-map",
+        "description": "Implemented in services/trekking-service/src/routes/admin.trekking.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "available": {
+                    "type": "boolean"
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "objectKey": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "sizeBytes": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 0
+                  },
+                  "checksum": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "minZoom": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 0,
+                    "maximum": 22
+                  },
+                  "maxZoom": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 0,
+                    "maximum": 22
+                  },
+                  "bounds": {
+                    "type": "object",
+                    "properties": {
+                      "minLat": {
+                        "type": "number",
+                        "minimum": -90,
+                        "maximum": 90
+                      },
+                      "minLon": {
+                        "type": "number",
+                        "minimum": -180,
+                        "maximum": 180
+                      },
+                      "maxLat": {
+                        "type": "number",
+                        "minimum": -90,
+                        "maximum": 90
+                      },
+                      "maxLon": {
+                        "type": "number",
+                        "minimum": -180,
+                        "maximum": 180
+                      }
+                    },
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "available",
+                  "version"
+                ]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "get": {
+        "summary": "GET /api/v1/admin/trekking/places/{id}/offline-map",
+        "description": "Implemented in services/trekking-service/src/routes/admin.trekking.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/trekking/routes/{routeId}/offline-map": {
+      "put": {
+        "summary": "PUT /api/v1/admin/trekking/routes/{routeId}/offline-map",
+        "description": "Implemented in services/trekking-service/src/routes/admin.trekking.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "available": {
+                    "type": "boolean"
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "objectKey": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "sizeBytes": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 0
+                  },
+                  "checksum": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "minZoom": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 0,
+                    "maximum": 22
+                  },
+                  "maxZoom": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 0,
+                    "maximum": 22
+                  },
+                  "bounds": {
+                    "type": "object",
+                    "properties": {
+                      "minLat": {
+                        "type": "number",
+                        "minimum": -90,
+                        "maximum": 90
+                      },
+                      "minLon": {
+                        "type": "number",
+                        "minimum": -180,
+                        "maximum": 180
+                      },
+                      "maxLat": {
+                        "type": "number",
+                        "minimum": -90,
+                        "maximum": 90
+                      },
+                      "maxLon": {
+                        "type": "number",
+                        "minimum": -180,
+                        "maximum": 180
+                      }
+                    },
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "available",
+                  "version"
+                ]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "routeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "get": {
+        "summary": "GET /api/v1/admin/trekking/routes/{routeId}/offline-map",
+        "description": "Implemented in services/trekking-service/src/routes/admin.trekking.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "routeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/trekking/places/{id}/reviews": {
+      "get": {
+        "summary": "GET /api/v1/admin/trekking/places/{id}/reviews",
+        "description": "Implemented in services/trekking-service/src/routes/admin.trekking.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/trekking/places/{id}/reviews/{reviewId}": {
+      "delete": {
+        "summary": "DELETE /api/v1/admin/trekking/places/{id}/reviews/{reviewId}",
+        "description": "Implemented in services/trekking-service/src/routes/admin.trekking.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reviewId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/trekking/places-offline-maps": {
+      "get": {
+        "summary": "GET /api/v1/admin/trekking/places-offline-maps",
+        "description": "Implemented in services/trekking-service/src/routes/admin.trekking.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/trekking/places/{id}/status": {
+      "patch": {
+        "summary": "PATCH /api/v1/admin/trekking/places/{id}/status",
+        "description": "Implemented in services/trekking-service/src/routes/admin.trekking.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "ACTIVE",
+                      "INACTIVE",
+                      "DISABLED"
+                    ]
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/trekking/places/{id}/offline-map/file": {
+      "get": {
+        "summary": "GET /api/v1/admin/trekking/places/{id}/offline-map/file",
+        "description": "Implemented in services/trekking-service/src/routes/admin.trekking.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/trekking/places/{id}/images": {
+      "post": {
+        "summary": "POST /api/v1/admin/trekking/places/{id}/images",
+        "description": "Implemented in services/trekking-service/src/routes/admin.trekking.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/trekking/places/{id}/map-image": {
+      "post": {
+        "summary": "POST /api/v1/admin/trekking/places/{id}/map-image",
+        "description": "Implemented in services/trekking-service/src/routes/admin.trekking.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/trekking/routes/{id}/image": {
+      "post": {
+        "summary": "POST /api/v1/admin/trekking/routes/{id}/image",
+        "description": "Implemented in services/trekking-service/src/routes/admin.trekking.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/trekking/routes": {
+      "get": {
+        "summary": "GET /api/v1/admin/trekking/routes",
+        "description": "Implemented in services/trekking-service/src/routes/admin.trekking.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "POST /api/v1/admin/trekking/routes",
+        "description": "Implemented in services/trekking-service/src/routes/admin.trekking.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "trekkingPlaceId": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 200
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 5000
+                  },
+                  "difficulty": {
+                    "type": "string",
+                    "enum": [
+                      "EASY",
+                      "MODERATE",
+                      "HARD",
+                      "EXPERT"
+                    ],
+                    "nullable": true
+                  },
+                  "distanceMeters": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 0
+                  },
+                  "estimatedDurationMinutes": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 0
+                  },
+                  "elevationGain": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 0
+                  },
+                  "maxElevation": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "imageUrl": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "uri"
+                  },
+                  "startLocation": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "Point"
+                        ]
+                      },
+                      "coordinates": {
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        },
+                        "maxItems": 2,
+                        "minItems": 2
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "coordinates"
+                    ],
+                    "nullable": true
+                  },
+                  "endLocation": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "Point"
+                        ]
+                      },
+                      "coordinates": {
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        },
+                        "maxItems": 2,
+                        "minItems": 2
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "coordinates"
+                    ],
+                    "nullable": true
+                  },
+                  "path": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "LineString"
+                        ]
+                      },
+                      "coordinates": {
+                        "type": "array",
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "number"
+                          },
+                          "maxItems": 2,
+                          "minItems": 2
+                        },
+                        "minItems": 2
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "coordinates"
+                    ],
+                    "nullable": true
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "ACTIVE",
+                      "INACTIVE",
+                      "DISABLED"
+                    ],
+                    "default": "ACTIVE"
+                  }
+                },
+                "required": [
+                  "trekkingPlaceId",
+                  "name"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/trekking/routes/{id}": {
+      "get": {
+        "summary": "GET /api/v1/admin/trekking/routes/{id}",
+        "description": "Implemented in services/trekking-service/src/routes/admin.trekking.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "put": {
+        "summary": "PUT /api/v1/admin/trekking/routes/{id}",
+        "description": "Implemented in services/trekking-service/src/routes/admin.trekking.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 200
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 5000
+                  },
+                  "difficulty": {
+                    "type": "string",
+                    "enum": [
+                      "EASY",
+                      "MODERATE",
+                      "HARD",
+                      "EXPERT"
+                    ],
+                    "nullable": true
+                  },
+                  "distanceMeters": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 0
+                  },
+                  "estimatedDurationMinutes": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 0
+                  },
+                  "elevationGain": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 0
+                  },
+                  "maxElevation": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "imageUrl": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "uri"
+                  },
+                  "startLocation": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "Point"
+                        ]
+                      },
+                      "coordinates": {
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        },
+                        "maxItems": 2,
+                        "minItems": 2
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "coordinates"
+                    ],
+                    "nullable": true
+                  },
+                  "endLocation": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "Point"
+                        ]
+                      },
+                      "coordinates": {
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        },
+                        "maxItems": 2,
+                        "minItems": 2
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "coordinates"
+                    ],
+                    "nullable": true
+                  },
+                  "path": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "LineString"
+                        ]
+                      },
+                      "coordinates": {
+                        "type": "array",
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "number"
+                          },
+                          "maxItems": 2,
+                          "minItems": 2
+                        },
+                        "minItems": 2
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "coordinates"
+                    ],
+                    "nullable": true
+                  }
+                },
+                "minimum": 1
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "delete": {
+        "summary": "DELETE /api/v1/admin/trekking/routes/{id}",
+        "description": "Implemented in services/trekking-service/src/routes/admin.trekking.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/trekking/routes/{id}/status": {
+      "patch": {
+        "summary": "PATCH /api/v1/admin/trekking/routes/{id}/status",
+        "description": "Implemented in services/trekking-service/src/routes/admin.trekking.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "ACTIVE",
+                      "INACTIVE",
+                      "DISABLED"
+                    ]
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/trekking/routes/{routeId}/milestones": {
+      "get": {
+        "summary": "GET /api/v1/admin/trekking/routes/{routeId}/milestones",
+        "description": "Implemented in services/trekking-service/src/routes/admin.trekking.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "routeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "post": {
+        "summary": "POST /api/v1/admin/trekking/routes/{routeId}/milestones",
+        "description": "Implemented in services/trekking-service/src/routes/admin.trekking.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 2000
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "START",
+                      "CHECKPOINT",
+                      "VIEWPOINT",
+                      "REST_POINT",
+                      "WATER_POINT",
+                      "CAMP",
+                      "SUMMIT",
+                      "FINISH"
+                    ]
+                  },
+                  "sequence": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 0
+                  },
+                  "location": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "Point"
+                        ]
+                      },
+                      "coordinates": {
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        },
+                        "maxItems": 2,
+                        "minItems": 2
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "coordinates"
+                    ]
+                  },
+                  "altitude": {
+                    "type": "number",
+                    "nullable": true
+                  },
+                  "checkinRadiusMeters": {
+                    "type": "integer",
+                    "default": 50,
+                    "minimum": 1
+                  },
+                  "required": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "imageUrl": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "uri"
+                  }
+                },
+                "required": [
+                  "name",
+                  "type",
+                  "location"
+                ]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "routeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/trekking/routes/{routeId}/milestones/{milestoneId}": {
+      "put": {
+        "summary": "PUT /api/v1/admin/trekking/routes/{routeId}/milestones/{milestoneId}",
+        "description": "Implemented in services/trekking-service/src/routes/admin.trekking.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 2000
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "START",
+                      "CHECKPOINT",
+                      "VIEWPOINT",
+                      "REST_POINT",
+                      "WATER_POINT",
+                      "CAMP",
+                      "SUMMIT",
+                      "FINISH"
+                    ]
+                  },
+                  "sequence": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "location": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "Point"
+                        ]
+                      },
+                      "coordinates": {
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        },
+                        "maxItems": 2,
+                        "minItems": 2
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "coordinates"
+                    ]
+                  },
+                  "altitude": {
+                    "type": "number",
+                    "nullable": true
+                  },
+                  "checkinRadiusMeters": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "required": {
+                    "type": "boolean"
+                  },
+                  "imageUrl": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "uri"
+                  }
+                },
+                "minimum": 1
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "routeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "milestoneId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "delete": {
+        "summary": "DELETE /api/v1/admin/trekking/routes/{routeId}/milestones/{milestoneId}",
+        "description": "Implemented in services/trekking-service/src/routes/admin.trekking.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "routeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "milestoneId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/trekking/milestones": {
+      "get": {
+        "tags": [
+          "Admin Trekking"
+        ],
+        "summary": "Danh sách tất cả milestones (flat, có thể filter theo routeId)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "routeId",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        }
+      }
+    },
+    "/api/v1/admin/trekking/milestones/{milestoneId}": {
+      "get": {
+        "tags": [
+          "Admin Trekking"
+        ],
+        "summary": "Chi tiết milestone",
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "milestoneId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Admin Trekking"
+        ],
+        "summary": "Cập nhật milestone",
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 2000
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "START",
+                      "CHECKPOINT",
+                      "VIEWPOINT",
+                      "REST_POINT",
+                      "WATER_POINT",
+                      "CAMP",
+                      "SUMMIT",
+                      "FINISH"
+                    ]
+                  },
+                  "sequence": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "location": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "Point"
+                        ]
+                      },
+                      "coordinates": {
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        },
+                        "maxItems": 2,
+                        "minItems": 2
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "coordinates"
+                    ]
+                  },
+                  "altitude": {
+                    "type": "number",
+                    "nullable": true
+                  },
+                  "checkinRadiusMeters": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "required": {
+                    "type": "boolean"
+                  },
+                  "imageUrl": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "uri"
+                  }
+                },
+                "minimum": 1
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "milestoneId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Admin Trekking"
+        ],
+        "summary": "Xóa milestone (soft delete)",
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "milestoneId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/trekking/journeys": {
+      "get": {
+        "tags": [
+          "Admin Trekking"
+        ],
+        "summary": "Danh sách hành trình (read-only)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "userId",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        }
+      }
+    },
+    "/api/v1/admin/trekking/journeys/{id}": {
+      "get": {
+        "tags": [
+          "Admin Trekking"
+        ],
+        "summary": "Chi tiết hành trình (read-only)",
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/trekking/offline-maps": {
+      "get": {
+        "tags": [
+          "Admin Trekking"
+        ],
+        "summary": "Danh sách gói bản đồ offline",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin Trekking"
+        ],
+        "summary": "Tạo gói bản đồ offline mới (trạng thái DRAFT)",
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/trekking/offline-maps/{id}": {
+      "get": {
+        "tags": [
+          "Admin Trekking"
+        ],
+        "summary": "Chi tiết gói bản đồ",
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Admin Trekking"
+        ],
+        "summary": "Cập nhật thông tin gói bản đồ",
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Admin Trekking"
+        ],
+        "summary": "Xóa gói bản đồ (không thể xóa khi đang PUBLISHED)",
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/trekking/offline-maps/{id}/publish": {
+      "post": {
+        "tags": [
+          "Admin Trekking"
+        ],
+        "summary": "Xuất bản gói bản đồ (status → PUBLISHED, ghi publishedAt)",
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/badges": {
+      "get": {
+        "tags": [
+          "Admin Badges"
+        ],
+        "summary": "Danh sách tất cả badges (bao gồm INACTIVE/DISABLED)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACTIVE",
+                "INACTIVE",
+                "DISABLED"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Danh sách badges"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin Badges"
+        ],
+        "summary": "Tạo badge mới",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 200
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 2000
+                  },
+                  "iconUrl": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "uri"
+                  },
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "TREKKING",
+                      "EXPLORATION",
+                      "DISTANCE",
+                      "PROVINCE"
+                    ],
+                    "nullable": true
+                  },
+                  "rarity": {
+                    "type": "string",
+                    "enum": [
+                      "COMMON",
+                      "RARE",
+                      "EPIC",
+                      "LEGENDARY"
+                    ],
+                    "nullable": true
+                  },
+                  "condition": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "CHECKIN_COUNT",
+                          "JOURNEY_COUNT",
+                          "PROVINCE_COUNT",
+                          "CONTRIBUTION_APPROVED",
+                          "SPECIFIC_PLACE",
+                          "ELEVATION_TOTAL",
+                          "DISTANCE_TOTAL",
+                          "JOURNEY_COMPLETED_COUNT",
+                          "SUMMIT_CHECKIN_COUNT",
+                          "PROVINCE_VISITED_COUNT",
+                          "ALTITUDE_REACHED",
+                          "PLACE_VISITED_COUNT",
+                          "FIRST_JOURNEY"
+                        ]
+                      },
+                      "value": {
+                        "type": "number"
+                      },
+                      "placeId": {
+                        "type": "string"
+                      },
+                      "unit": {
+                        "type": "string",
+                        "enum": [
+                          "KILOMETERS",
+                          "METERS"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "type"
+                    ]
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "ACTIVE",
+                      "INACTIVE"
+                    ],
+                    "default": "ACTIVE"
+                  }
+                },
+                "required": [
+                  "code",
+                  "name",
+                  "condition"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Badge đã tạo"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/badges/{badgeId}": {
+      "get": {
+        "tags": [
+          "Admin Badges"
+        ],
+        "summary": "Chi tiết badge",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "badgeId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chi tiết badge"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Admin Badges"
+        ],
+        "summary": "Cập nhật badge (không bao gồm status)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "badgeId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 200
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 2000
+                  },
+                  "iconUrl": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "uri"
+                  },
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "TREKKING",
+                      "EXPLORATION",
+                      "DISTANCE",
+                      "PROVINCE"
+                    ],
+                    "nullable": true
+                  },
+                  "rarity": {
+                    "type": "string",
+                    "enum": [
+                      "COMMON",
+                      "RARE",
+                      "EPIC",
+                      "LEGENDARY"
+                    ],
+                    "nullable": true
+                  },
+                  "condition": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "CHECKIN_COUNT",
+                          "JOURNEY_COUNT",
+                          "PROVINCE_COUNT",
+                          "CONTRIBUTION_APPROVED",
+                          "SPECIFIC_PLACE",
+                          "ELEVATION_TOTAL",
+                          "DISTANCE_TOTAL",
+                          "JOURNEY_COMPLETED_COUNT",
+                          "SUMMIT_CHECKIN_COUNT",
+                          "PROVINCE_VISITED_COUNT",
+                          "ALTITUDE_REACHED",
+                          "PLACE_VISITED_COUNT",
+                          "FIRST_JOURNEY"
+                        ]
+                      },
+                      "value": {
+                        "type": "number"
+                      },
+                      "placeId": {
+                        "type": "string"
+                      },
+                      "unit": {
+                        "type": "string",
+                        "enum": [
+                          "KILOMETERS",
+                          "METERS"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "type"
+                    ]
+                  }
+                },
+                "minimum": 1
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Badge đã cập nhật"
+          }
+        }
+      },
+      "put": {
+        "summary": "PUT /api/v1/admin/badges/{badgeId}",
+        "description": "Implemented in services/trekking-service/src/routes/admin.contribution.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 200
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 2000
+                  },
+                  "iconUrl": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "uri"
+                  },
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "TREKKING",
+                      "EXPLORATION",
+                      "DISTANCE",
+                      "PROVINCE"
+                    ],
+                    "nullable": true
+                  },
+                  "rarity": {
+                    "type": "string",
+                    "enum": [
+                      "COMMON",
+                      "RARE",
+                      "EPIC",
+                      "LEGENDARY"
+                    ],
+                    "nullable": true
+                  },
+                  "condition": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "CHECKIN_COUNT",
+                          "JOURNEY_COUNT",
+                          "PROVINCE_COUNT",
+                          "CONTRIBUTION_APPROVED",
+                          "SPECIFIC_PLACE",
+                          "ELEVATION_TOTAL",
+                          "DISTANCE_TOTAL",
+                          "JOURNEY_COMPLETED_COUNT",
+                          "SUMMIT_CHECKIN_COUNT",
+                          "PROVINCE_VISITED_COUNT",
+                          "ALTITUDE_REACHED",
+                          "PLACE_VISITED_COUNT",
+                          "FIRST_JOURNEY"
+                        ]
+                      },
+                      "value": {
+                        "type": "number"
+                      },
+                      "placeId": {
+                        "type": "string"
+                      },
+                      "unit": {
+                        "type": "string",
+                        "enum": [
+                          "KILOMETERS",
+                          "METERS"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "type"
+                    ]
+                  }
+                },
+                "minimum": 1
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "badgeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/badges/{badgeId}/status": {
+      "patch": {
+        "tags": [
+          "Admin Badges"
+        ],
+        "summary": "Cập nhật status badge (ACTIVE/INACTIVE/DISABLED)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "badgeId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "ACTIVE",
+                      "INACTIVE"
+                    ]
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Status đã cập nhật"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/contributions": {
+      "get": {
+        "tags": [
+          "Admin Contributions"
+        ],
+        "summary": "Danh sách contributions (filter by type/status/userId)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "type",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ROUTE_SUBMISSION",
+                "PLACE_SUGGESTION"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "userId",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        }
+      }
+    },
+    "/api/v1/admin/contributions/{id}": {
+      "get": {
+        "tags": [
+          "Admin Contributions"
+        ],
+        "summary": "Chi tiết contribution + markers",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/contributions/{id}/review": {
+      "patch": {
+        "tags": [
+          "Admin Contributions"
+        ],
+        "summary": "Duyệt contribution (APPROVED/REJECTED/NEEDS_REVISION)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Giữ nguyên PATCH cho backward compat với existing code.",
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "decision": {
+                    "type": "string",
+                    "enum": [
+                      "APPROVED",
+                      "REJECTED",
+                      "NEEDS_REVISION"
+                    ]
+                  },
+                  "adminNote": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 2000
+                  },
+                  "resultingRouteId": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "resultingPlaceId": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "decision"
+                ]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/contributions/{submissionId}/markers": {
+      "get": {
+        "tags": [
+          "Admin Contributions"
+        ],
+        "summary": "Lấy danh sách Journey Markers đính kèm trong route submission (FR-ADM-21)",
+        "description": "Trả về snapshot markers được copy khi user submit. Snapshot KHÔNG thay đổi\nkhi user sửa marker gốc sau khi đã submit (BR-28).\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "submissionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        }
+      }
+    },
+    "/api/v1/admin/contributions/{submissionId}/markers/{markerId}/review": {
+      "post": {
+        "tags": [
+          "Admin Contributions"
+        ],
+        "summary": "Duyệt hoặc từ chối một Journey Marker (FR-ADM-21, BR-26)",
+        "description": "Khi APPROVE: có thể tạo / link Official Milestone và trả về resultingMilestoneId.\naction: APPROVE | REJECT\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "See the service API guide for status codes and response fields."
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "decision": {
+                    "type": "string",
+                    "enum": [
+                      "APPROVED",
+                      "REJECTED"
+                    ]
+                  },
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "APPROVE",
+                      "REJECT"
+                    ]
+                  },
+                  "adminNote": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 2000
+                  },
+                  "createOfficialMilestone": {
+                    "type": "boolean"
+                  },
+                  "resultingMilestoneId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "markerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "patch": {
+        "summary": "PATCH /api/v1/admin/contributions/{submissionId}/markers/{markerId}/review",
+        "description": "Implemented in services/trekking-service/src/routes/admin.contribution.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "decision": {
+                    "type": "string",
+                    "enum": [
+                      "APPROVED",
+                      "REJECTED"
+                    ]
+                  },
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "APPROVE",
+                      "REJECT"
+                    ]
+                  },
+                  "adminNote": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 2000
+                  },
+                  "createOfficialMilestone": {
+                    "type": "boolean"
+                  },
+                  "resultingMilestoneId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "markerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/contributions/routes/{submissionId}/markers/{markerId}/review": {
+      "patch": {
+        "summary": "PATCH /api/v1/admin/contributions/routes/{submissionId}/markers/{markerId}/review",
+        "description": "Implemented in services/trekking-service/src/routes/admin.contribution.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "decision": {
+                    "type": "string",
+                    "enum": [
+                      "APPROVED",
+                      "REJECTED"
+                    ]
+                  },
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "APPROVE",
+                      "REJECT"
+                    ]
+                  },
+                  "adminNote": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 2000
+                  },
+                  "createOfficialMilestone": {
+                    "type": "boolean"
+                  },
+                  "resultingMilestoneId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "markerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/internal/v1/events": {
+      "post": {
+        "summary": "POST /internal/v1/events",
+        "description": "Implemented in services/trekking-service/src/routes/internal.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "serviceToken": []
+          }
+        ]
+      }
+    },
+    "/internal/v1/users/{userId}/stats": {
+      "get": {
+        "summary": "GET /internal/v1/users/{userId}/stats",
+        "description": "Implemented in services/trekking-service/src/routes/internal.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "serviceToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/internal/v1/dashboard": {
+      "get": {
+        "summary": "GET /internal/v1/dashboard",
+        "description": "Implemented in services/trekking-service/src/routes/internal.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/internal/v1/milestones/{milestoneId}/checkin-context": {
+      "get": {
+        "summary": "GET /internal/v1/milestones/{milestoneId}/checkin-context",
+        "description": "Implemented in services/trekking-service/src/routes/internal.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "serviceToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "milestoneId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Routes",
+      "description": "Tuyến đường trekking"
+    },
+    {
+      "name": "Places",
+      "description": "Địa điểm trekking"
+    },
+    {
+      "name": "Journeys",
+      "description": "Hành trình trekking"
+    },
+    {
+      "name": "Journey Markers",
+      "description": "Cột mốc do người dùng đánh dấu trong Journey"
+    },
+    {
+      "name": "Contributions",
+      "description": "Đóng góp dữ liệu trekking từ người dùng"
+    },
+    {
+      "name": "Badges",
+      "description": "Huy hiệu thành tích"
+    },
+    {
+      "name": "Admin Trekking",
+      "description": "Quản trị dữ liệu trekking (ADMIN only)"
+    },
+    {
+      "name": "Admin Contributions",
+      "description": "Quản lý đóng góp của người dùng (ADMIN only)"
+    },
+    {
+      "name": "Admin Badges",
+      "description": "Quản lý badges (ADMIN only)"
+    }
+  ]
+}

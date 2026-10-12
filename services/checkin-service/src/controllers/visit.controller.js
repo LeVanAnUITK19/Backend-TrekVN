@@ -111,6 +111,34 @@ const getMySummary = async (req, res, next) => {
   }
 };
 
+// ─── Province Management ──────────────────────────────────────────────────────
+
+/**
+ * POST /api/v1/visits/provinces
+ * Thêm tỉnh mới vào hệ thống.
+ */
+const addProvince = async (req, res, next) => {
+  try {
+    const province = await visitService.addProvince(req.body);
+    res.status(201).json({ success: true, message: 'Đã thêm tỉnh', data: province });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * PATCH /api/v1/visits/provinces/:provinceId
+ * Cập nhật thông tin tỉnh.
+ */
+const updateProvince = async (req, res, next) => {
+  try {
+    const province = await visitService.updateProvince(req.params.provinceId, req.body);
+    res.json({ success: true, message: 'Đã cập nhật tỉnh', data: province });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getMyProvinceVisits,
   getProvinceVisitDetail,
@@ -119,4 +147,6 @@ module.exports = {
   getRecentPlaceVisits,
   getPlaceVisitDetail,
   getMySummary,
+  addProvince,
+  updateProvince,
 };

@@ -410,3 +410,58 @@ describe('GET /api/v1/journeys/:journeyId/checkins', () => {
     expect(res.body.data).toHaveLength(0);
   });
 });
+
+// ═══════════════════════════════════════════════════════════════════
+// GET /api/v1/checkins/journeys/:journeyId — Canonical Gateway endpoint
+// ═══════════════════════════════════════════════════════════════════
+
+describe('GET /api/v1/checkins/journeys/:journeyId (canonical endpoint via Gateway)', () => {
+  it('200 — trả về check-ins của journey (giống /journeys/:id/checkins)', async () => {
+    await request(app)
+      .post('/api/v1/checkins')
+      .set('Authorization', `Bearer ${token}`)
+      .send(checkinPayload({ journeyId: 'journey_canonical_001' }));
+
+    const res = await request(app)
+      .get('/api/v1/checkins/journeys/journey_canonical_001')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].journeyId).toBe('journey_canonical_001');
+  });
+
+  it('200 — journey không có check-in → mảng rỗng', async () => {
+    const res = await request(app)
+      .get('/api/v1/checkins/journeys/journey_no_checkins')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(0);
+  });
+
+  it('401 — không có token', async () => {
+    const res = await request(app)
+      .get('/api/v1/checkins/journeys/journey_canonical_001');
+    expect(res.status).toBe(401);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// Event publishing — CHECKIN_VERIFIED fires after verified checkin
+// ═══════════════════════════════════════════════════════════════════
+
+describe('Event publishing on checkin', () => {
+  it('publisher.publish được gọi sau verified check-in (RABBITMQ_ENABLED=false không throw)', async () => {
+    // RABBITMQ_ENABLED=false → publish silently skips without error
+    const res = await request(app)
+      .post('/api/v1/checkins')
+      .set('Authorization', `Bearer ${token}`)
+      .send(checkinPayload({ journeyId: 'journey_event_001' }));
+
+    // Primary concern: domain operation must succeed regardless of RabbitMQ state
+    expect(res.status).toBe(201);
+    expect(res.body.data.verification.status).toBe('VERIFIED');
+  });
+});

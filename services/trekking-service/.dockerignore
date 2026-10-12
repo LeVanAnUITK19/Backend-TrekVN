@@ -1,0 +1,11 @@
+node_modules
+.env
+.env.*
+*.pem
+*.key
+audit-*.json
+*.log
+coverage
+tests
+.gitignore
+README.md

@@ -1,14 +1,19 @@
 const checkinRepo = require('../repositories/milestoneCheckin.repository');
 const placeVisitRepo = require('../repositories/placeVisit.repository');
 const provinceVisitRepo = require('../repositories/provinceVisit.repository');
+const provinceRepo = require('../repositories/province.repository');
+const mongoose = require('mongoose');
 const { getTrekkingProviderInstance } = require('../providers/trekking');
 const { haversineMeters } = require('../utils/haversine');
+const publisher = require('../events/publishers/checkin.publisher');
+const { EVENT_TYPES } = require('../constants/events');
 const {
   BadRequestError,
   BusinessError,
   ConflictError,
   NotFoundError,
   ForbiddenError,
+  ServiceUnavailableError,
 } = require('../utils/errors');
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -44,7 +49,7 @@ const processCheckin = async (userId, body, syncSource = 'ONLINE') => {
   if (clientCheckinId) {
     const existing = await checkinRepo.findByClientCheckinId(clientCheckinId, userId);
     if (existing) {
-      return existing;
+      return _finalizeCheckin(existing);
     }
   }
 
@@ -60,12 +65,21 @@ const processCheckin = async (userId, body, syncSource = 'ONLINE') => {
 
   // 4. Lấy metadata milestone từ TrekkingProvider (không tin client)
   const trekkingProvider = getTrekkingProviderInstance();
-  const ctx = await trekkingProvider.getMilestoneCheckinContext(milestoneId);
+  const context = await trekkingProvider.getMilestoneCheckinContext(milestoneId);
+  const ctx = context ? { ...context } : null;
   if (!ctx) {
     throw new NotFoundError(
       `Milestone "${milestoneId}" không tồn tại`,
       'MILESTONE_NOT_FOUND'
     );
+  }
+
+  // Trekking catalogs historically store province codes; check-in owns ObjectIds.
+  if (!mongoose.isValidObjectId(ctx.provinceId)) {
+    const aliases = { ho_chi_minh: 'tp_ho_chi_minh', hue: 'thua_thien_hue' };
+    const province = await provinceRepo.findByCode(aliases[ctx.provinceId] || ctx.provinceId);
+    if (!province) {throw new ServiceUnavailableError('Tỉnh của địa điểm chưa được liên kết với danh mục tỉnh.');}
+    ctx.provinceId = String(province._id);
   }
 
   // 5. Validate coordinates range
@@ -99,6 +113,7 @@ const processCheckin = async (userId, body, syncSource = 'ONLINE') => {
     provinceId: ctx.provinceId,
     milestoneId,
     milestoneType: ctx.type,
+    altitudeMeters: ctx.altitudeMeters || 0,
     qualifiesPlaceVisit: ctx.qualifiesPlaceVisit,
     location: {
       type: 'Point',
@@ -125,19 +140,35 @@ const processCheckin = async (userId, body, syncSource = 'ONLINE') => {
       const existingClient = clientCheckinId
         ? await checkinRepo.findByClientCheckinId(clientCheckinId, userId)
         : null;
-      if (existingClient) { return existingClient; }
+      if (existingClient) { return _finalizeCheckin(existingClient); }
     }
     throw err;
   }
 
-  // 9. Cập nhật PlaceVisit nếu qualifiesPlaceVisit=true
+  return _finalizeCheckin(checkin);
+};
+
+// Resume side effects on sync replay after a partial write; XP consumers deduplicate by source.
+const _finalizeCheckin = async (checkin) => {
+  const { userId, journeyId, milestoneId } = checkin;
+  const ctx = { ...checkin.toObject(), type: checkin.milestoneType };
   if (ctx.qualifiesPlaceVisit) {
-    await _updatePlaceVisit(userId, ctx, journeyId, checkin._id, new Date(checkedAt));
+    await _updatePlaceVisit(userId, ctx, journeyId, checkin._id, checkin.checkedAt);
   }
-
-  // 10. Cập nhật ProvinceVisit (VERIFIED)
-  await _updateProvinceVisit(userId, ctx.provinceId, journeyId, checkin._id, new Date(checkedAt));
-
+  await _updateProvinceVisit(userId, ctx.provinceId, journeyId, checkin._id, checkin.checkedAt);
+  const publish = (type, payload) => publisher.publish(type, payload, type + ':' + checkin._id);
+  await publish(EVENT_TYPES.CHECKIN_VERIFIED, {
+    userId, checkinId: String(checkin._id), journeyId, milestoneId,
+    milestoneType: ctx.type, trekkingRouteId: ctx.trekkingRouteId,
+    trekkingPlaceId: ctx.trekkingPlaceId, provinceId: String(ctx.provinceId),
+  });
+  // Award once per user/province or user/place, even when a previous event was lost.
+  await publish(EVENT_TYPES.PROVINCE_FIRST_VISITED, {
+    userId, provinceId: String(ctx.provinceId), checkinId: String(checkin._id), journeyId,
+  });
+  if (ctx.qualifiesPlaceVisit) {await publish(EVENT_TYPES.PLACE_FIRST_VISITED, {
+    userId, trekkingPlaceId: ctx.trekkingPlaceId, checkinId: String(checkin._id), journeyId,
+  });}
   return checkin;
 };
 
@@ -145,8 +176,8 @@ const processCheckin = async (userId, body, syncSource = 'ONLINE') => {
 
 /**
  * Cập nhật PlaceVisit.
- * Cùng một Journey tại cùng Place chỉ tăng visitCount 1 lần,
- * dù có bao nhiêu qualifying milestone.
+ * Cùng một Journey tại cùng Place chỉ tăng visitCount 1 lần.
+ * @returns {boolean} true nếu là lần đầu tiên visit place này
  */
 const _updatePlaceVisit = async (userId, ctx, journeyId, checkinId, visitedAt) => {
   const previousQualifying = await checkinRepo.findQualifyingCheckinInJourney(
@@ -155,20 +186,23 @@ const _updatePlaceVisit = async (userId, ctx, journeyId, checkinId, visitedAt) =
     ctx.trekkingPlaceId
   );
 
-  // alreadyCounted: trong journey này đã có qualifying check-in khác (không phải bản ghi vừa tạo)
+  // alreadyCounted: trong journey này đã có qualifying check-in khác
   const alreadyCounted =
     previousQualifying && String(previousQualifying._id) !== String(checkinId);
 
+  const existingVisit = await placeVisitRepo.findByUserAndPlace(userId, ctx.trekkingPlaceId);
+  const isFirstVisit = !existingVisit;
+  if (existingVisit && String(existingVisit.lastCheckinId) === String(checkinId)) {return false;}
+
   if (alreadyCounted) {
     // Chỉ cập nhật metadata, không tăng visitCount
-    const existing = await placeVisitRepo.findByUserAndPlace(userId, ctx.trekkingPlaceId);
-    if (existing) {
-      existing.lastVisitedAt = visitedAt;
-      existing.lastJourneyId = journeyId;
-      existing.lastCheckinId = checkinId;
-      await existing.save();
+    if (existingVisit) {
+      existingVisit.lastVisitedAt = visitedAt;
+      existingVisit.lastJourneyId = journeyId;
+      existingVisit.lastCheckinId = checkinId;
+      await existingVisit.save();
     }
-    return;
+    return false; // không phải first visit mới
   }
 
   await placeVisitRepo.upsertVisit(userId, ctx.trekkingPlaceId, {
@@ -177,16 +211,20 @@ const _updatePlaceVisit = async (userId, ctx, journeyId, checkinId, visitedAt) =
     journeyId,
     checkinId,
   });
+
+  return isFirstVisit;
 };
 
 // ─── Province Visit update ────────────────────────────────────────────────────
 
 /**
  * Cập nhật ProvinceVisit (VERIFIED).
- * Không tăng visitCount nhiều lần cho cùng một Journey.
+ * @returns {boolean} true nếu là lần đầu tiên VERIFIED province này
  */
 const _updateProvinceVisit = async (userId, provinceId, journeyId, checkinId, checkedAt) => {
   const existingVisit = await provinceVisitRepo.findByUserAndProvince(userId, provinceId);
+  const isFirstVerifiedVisit = !existingVisit || existingVisit.verificationStatus !== 'VERIFIED';
+
   const alreadyCounted =
     existingVisit &&
     (existingVisit.verifiedJourneyId === journeyId ||
@@ -198,6 +236,8 @@ const _updateProvinceVisit = async (userId, provinceId, journeyId, checkinId, ch
     checkinId,
     alreadyCounted,
   });
+
+  return isFirstVerifiedVisit;
 };
 
 // ─── Public API ───────────────────────────────────────────────────────────────

@@ -1,0 +1,595 @@
+// ======================================================
+// TREKVIET AGENT DATABASE - VERSION 1.1
+// ======================================================
+//
+// Physical database đề xuất:
+//   trekviet_agent
+//
+// Mục đích:
+// - AI Assistant chat history
+// - LLM/Agent execution history
+// - Place Builder candidates
+// - Offline Map Builder jobs
+// - Workflow/audit events
+//
+// IMPORTANT:
+// - Đây là DB RIÊNG của Agent Service.
+// - KHÔNG phải production Trekking DB.
+// - Cross-database references chỉ là conceptual IDs.
+// - Agent Service KHÔNG được kết nối trực tiếp Production MongoDB.
+// - Production writes phải đi qua authenticated Trekking Service APIs.
+// - Binary/file lớn KHÔNG lưu trong MongoDB:
+//   map.zip, MBTiles, OSM PBF, DEM, hillshade, contour, ảnh binary...
+// ======================================================
+
+
+// ======================================================
+// CONVERSATIONS
+// ======================================================
+
+Table conversations {
+  conversationId varchar [pk]
+
+  // Conceptual ref -> Production users.userId
+  adminId varchar [not null]
+
+  title varchar
+
+  // ACTIVE | ARCHIVED
+  status varchar [not null, default: 'ACTIVE']
+
+  // Provider/model Admin đang chọn cho conversation.
+  // Ví dụ: auto | uit | groq | openai
+  selectedProvider varchar
+  selectedModel varchar
+
+  messageCount int [not null, default: 0]
+
+  lastMessageAt timestamp
+
+  // Summary dùng khi conversation dài để giảm context/token.
+  summary text
+
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+
+  indexes {
+    adminId
+    status
+    (adminId, updatedAt)
+    (status, updatedAt)
+  }
+}
+
+
+// ======================================================
+// MESSAGES
+// ======================================================
+
+Table messages {
+  messageId varchar [pk]
+
+  conversationId varchar [not null]
+
+  // Conceptual ref -> Production users.userId
+  adminId varchar [not null]
+
+  // SYSTEM | USER | ASSISTANT | TOOL
+  role varchar [not null]
+
+  content text [not null]
+
+  // Metadata LLM cho assistant response.
+  //
+  // {
+  //   "provider": "uit",
+  //   "model": "...",
+  //   "latencyMs": 842,
+  //   "usage": {
+  //     "promptTokens": 1200,
+  //     "completionTokens": 300,
+  //     "totalTokens": 1500
+  //   }
+  // }
+  llm json
+
+  // V1 Assistant chỉ có read-only tools.
+  //
+  // [
+  //   {
+  //     "name": "search_app_docs",
+  //     "mode": "READ_ONLY",
+  //     "success": true
+  //   }
+  // ]
+  toolCalls json
+
+  error json
+
+  createdAt timestamp [not null]
+
+  indexes {
+    conversationId
+    adminId
+    (conversationId, createdAt)
+    (adminId, createdAt)
+  }
+}
+
+
+// ======================================================
+// AGENT RUNS
+// ======================================================
+
+Table agent_runs {
+  agentRunId varchar [pk]
+
+  // ASSISTANT_CHAT | PLACE_BUILDER | MAP_BUILDER
+  runType varchar [not null]
+
+  conversationId varchar
+
+  // jobId của Place Builder / Map Builder nếu có.
+  workflowId varchar
+
+  // Conceptual ref -> Production users.userId
+  adminId varchar [not null]
+
+  provider varchar
+  model varchar
+
+  // RUNNING | SUCCESS | FAILED | CANCELLED
+  status varchar [not null]
+
+  startedAt timestamp
+  finishedAt timestamp
+
+  durationMs bigint
+
+  // Token usage / provider-specific usage metadata.
+  usage json
+
+  // Danh sách tool/step đã chạy.
+  toolSummary json
+
+  error json
+
+  // Dùng MongoDB TTL index.
+  expiresAt timestamp
+
+  createdAt timestamp [not null]
+
+  indexes {
+    runType
+    adminId
+    status
+    workflowId
+    createdAt
+    (runType, createdAt)
+    (adminId, createdAt)
+  }
+}
+
+
+// ======================================================
+// PLACE BUILDER CANDIDATES
+// ======================================================
+
+Table place_candidates {
+  placeCandidateId varchar [pk]
+
+  // Ví dụ: PLC-20261003-0001
+  jobId varchar [not null, unique]
+
+  // Conceptual ref -> Production users.userId
+  adminId varchar [not null]
+
+  // CREATE | UPDATE
+  operation varchar [not null]
+
+  // Có giá trị khi operation = UPDATE.
+  // Conceptual ref -> trekking_places.trekkingPlaceId
+  targetPlaceId varchar
+
+  // Input ban đầu từ Admin.
+  //
+  // {
+  //   "placeName": "Núi Bà Đen",
+  //   "locationHint": "Tây Ninh"
+  // }
+  input json [not null]
+
+  // PROCESSING
+  // PENDING_REVIEW
+  // APPROVED
+  // REJECTED
+  // NEEDS_FIX
+  // FAILED
+  status varchar [not null]
+
+  // Dữ liệu chuẩn hóa.
+  //
+  // {
+  //   "productionPayload": {
+  //     "name": "Núi Bà Đen",
+  //     "slug": "nui-ba-den",
+  //     "provinceId": "...",
+  //     "address": "...",
+  //     "location": {
+  //       "type": "Point",
+  //       "coordinates": [106.166, 11.3869]
+  //     },
+  //     "description": "...",
+  //     "difficulty": "MEDIUM",
+  //     "averageDurationMinutes": 300,
+  //     "elevationMeters": 986,
+  //     "images": [],
+  //     "imageMapUrl": null,
+  //     "tags": ["mountain", "trekking"],
+  //     "dataOrigin": "AI_AGENT",
+  //     "externalRefs": {
+  //       "osm": { "type": "node", "id": "123456" },
+  //       "wikidataId": "Q..."
+  //     },
+  //     "lastVerifiedAt": "..."
+  //   },
+  //
+  //   "enrichment": {
+  //     "category": "MOUNTAIN",
+  //     "activities": ["TREKKING", "HIKING"],
+  //     "estimatedDuration": {
+  //       "minMinutes": 240,
+  //       "maxMinutes": 360
+  //     }
+  //   }
+  // }
+  candidate json [not null]
+
+  // Nguồn Agent sử dụng:
+  // OSM / Wikidata / website...
+  //
+  // [
+  //   {
+  //     "provider": "OpenStreetMap",
+  //     "sourceId": "node:123456",
+  //     "url": "...",
+  //     "retrievedAt": "...",
+  //     "fields": ["name", "location", "elevationMeters"]
+  //   }
+  // ]
+  sources json
+
+  // {
+  //   "confidenceScore": 90,
+  //   "fieldConfidence": {...},
+  //   "warnings": [...]
+  // }
+  quality json
+
+  // {
+  //   "isPotentialDuplicate": false,
+  //   "matchedPlaceId": null,
+  //   "score": 0,
+  //   "reason": null
+  // }
+  duplicateCheck json
+
+  // {
+  //   "reviewedBy": "...",
+  //   "reviewedAt": "...",
+  //   "note": "..."
+  // }
+  review json
+
+  // {
+  //   "synced": true,
+  //   "productionPlaceId": "...",
+  //   "auditLogId": "...",
+  //   "syncedAt": "...",
+  //   "lastError": null
+  // }
+  productionSync json
+
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+
+  indexes {
+    jobId
+    adminId
+    targetPlaceId
+    status
+    createdAt
+    (status, createdAt)
+    (adminId, createdAt)
+  }
+}
+
+
+// ======================================================
+// OFFLINE MAP BUILDER JOBS
+// ======================================================
+
+Table map_jobs {
+  mapJobId varchar [pk]
+
+  // Ví dụ: MAP-20261003-0001
+  jobId varchar [not null, unique]
+
+  // Conceptual ref -> Production users.userId
+  adminId varchar [not null]
+
+  // Conceptual refs tới Production Trekking DB.
+  trekkingPlaceId varchar [not null]
+  trekkingRouteId varchar
+
+  placeName varchar [not null]
+
+  // {
+  //   "type": "PLACE" | "ROUTE",
+  //   "targetId": "..."
+  // }
+  publishTarget json [not null]
+
+  // Input chuẩn từ Admin.
+  //
+  // {
+  //   "bbox": {
+  //     "minLon": 106.139430,
+  //     "minLat": 11.361570,
+  //     "maxLon": 106.191620,
+  //     "maxLat": 11.412390
+  //   },
+  //   "minZoom": 10,
+  //   "maxZoom": 14
+  // }
+  input json [not null]
+
+  // QUEUED
+  // PROCESSING
+  // PENDING_REVIEW
+  // APPROVED
+  // REJECTED
+  // PUBLISHING
+  // PUBLISHED
+  // FAILED
+  // CANCELLED
+  status varchar [not null]
+
+  // {
+  //   "currentStep": "BUILD_MBTILES",
+  //   "percent": 55,
+  //   "steps": [...]
+  // }
+  progress json
+
+  // Temporary artifact metadata.
+  // Binary map.zip KHÔNG lưu MongoDB.
+  //
+  // {
+  //   "artifactType": "MAP_ZIP",
+  //   "tempPath": "/tmp/...",
+  //   "fileName": "ba-den-v1-flutter.zip",
+  //   "fileSizeBytes": 19300000,
+  //   "sha256": "...",
+  //   "metadata": {
+  //     "bounds": [...],
+  //     "center": [...],
+  //     "minZoom": 10,
+  //     "maxZoom": 14,
+  //     "version": 1
+  //   },
+  //   "expiresAt": "..."
+  // }
+  output json
+
+  // {
+  //   "reviewedBy": "...",
+  //   "reviewedAt": "...",
+  //   "note": "..."
+  // }
+  review json
+
+  // {
+  //   "approved": true,
+  //
+  //   "r2": {
+  //     "uploaded": true,
+  //     "bucket": "...",
+  //     "objectKey": "maps/nui-ba-den/v1/...",
+  //     "uploadedAt": "..."
+  //   },
+  //
+  //   "productionOfflineMap": {
+  //     "updated": true,
+  //     "auditLogId": "...",
+  //     "updatedAt": "...",
+  //     "lastError": null
+  //   }
+  // }
+  publish json
+
+  error json
+
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+
+  indexes {
+    jobId
+    adminId
+    trekkingPlaceId
+    trekkingRouteId
+    status
+    createdAt
+    (trekkingPlaceId, createdAt)
+    (trekkingRouteId, createdAt)
+    (status, createdAt)
+    (adminId, createdAt)
+  }
+}
+
+
+// ======================================================
+// WORKFLOW EVENTS
+// ======================================================
+
+Table workflow_events {
+  workflowEventId varchar [pk]
+
+  // jobId hoặc conversation-related run ID
+  jobId varchar [not null]
+
+  // ASSISTANT | PLACE_BUILDER | MAP_BUILDER
+  workflowType varchar [not null]
+
+  event varchar [not null]
+
+  // DEBUG | INFO | WARN | ERROR
+  level varchar [not null]
+
+  message text
+
+  // Metadata nhỏ phục vụ debug/audit.
+  // Không lưu raw payload lớn.
+  metadata json
+
+  createdAt timestamp [not null]
+
+  // Dùng MongoDB TTL index.
+  expiresAt timestamp
+
+  indexes {
+    jobId
+    workflowType
+    level
+    createdAt
+    (jobId, createdAt)
+    (workflowType, createdAt)
+  }
+}
+
+
+// ======================================================
+// RELATIONSHIPS
+// ======================================================
+
+// Internal Agent DB refs
+Ref: messages.conversationId > conversations.conversationId
+Ref: agent_runs.conversationId > conversations.conversationId
+
+
+// ======================================================
+// CONCEPTUAL CROSS-DATABASE REFERENCES
+// ======================================================
+//
+// DBML hiển thị để dễ hiểu hệ thống.
+// MongoDB KHÔNG enforce các foreign key này.
+//
+// Ref conceptual:
+//
+// conversations.adminId
+// messages.adminId
+// agent_runs.adminId
+// place_candidates.adminId
+// map_jobs.adminId
+//    -> Production users.userId
+//
+// place_candidates.targetPlaceId
+// place_candidates.productionSync.productionPlaceId
+// map_jobs.trekkingPlaceId
+//    -> Production trekking_places.trekkingPlaceId
+//
+// map_jobs.trekkingRouteId
+//    -> Production trekking_routes.trekkingRouteId
+//
+// auditLogId trong productionSync/publish
+//    -> Production audit_logs.auditLogId
+// ======================================================
+
+
+// ======================================================
+// VISUAL GROUP
+// ======================================================
+
+Table pending_approvals {
+  _id varchar [pk]
+  approvalId varchar [not null, unique]
+  adminId varchar [not null]
+  conversationId varchar [not null]
+  action varchar [not null]
+  payload json
+  display json
+  status varchar [default: 'PENDING', note: 'PENDING | EXECUTING | APPROVED | REJECTED | FAILED | EXPIRED']
+  executionResult json
+  expiresAt timestamp [note: '24h after creation; TTL index expireAfterSeconds=0']
+  createdAt timestamp
+  updatedAt timestamp
+  indexes {
+    (conversationId, status, createdAt)
+    (adminId, createdAt)
+    expiresAt
+  }
+}
+
+TableGroup agent_service {
+  pending_approvals
+  conversations
+  messages
+  agent_runs
+  place_candidates
+  map_jobs
+  workflow_events
+}
+
+
+// ======================================================
+// MONGODB IMPLEMENTATION NOTES
+// ======================================================
+//
+// Database:
+//   trekviet_agent
+//
+// Collections:
+//   conversations
+//   messages
+//   agent_runs
+//   place_candidates
+//   map_jobs
+//   workflow_events
+//
+// TTL indexes:
+//   agent_runs.expiresAt
+//   workflow_events.expiresAt
+//
+// KHÔNG dùng TTL cho map_jobs chỉ để xóa document.
+// map_jobs nên giữ metadata/audit.
+// Temporary file được cleanup riêng dựa trên output.expiresAt.
+//
+// Recommended retention:
+//   agent_runs:       60-90 ngày
+//   workflow_events:  30-90 ngày
+//
+// File storage:
+//   BEFORE APPROVAL:
+//     temporary filesystem / mounted volume
+//
+//   AFTER APPROVAL:
+//     Cloudflare R2
+//
+// Security:
+//   Assistant: READ ONLY
+//
+//   Place Builder:
+//     Agent DB candidate -> Admin approval ->
+//     authenticated Trekking Service API
+//
+//   Map Builder:
+//     temporary map.zip -> Admin approval ->
+//     R2 -> authenticated Trekking Service API
+//
+// Never:
+//   Agent -> direct Production MongoDB
+//   Assistant -> production write
+//   Map Builder -> R2 before Admin approval
+//   Frontend -> API key / R2 secret / internal token
+//
+// ======================================================

@@ -39,6 +39,7 @@ const milestoneCheckinSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    altitudeMeters: { type: Number, default: 0 },
     milestoneType: {
       type: String,
       required: true,

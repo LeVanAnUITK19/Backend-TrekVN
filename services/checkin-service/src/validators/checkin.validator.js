@@ -67,8 +67,42 @@ const manualMarkSchema = Joi.object({
   }),
 });
 
+// ─── Province management ──────────────────────────────────────────────────────
+
+const provinceSchema = Joi.object({
+  code: Joi.string().trim().lowercase().required().messages({
+    'any.required': 'code là bắt buộc',
+  }),
+  name: Joi.string().trim().required().messages({
+    'any.required': 'name là bắt buộc',
+  }),
+  description: Joi.string().trim().allow(null, '').default(null),
+  region: Joi.string().valid('NORTH', 'CENTRAL', 'SOUTH').allow(null).default(null),
+  mapAsset: Joi.string().trim().allow(null, '').default(null),
+  mapFeatureId: Joi.string().trim().allow(null, '').default(null),
+  center: Joi.object({
+    coordinates: Joi.array().items(Joi.number()).length(2).default([0, 0]),
+  }).default({ coordinates: [0, 0] }),
+});
+
+const updateProvinceSchema = Joi.object({
+  code: Joi.string().trim().lowercase(),
+  name: Joi.string().trim(),
+  description: Joi.string().trim().allow(null, ''),
+  region: Joi.string().valid('NORTH', 'CENTRAL', 'SOUTH').allow(null),
+  mapAsset: Joi.string().trim().allow(null, ''),
+  mapFeatureId: Joi.string().trim().allow(null, ''),
+  center: Joi.object({
+    coordinates: Joi.array().items(Joi.number()).length(2),
+  }),
+}).min(1).messages({
+  'object.min': 'Phải cung cấp ít nhất một field để cập nhật',
+});
+
 module.exports = {
   createCheckinSchema,
   syncCheckinSchema,
   manualMarkSchema,
+  provinceSchema,
+  updateProvinceSchema,
 };

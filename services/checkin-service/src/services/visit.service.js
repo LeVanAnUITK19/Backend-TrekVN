@@ -162,6 +162,42 @@ const getMySummary = async (userId) => {
   };
 };
 
+// ─── Province Management (Admin) ──────────────────────────────────────────────
+
+/**
+ * Thêm tỉnh mới.
+ */
+const addProvince = async (data) => {
+  const existing = await provinceRepo.findByCode(data.code);
+  if (existing) {
+    const { BadRequestError } = require('../utils/errors');
+    throw new BadRequestError(`Tỉnh với code "${data.code}" đã tồn tại`, 'PROVINCE_CODE_EXISTS');
+  }
+  return provinceRepo.create(data);
+};
+
+/**
+ * Cập nhật thông tin tỉnh.
+ */
+const updateProvince = async (provinceId, data) => {
+  const { NotFoundError } = require('../utils/errors');
+  const province = await provinceRepo.findById(provinceId);
+  if (!province) {
+    throw new NotFoundError('Không tìm thấy tỉnh', 'PROVINCE_NOT_FOUND');
+  }
+
+  // Kiểm tra code conflict nếu có thay đổi code
+  if (data.code && data.code !== province.code) {
+    const existing = await provinceRepo.findByCode(data.code);
+    if (existing) {
+      const { BadRequestError } = require('../utils/errors');
+      throw new BadRequestError(`Code "${data.code}" đã được dùng bởi tỉnh khác`, 'PROVINCE_CODE_EXISTS');
+    }
+  }
+
+  return provinceRepo.updateById(provinceId, data);
+};
+
 module.exports = {
   getMyProvinceVisits,
   getProvinceVisitDetail,
@@ -170,4 +206,6 @@ module.exports = {
   getRecentPlaceVisits,
   getPlaceVisitDetail,
   getMySummary,
+  addProvince,
+  updateProvince,
 };

@@ -30,22 +30,64 @@ Table trekking_places {
 
   address varchar
 
-  // GeoJSON Point
+  // GeoJSON Point:
+  // { "type": "Point", "coordinates": [longitude, latitude] }
   location json [not null]
 
   description text
 
   difficulty varchar
 
-  // phút
+  // Đơn vị: phút
   averageDurationMinutes int
+
+  // Optional: độ cao đại diện của địa điểm / đỉnh núi (mét)
+  elevationMeters int
 
   // Danh sách URL ảnh
   images json
 
+  // Ảnh preview/minimap của địa điểm.
+  // Không phải file offline map package.
+  imageMapUrl varchar
+
   // Ví dụ:
   // ["mountain", "camping", "cloud-hunting"]
   tags json
+
+  // Nguồn tạo bản ghi:
+  // MANUAL | USER_CONTRIBUTION | AI_AGENT
+  dataOrigin varchar [default: 'MANUAL']
+
+  // External IDs phục vụ chống trùng và cập nhật lại dữ liệu.
+  // Ví dụ:
+  // {
+  //   "osm": { "type": "node", "id": "123456" },
+  //   "wikidataId": "Q123456"
+  // }
+  externalRefs json
+
+  // Thời điểm gần nhất dữ liệu được Admin/Agent xác minh lại.
+  lastVerifiedAt timestamp
+
+  // Offline map cấp ĐỊA ĐIỂM.
+  // Chỉ lưu R2 objectKey; downloadUrl được backend build runtime.
+  //
+  // Ví dụ:
+  // {
+  //   "available": true,
+  //   "version": 1,
+  //   "objectKey": "maps/nui-ba-den/v1/ba-den-v1-flutter.zip",
+  //   "sizeBytes": 19300000,
+  //   "checksum": "sha256...",
+  //   "minZoom": 10,
+  //   "maxZoom": 14,
+  //   "bounds": {
+  //     "minLon": 106.139430, "minLat": 11.361570,
+  //     "maxLon": 106.191620, "maxLat": 11.412390
+  //   }
+  // }
+  offlineMap json
 
   ratingAverage double [default: 0]
   ratingCount int [default: 0]
@@ -54,6 +96,15 @@ Table trekking_places {
 
   createdAt timestamp
   updatedAt timestamp
+
+  indexes {
+    provinceId
+    status
+    (provinceId, status)
+    dataOrigin
+    // MongoDB/Mongoose: location cần 2dsphere index
+    // MongoDB/Mongoose: sparse index cho externalRefs.osm.id / wikidataId nếu dùng duplicate lookup
+  }
 }
 
 
@@ -119,19 +170,37 @@ Table trekking_routes {
   // GeoJSON LineString
   path json
 
+  // R2 objectKey thay vì full URL — backend build downloadUrl tại runtime.
+  //
   // Ví dụ:
   // {
   //   "available": true,
   //   "version": 1,
-  //   "sizeBytes": 48000000,
-  //   "downloadUrl": "..."
+  //   "objectKey": "ba-den/v1/ba-den-v1-flutter.zip",
+  //   "sizeBytes": 0,
+  //   "checksum": "",
+  //   "minZoom": 8,
+  //   "maxZoom": 14,
+  //   "bounds": {
+  //     "minLon": 106.139430, "minLat": 11.361570,
+  //     "maxLon": 106.191620, "maxLat": 11.412390
+  //   }
   // }
+  //
+  // downloadUrl KHÔNG lưu trong DB.
+  // Backend: downloadUrl = R2_PUBLIC_BASE_URL + "/" + objectKey
   offlineMap json
 
   status varchar [default: 'ACTIVE']
 
   createdAt timestamp
   updatedAt timestamp
+
+  indexes {
+    trekkingPlaceId
+    status
+    (trekkingPlaceId, status)
+  }
 }
 
 
@@ -189,6 +258,10 @@ Table journeys {
 
   userId varchar [not null]
 
+  // ID do mobile sinh ra trước khi sync.
+  // Dùng làm idempotency key khi create/retry journey offline-first.
+  clientJourneyId varchar
+
   trekkingPlaceId varchar [not null]
   trekkingRouteId varchar [not null]
 
@@ -233,8 +306,14 @@ Table journeys {
 
   indexes {
     userId
+    trekkingPlaceId
     trekkingRouteId
+    provinceId
     status
+    createdAt
+    (userId, status)
+    (userId, createdAt)
+    // MongoDB/Mongoose: unique partial/sparse index trên clientJourneyId
   }
 }
 
@@ -282,6 +361,7 @@ Table journey_markers {
     userId
     (journeyId, markedAt)
     clientMarkerId
+    // MongoDB/Mongoose: unique partial index cho (userId, clientMarkerId)
   }
 }
 
@@ -478,6 +558,12 @@ Table badges {
 
   createdAt timestamp
   updatedAt timestamp
+
+  indexes {
+    category
+    rarity
+    status
+  }
 }
 
 
@@ -502,6 +588,9 @@ Table user_badges {
 
   indexes {
     (userId, badgeId) [unique]
+    badgeId
+    earnedAt
+    (userId, earnedAt)
   }
 }
 
@@ -560,4 +649,57 @@ TableGroup trekking_service {
   place_suggestions
   badges
   user_badges
+}
+
+
+// ======================================================
+// VERSION 3.1 IMPLEMENTATION ALIGNMENT (v4.0 code changes)
+// ======================================================
+//
+// Infrastructure/operational tables added for reliable event delivery
+// and consumer idempotency.
+// ======================================================
+
+// ── Transactional Outbox ────────────────────────────────
+
+Table event_outbox {
+  // MongoDB/Mongoose collection: eventoutboxes
+
+  eventId varchar [pk, unique]
+  eventType varchar [not null]
+  eventVersion int [default: 1]
+  payload json [not null]
+
+  // PENDING | PROCESSING | PUBLISHED | FAILED
+  status varchar [not null, default: 'PENDING']
+
+  retryCount int [default: 0]
+  nextRetryAt timestamp
+  lastError varchar
+  publishedAt timestamp
+
+  createdAt timestamp
+  updatedAt timestamp
+
+  indexes {
+    (status, nextRetryAt)
+    publishedAt  // TTL index (PUBLISHED only) — auto-delete after 7 days
+  }
+}
+
+// ── Consumer idempotency ────────────────────────────────
+
+Table trekking_processed_events {
+  // MongoDB/Mongoose collection: processedevents (trekking_db)
+  // Same schema as auth_db.processed_events
+
+  eventId varchar [not null]
+  consumerName varchar [not null]
+  // e.g. "trekking.checkinCount" | "trekking.badge"
+  processedAt timestamp [not null]
+
+  indexes {
+    (eventId, consumerName) [unique]
+    processedAt  // TTL index — auto-delete after 30 days
+  }
 }

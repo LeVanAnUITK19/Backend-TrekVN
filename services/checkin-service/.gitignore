@@ -6,6 +6,7 @@ node_modules/
 .env.local
 .env.*.local
 .env.production
+.env.staging
 
 # ─── Build output ────────────────────────────────────────────────────────────
 dist/
@@ -32,4 +33,4 @@ Thumbs.db
 *.swo
 
 # ─── Docker ──────────────────────────────────────────────────────────────────
-.dockerignore
+# Keep .dockerignore tracked to exclude secrets from Docker builds.

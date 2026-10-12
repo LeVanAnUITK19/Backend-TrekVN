@@ -7,6 +7,7 @@ const db = require('../setup/db');
 const createApp = require('../../src/app');
 const { createPendingUser, createOtpRecord } = require('../helpers/factory');
 const OtpVerification = require('../../src/models/OtpVerification');
+const RankDefinition = require('../../src/models/RankDefinition');
 
 jest.mock('../../src/config/mailer', () => ({
   sendMail: jest.fn().mockResolvedValue({ messageId: 'test-msg-id' }),
@@ -17,6 +18,12 @@ let app;
 beforeAll(async () => {
   await db.connect();
   app = createApp();
+  // Seed NEWBIE rank so initRankProfile works in tests
+  await RankDefinition.create({
+    code: 'NEWBIE', name: 'Newbie', level: 1, minXp: 0,
+    minCompletedJourneys: 0, minVisitedProvinces: 0, minBadgeCount: 0,
+    status: 'ACTIVE',
+  });
 });
 
 afterEach(async () => {

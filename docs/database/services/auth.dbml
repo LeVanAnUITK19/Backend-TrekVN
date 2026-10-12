@@ -160,10 +160,182 @@ Table audit_logs {
   }
 }
 
+// ======================================================
+// GAMIFICATION / USER RANKING
+// ======================================================
+
+Table rank_definitions {
+
+  rankId varchar [pk]
+
+  code varchar [not null, unique]
+  // NEWBIE
+  // HIKER
+  // EXPLORER
+  // TREKKER
+  // PATHFINDER
+  // MOUNTAINEER
+  // ADVENTURER
+  // ELITE_TREKKER
+  // TREK_MASTER
+  // TREK_LEGEND
+
+  name varchar [not null]
+  description text
+
+  // Thứ tự rank: 1 -> 10
+  level int [not null, unique]
+
+  // Điều kiện XP tối thiểu
+  minXp bigint [not null, default: 0]
+
+  // Các điều kiện bổ sung
+  minCompletedJourneys int [default: 0]
+  minVisitedProvinces int [default: 0]
+  minBadgeCount int [default: 0]
+  minDistanceMeters bigint [default: 0]
+  minApprovedContributions int [default: 0]
+
+  iconUrl varchar
+
+  // ACTIVE | INACTIVE
+  status varchar [default: 'ACTIVE']
+
+  createdAt timestamp
+  updatedAt timestamp
+
+  indexes {
+    level
+    minXp
+    status
+  }
+}
+
+Table user_rank_profiles {
+
+  userRankProfileId varchar [pk]
+
+  userId varchar [not null, unique]
+
+  currentRankId varchar [not null]
+
+  totalXp bigint [not null, default: 0]
+
+  completedJourneyCount int [default: 0]
+
+  totalDistanceMeters bigint [default: 0]
+
+  totalElevationGain bigint [default: 0]
+
+  verifiedCheckinCount int [default: 0]
+
+  visitedProvinceCount int [default: 0]
+
+  visitedPlaceCount int [default: 0]
+
+  badgeCount int [default: 0]
+
+  approvedContributionCount int [default: 0]
+
+  lastCalculatedAt timestamp
+
+  createdAt timestamp
+  updatedAt timestamp
+
+  indexes {
+    userId
+    currentRankId
+    totalXp
+  }
+}
+
+Table xp_transactions {
+
+  xpTransactionId varchar [pk]
+
+  userId varchar [not null]
+
+  // EARN | REVERSAL | ADMIN_ADJUSTMENT
+  transactionType varchar [not null, default: 'EARN']
+
+  sourceType varchar [not null]
+
+  // JOURNEY_COMPLETED
+  // JOURNEY_DISTANCE
+  // JOURNEY_ELEVATION
+  // MILESTONE_CHECKIN
+  // PROVINCE_VISITED
+  // PLACE_VISITED
+  // BADGE_EARNED
+  // ROUTE_APPROVED
+  // PLACE_APPROVED
+  // ADMIN_ADJUSTMENT
+
+  // journeyId / checkinId / badgeId / ...
+  sourceId varchar
+
+  xpAmount int [not null]
+
+  description varchar
+
+  // Chống cộng XP nhiều lần khi retry/offline sync
+  idempotencyKey varchar [not null, unique]
+
+  createdAt timestamp [not null]
+
+  indexes {
+    userId
+    sourceType
+    sourceId
+    createdAt
+  }
+}
+
+Table rank_history {
+
+  rankHistoryId varchar [pk]
+
+  userId varchar [not null]
+
+  previousRankId varchar
+
+  newRankId varchar [not null]
+
+  xpAtChange bigint [not null]
+
+  // PROMOTION | DEMOTION | RECALCULATION
+  changeType varchar [default: 'PROMOTION']
+
+  changedAt timestamp [not null]
+
+  createdAt timestamp
+
+  indexes {
+    userId
+    changedAt
+  }
+}
 
 // ======================================================
 // INTERNAL RELATIONSHIPS
 // ======================================================
+
+Ref: user_rank_profiles.userId > users.userId
+
+Ref: user_rank_profiles.currentRankId >
+     rank_definitions.rankId
+
+Ref: xp_transactions.userId > users.userId
+
+Ref: rank_history.userId > users.userId
+
+Ref: rank_history.previousRankId >
+     rank_definitions.rankId
+
+Ref: rank_history.newRankId >
+     rank_definitions.rankId
+
+
 
 Ref: auth_identities.userId > users.userId
 
@@ -187,4 +359,44 @@ TableGroup auth_service {
   otp_verifications
   refresh_tokens
   audit_logs
+  rank_definitions
+  user_rank_profiles
+  xp_transactions
+  rank_history
 }
+
+
+// ======================================================
+// VERSION 3.1 IMPLEMENTATION ALIGNMENT (v4.0 code changes)
+// ======================================================
+//
+// The following collections were added to implement SRS v4.0 requirements.
+// They are infrastructure/operational tables, not business domain tables.
+//
+// users.status corrected: PENDING_VERIFICATION | ACTIVE | BLOCKED
+//   (SUSPENDED and DISABLED removed — see migration guide)
+// users.passwordHash: now nullable (Google-only users have null)
+// users.role: USER | ADMIN (GUIDE removed)
+// ======================================================
+
+// ── Consumer idempotency ────────────────────────────────
+
+Table processed_events {
+  // MongoDB/Mongoose collection: processedevents
+
+  _id varchar [pk]
+
+  eventId varchar [not null]
+  // e.g. "gamification" — identifies which consumer processed this event
+  consumerName varchar [not null]
+
+  processedAt timestamp [not null]
+
+  indexes {
+    (eventId, consumerName) [unique]
+    processedAt  // TTL index — auto-delete after 30 days
+  }
+}
+
+Ref: processed_events.eventId - xp_transactions.idempotencyKey
+// Conceptual link: processed_events prevents duplicate XP transactions

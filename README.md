@@ -6,18 +6,19 @@
 
 **Nền tảng backend microservices cho ứng dụng trekking Việt Nam**
 
-[![Node.js](https://img.shields.io/badge/Node.js-20-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org)
+[![Node.js](https://img.shields.io/badge/Node.js-22-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org)
 [![Express](https://img.shields.io/badge/Express-4.x-000000?style=flat-square&logo=express&logoColor=white)](https://expressjs.com)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?style=flat-square&logo=mongodb&logoColor=white)](https://mongodb.com)
 [![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?style=flat-square&logo=docker&logoColor=white)](https://docker.com)
 [![CI](https://img.shields.io/badge/CI-GitHub_Actions-2088FF?style=flat-square&logo=github-actions&logoColor=white)](/.github/workflows)
-[![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
 
 </div>
 
 ---
 
 ## 📖 Giới thiệu
+
+**Cập nhật theo code ngày 12/10/2026:** [Services hiện có](docs/services.md), [API/Swagger inventory](docs/api-route-inventory.md), [database runtime](docs/database/README.md), [báo cáo trước khi push](docs/pre-push-audit-2026-10-12.md).
 
 **TrekViệt** là ứng dụng mobile hỗ trợ người dùng khám phá, lên kế hoạch và theo dõi các hành trình trekking trên khắp lãnh thổ Việt Nam — từ những cung đường đèo hùng vĩ ở Tây Bắc đến các cánh rừng nguyên sinh ở Tây Nguyên.
 
@@ -33,7 +34,7 @@
 | 🔄 **Backtrack** | Xem lại và đi ngược đường đã đi |
 | 🌏 **Bản đồ Tỉnh thành** | Theo dõi số tỉnh/thành đã khám phá trên bản đồ Việt Nam |
 | 🏅 **Hệ thống Huy hiệu** | Nhận thành tích theo quãng đường, độ cao, số tỉnh... |
-| 👥 **Cộng đồng** | Chia sẻ hành trình, bài viết và tương tác với người dùng khác |
+| 👥 **Cộng đồng (dự kiến)** | Chưa có service chạy được; hiện chỉ có schema thiết kế |
 | 🔁 **Đồng bộ Offline** | Lưu check-in và GPS khi mất mạng, đồng bộ tự động khi có kết nối |
 
 ---
@@ -92,9 +93,11 @@ Backend-TrekVN/
 │   ├── auth-service/         # Đăng ký, đăng nhập, JWT, OTP
 │   ├── trekking-service/     # Địa điểm, cung đường, hành trình, GPS
 │   ├── checkin-service/      # Check-in milestone, đồng bộ offline
-│   └── community-service/    # Bài viết, bình luận, chia sẻ thành tích
+│   ├── community-service/    # Bài viết, bình luận, chia sẻ thành tích
+│   └── agent-service/        # 🤖 AI Assistant, Place Builder, Map Builder
 │
 ├── 📂 docs/                  # API documentation (Swagger/Markdown)
+│   └── agent/                # Agent Service docs
 ├── 📂 deployment/            # Docker Compose, Kubernetes manifests
 ├── 📂 infrastructure/        # Terraform, cloud configs
 └── 📂 .github/workflows/     # CI/CD pipelines (GitHub Actions)
@@ -110,13 +113,33 @@ auth-service/
 │   ├── middlewares/     # Auth, Validate, ErrorHandler
 │   ├── models/          # Mongoose schemas (User, RefreshToken, OTP...)
 │   ├── repositories/    # Data access layer
-│   ├── routes/          # Express route definitions
+│   ├── routes/          # Express route definitions + Swagger JSDoc
 │   ├── services/        # Business logic
 │   ├── utils/           # Helpers, email templates, error classes
 │   └── validators/      # Joi validation schemas
 └── tests/
     ├── integration/     # Supertest + mongodb-memory-server
     ├── unit/
+    └── setup/
+```
+
+### CheckIn Service — cấu trúc chi tiết
+
+```
+checkin-service/
+├── src/
+│   ├── config/          # Database, Logger
+│   ├── models/          # Province, ProvinceVisit, PlaceVisit, MilestoneCheckin
+│   ├── providers/       # TrekkingProvider abstraction (Mock / HTTP)
+│   │   └── trekking/
+│   ├── mocks/           # milestones.json (development/test data)
+│   ├── repositories/    # Data access layer
+│   ├── routes/          # Express route definitions + Swagger JSDoc
+│   ├── services/        # Business logic (Haversine, GPS validation)
+│   ├── utils/           # Error classes, Haversine formula
+│   └── validators/      # Joi validation schemas
+└── tests/
+    ├── integration/     # 45 tests — Supertest + mongodb-memory-server
     └── setup/
 ```
 
@@ -134,11 +157,18 @@ auth-service/
 - MapLibre + OpenStreetMap
 - MBTiles (offline maps)
 
-**⚙️ Backend**
-- Node.js 20 + Express.js
+**⚙️ Backend (Node.js services)**
+- Node.js 22 + Express.js
 - REST API · Microservices
 - JWT · bcryptjs · Nodemailer
 - Swagger / OpenAPI 3.0
+
+**🤖 Agent Service (Python)**
+- Python 3.11 + FastAPI + Pydantic v2
+- Motor (async MongoDB)
+- UIT LLM / Groq / OpenAI
+- Tilemaker + GDAL (map pipeline)
+- Cloudflare R2 (S3-compatible)
 
 </td>
 <td valign="top" width="50%">
@@ -154,7 +184,7 @@ auth-service/
 - npm audit (dependency audit)
 
 **📊 Monitoring**
-- Prometheus + Grafana
+- Prometheus + Grafana (dự kiến, chưa có cấu hình triển khai)
 - Winston (structured logging)
 
 </td>
@@ -167,7 +197,7 @@ auth-service/
 
 ### Yêu cầu
 
-- **Node.js** >= 20
+- **Node.js** >= 22
 - **Docker** & Docker Compose
 - **MongoDB** (Atlas hoặc local)
 
@@ -224,7 +254,7 @@ npm run lint
 
 ## 🔄 CI/CD Pipeline
 
-Mỗi service có pipeline GitHub Actions riêng, tự động kích hoạt khi có thay đổi trong thư mục tương ứng.
+Workflow `ci.yml` phát hiện thay đổi và gọi reusable Node/Python jobs cho auth, checkin, trekking, gateway và agent. Community chưa được triển khai nên không chạy CI. Sonar Quality Gate yêu cầu cấu hình repository secrets và project tương ứng.
 
 ```
 Push / Pull Request
@@ -250,7 +280,7 @@ Push / Pull Request
 | `POST` | `/api/v1/auth/register` | Đăng ký tài khoản |
 | `POST` | `/api/v1/auth/verify-email` | Xác minh email bằng OTP |
 | `POST` | `/api/v1/auth/login` | Đăng nhập |
-| `POST` | `/api/v1/auth/refresh-token` | Làm mới access token |
+| `POST` | `/api/v1/auth/refresh` | Làm mới access token |
 | `POST` | `/api/v1/auth/logout` | Đăng xuất |
 | `POST` | `/api/v1/auth/forgot-password` | Quên mật khẩu |
 | `POST` | `/api/v1/auth/reset-password` | Đặt lại mật khẩu |
@@ -262,13 +292,33 @@ Push / Pull Request
 
 ---
 
+## 📡 API Endpoints (CheckIn Service)
+
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| `POST` | `/api/v1/checkins` | Check-in GPS tại milestone |
+| `POST` | `/api/v1/checkins/sync` | Đồng bộ offline check-ins (idempotent) |
+| `GET`  | `/api/v1/checkins/me` | Lịch sử check-in (filter + pagination) |
+| `GET`  | `/api/v1/checkins/me/recent` | Check-in gần đây |
+| `GET`  | `/api/v1/checkins/:checkinId` | Chi tiết một check-in |
+| `GET`  | `/api/v1/journeys/:journeyId/checkins` | Check-in trong một Journey |
+| `GET`  | `/api/v1/visits/me/summary` | Tổng hợp tỉnh / địa điểm / check-in |
+| `PATCH`| `/api/v1/visits/provinces/me/:provinceId` | Tick/bỏ tick tỉnh thủ công |
+| `GET`  | `/api/v1/visits/places/me/recent` | Địa điểm đến gần đây (Home screen) |
+| `GET`  | `/health` | Health check |
+
+> 📄 Tài liệu đầy đủ: [`docs/checkin-service-api.md`](docs/checkin-service-api.md) hoặc Swagger UI tại `http://localhost:3002/api-docs`
+
+---
+
 ## 🗺️ Roadmap
 
 - [x] Auth Service — Đăng ký, đăng nhập, JWT, OTP, quản lý người dùng
-- [ ] Trekking Service — Địa điểm, cung đường, hành trình, GPS tracking
-- [ ] Check-in Service — Milestone check-in, offline sync
+- [x] CheckIn Service — GPS check-in, offline sync, province/place visit tracking
+- [x] Trekking Service — Địa điểm, cung đường, hành trình, marker, đóng góp, huy hiệu, bản đồ offline
 - [ ] Community Service — Bài viết, bình luận, chia sẻ thành tích
-- [ ] API Gateway — Routing, authentication, rate limiting
+- [x] API Gateway — Routing, authentication, rate limiting
+- [x] Agent Service — Assistant, phê duyệt badge, Map Builder, task history (Place Builder HTTP tạm tắt)
 - [ ] Monitoring — Prometheus + Grafana dashboard
 - [ ] Deployment — Docker Compose full stack
 

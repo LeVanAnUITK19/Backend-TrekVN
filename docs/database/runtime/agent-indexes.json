@@ -1,0 +1,309 @@
+{
+  "conversations": [
+    {
+      "name": "adminId_1",
+      "key": {
+        "adminId": 1
+      }
+    },
+    {
+      "name": "status_1",
+      "key": {
+        "status": 1
+      }
+    },
+    {
+      "name": "adminId_1_updatedAt_-1",
+      "key": {
+        "adminId": 1,
+        "updatedAt": -1
+      }
+    },
+    {
+      "name": "status_1_updatedAt_-1",
+      "key": {
+        "status": 1,
+        "updatedAt": -1
+      }
+    }
+  ],
+  "messages": [
+    {
+      "name": "conversationId_1",
+      "key": {
+        "conversationId": 1
+      }
+    },
+    {
+      "name": "adminId_1",
+      "key": {
+        "adminId": 1
+      }
+    },
+    {
+      "name": "conversationId_1_createdAt_1",
+      "key": {
+        "conversationId": 1,
+        "createdAt": 1
+      }
+    },
+    {
+      "name": "adminId_1_createdAt_-1",
+      "key": {
+        "adminId": 1,
+        "createdAt": -1
+      }
+    }
+  ],
+  "agent_runs": [
+    {
+      "name": "runType_1",
+      "key": {
+        "runType": 1
+      }
+    },
+    {
+      "name": "adminId_1",
+      "key": {
+        "adminId": 1
+      }
+    },
+    {
+      "name": "status_1",
+      "key": {
+        "status": 1
+      }
+    },
+    {
+      "name": "workflowId_1",
+      "key": {
+        "workflowId": 1
+      }
+    },
+    {
+      "name": "createdAt_-1",
+      "key": {
+        "createdAt": -1
+      }
+    },
+    {
+      "name": "runType_1_createdAt_-1",
+      "key": {
+        "runType": 1,
+        "createdAt": -1
+      }
+    },
+    {
+      "name": "adminId_1_createdAt_-1",
+      "key": {
+        "adminId": 1,
+        "createdAt": -1
+      }
+    },
+    {
+      "expireAfterSeconds": 0,
+      "sparse": true,
+      "name": "expiresAt_1",
+      "key": {
+        "expiresAt": 1
+      }
+    }
+  ],
+  "place_candidates": [
+    {
+      "unique": true,
+      "name": "jobId_1",
+      "key": {
+        "jobId": 1
+      }
+    },
+    {
+      "name": "adminId_1",
+      "key": {
+        "adminId": 1
+      }
+    },
+    {
+      "sparse": true,
+      "name": "targetPlaceId_1",
+      "key": {
+        "targetPlaceId": 1
+      }
+    },
+    {
+      "name": "status_1",
+      "key": {
+        "status": 1
+      }
+    },
+    {
+      "name": "createdAt_-1",
+      "key": {
+        "createdAt": -1
+      }
+    },
+    {
+      "name": "status_1_createdAt_-1",
+      "key": {
+        "status": 1,
+        "createdAt": -1
+      }
+    },
+    {
+      "name": "adminId_1_createdAt_-1",
+      "key": {
+        "adminId": 1,
+        "createdAt": -1
+      }
+    }
+  ],
+  "map_jobs": [
+    {
+      "unique": true,
+      "name": "jobId_1",
+      "key": {
+        "jobId": 1
+      }
+    },
+    {
+      "name": "adminId_1",
+      "key": {
+        "adminId": 1
+      }
+    },
+    {
+      "name": "trekkingPlaceId_1",
+      "key": {
+        "trekkingPlaceId": 1
+      }
+    },
+    {
+      "sparse": true,
+      "name": "trekkingRouteId_1",
+      "key": {
+        "trekkingRouteId": 1
+      }
+    },
+    {
+      "name": "status_1",
+      "key": {
+        "status": 1
+      }
+    },
+    {
+      "name": "createdAt_-1",
+      "key": {
+        "createdAt": -1
+      }
+    },
+    {
+      "name": "trekkingPlaceId_1_createdAt_-1",
+      "key": {
+        "trekkingPlaceId": 1,
+        "createdAt": -1
+      }
+    },
+    {
+      "sparse": true,
+      "name": "trekkingRouteId_1_createdAt_-1",
+      "key": {
+        "trekkingRouteId": 1,
+        "createdAt": -1
+      }
+    },
+    {
+      "name": "status_1_createdAt_-1",
+      "key": {
+        "status": 1,
+        "createdAt": -1
+      }
+    },
+    {
+      "name": "adminId_1_createdAt_-1",
+      "key": {
+        "adminId": 1,
+        "createdAt": -1
+      }
+    }
+  ],
+  "workflow_events": [
+    {
+      "name": "jobId_1",
+      "key": {
+        "jobId": 1
+      }
+    },
+    {
+      "name": "workflowType_1",
+      "key": {
+        "workflowType": 1
+      }
+    },
+    {
+      "name": "level_1",
+      "key": {
+        "level": 1
+      }
+    },
+    {
+      "name": "createdAt_-1",
+      "key": {
+        "createdAt": -1
+      }
+    },
+    {
+      "name": "jobId_1_createdAt_1",
+      "key": {
+        "jobId": 1,
+        "createdAt": 1
+      }
+    },
+    {
+      "name": "workflowType_1_createdAt_-1",
+      "key": {
+        "workflowType": 1,
+        "createdAt": -1
+      }
+    },
+    {
+      "expireAfterSeconds": 0,
+      "sparse": true,
+      "name": "expiresAt_1",
+      "key": {
+        "expiresAt": 1
+      }
+    }
+  ],
+  "pending_approvals": [
+    {
+      "unique": true,
+      "name": "approvalId_1",
+      "key": {
+        "approvalId": 1
+      }
+    },
+    {
+      "name": "conversationId_1_status_1_createdAt_-1",
+      "key": {
+        "conversationId": 1,
+        "status": 1,
+        "createdAt": -1
+      }
+    },
+    {
+      "name": "adminId_1_createdAt_-1",
+      "key": {
+        "adminId": 1,
+        "createdAt": -1
+      }
+    },
+    {
+      "expireAfterSeconds": 0,
+      "sparse": true,
+      "name": "expiresAt_1",
+      "key": {
+        "expiresAt": 1
+      }
+    }
+  ]
+}

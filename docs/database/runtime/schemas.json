@@ -1,0 +1,4024 @@
+{
+  "auth-service": [
+    {
+      "model": "AuditLog",
+      "collection": "auditlogs",
+      "fields": [
+        {
+          "name": "adminId",
+          "type": "ObjectId",
+          "required": true,
+          "ref": "User"
+        },
+        {
+          "name": "adminName",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "adminEmail",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "action",
+          "type": "String",
+          "required": true,
+          "enum": [
+            "CREATE",
+            "UPDATE",
+            "DELETE",
+            "BLOCK",
+            "UNBLOCK",
+            "APPROVE",
+            "REJECT",
+            "HIDE",
+            "PUBLISH",
+            "DISABLE",
+            "LOGIN",
+            "LOGOUT",
+            "XP_ADJUSTMENT"
+          ]
+        },
+        {
+          "name": "entityType",
+          "type": "String",
+          "required": true,
+          "enum": [
+            "USER",
+            "PLACE",
+            "ROUTE",
+            "MILESTONE",
+            "CONTRIBUTION",
+            "POST",
+            "COMMENT",
+            "REVIEW",
+            "BADGE",
+            "OFFLINE_MAP",
+            "RANK"
+          ]
+        },
+        {
+          "name": "entityId",
+          "type": "String",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "beforeSummary",
+          "type": "Mixed",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "afterSummary",
+          "type": "Mixed",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "result",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "SUCCESS",
+            "FAILURE"
+          ],
+          "default": "SUCCESS"
+        },
+        {
+          "name": "ipAddress",
+          "type": "String",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "note",
+          "type": "String",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "timestamp",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "adminId": 1,
+            "timestamp": -1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "action": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "entityType": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "timestamp": -1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "result": 1
+          },
+          "options": {
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "AuthIdentity",
+      "collection": "authidentities",
+      "fields": [
+        {
+          "name": "userId",
+          "type": "ObjectId",
+          "required": true,
+          "ref": "User"
+        },
+        {
+          "name": "provider",
+          "type": "String",
+          "required": true,
+          "enum": [
+            "LOCAL",
+            "GOOGLE"
+          ]
+        },
+        {
+          "name": "providerUserId",
+          "type": "String",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "passwordHash",
+          "type": "String",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "userId": 1,
+            "provider": 1
+          },
+          "options": {
+            "unique": true,
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "provider": 1,
+            "providerUserId": 1
+          },
+          "options": {
+            "unique": true,
+            "partialFilterExpression": {
+              "providerUserId": {
+                "$type": "string"
+              }
+            },
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "OtpVerification",
+      "collection": "otpverifications",
+      "fields": [
+        {
+          "name": "userId",
+          "type": "ObjectId",
+          "required": false,
+          "ref": "User",
+          "default": null
+        },
+        {
+          "name": "email",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "purpose",
+          "type": "String",
+          "required": true,
+          "enum": [
+            "REGISTER",
+            "RESET_PASSWORD"
+          ]
+        },
+        {
+          "name": "otpHash",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "expiresAt",
+          "type": "Date",
+          "required": true
+        },
+        {
+          "name": "attempts",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "status",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "ACTIVE",
+            "USED",
+            "EXPIRED"
+          ],
+          "default": "ACTIVE"
+        },
+        {
+          "name": "usedAt",
+          "type": "Date",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "expiresAt": 1
+          },
+          "options": {
+            "expireAfterSeconds": 86400,
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "PasswordResetToken",
+      "collection": "passwordresettokens",
+      "fields": [
+        {
+          "name": "tokenHash",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "userId",
+          "type": "ObjectId",
+          "required": true,
+          "ref": "User"
+        },
+        {
+          "name": "expiresAt",
+          "type": "Date",
+          "required": true
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "tokenHash": 1
+          },
+          "options": {
+            "unique": true,
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "expiresAt": 1
+          },
+          "options": {
+            "expireAfterSeconds": 0,
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "ProcessedEvent",
+      "collection": "processedevents",
+      "fields": [
+        {
+          "name": "eventId",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "consumerName",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "processedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "eventId": 1,
+            "consumerName": 1
+          },
+          "options": {
+            "unique": true,
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "processedAt": 1
+          },
+          "options": {
+            "expireAfterSeconds": 2592000,
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "RankDefinition",
+      "collection": "rankdefinitions",
+      "fields": [
+        {
+          "name": "code",
+          "type": "String",
+          "required": true,
+          "enum": [
+            "NEWBIE",
+            "HIKER",
+            "EXPLORER",
+            "TREKKER",
+            "PATHFINDER",
+            "MOUNTAINEER",
+            "ADVENTURER",
+            "ELITE_TREKKER",
+            "TREK_MASTER",
+            "TREK_LEGEND"
+          ]
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "description",
+          "type": "String",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "level",
+          "type": "Number",
+          "required": true
+        },
+        {
+          "name": "minXp",
+          "type": "Number",
+          "required": true,
+          "default": 0
+        },
+        {
+          "name": "minCompletedJourneys",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "minVisitedProvinces",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "minBadgeCount",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "minDistanceMeters",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "minApprovedContributions",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "iconUrl",
+          "type": "String",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "ACTIVE",
+            "INACTIVE"
+          ],
+          "default": "ACTIVE"
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "code": 1
+          },
+          "options": {
+            "unique": true,
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "level": 1
+          },
+          "options": {
+            "unique": true,
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "minXp": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "status": 1
+          },
+          "options": {
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "RankHistory",
+      "collection": "rankhistories",
+      "fields": [
+        {
+          "name": "userId",
+          "type": "ObjectId",
+          "required": true,
+          "ref": "User"
+        },
+        {
+          "name": "previousRankId",
+          "type": "ObjectId",
+          "required": false,
+          "ref": "RankDefinition",
+          "default": null
+        },
+        {
+          "name": "newRankId",
+          "type": "ObjectId",
+          "required": true,
+          "ref": "RankDefinition"
+        },
+        {
+          "name": "xpAtChange",
+          "type": "Number",
+          "required": true
+        },
+        {
+          "name": "changeType",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "PROMOTION",
+            "DEMOTION",
+            "RECALCULATION"
+          ],
+          "default": "PROMOTION"
+        },
+        {
+          "name": "changedAt",
+          "type": "Date",
+          "required": true
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "userId": 1,
+            "changedAt": -1
+          },
+          "options": {
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "RefreshToken",
+      "collection": "refreshtokens",
+      "fields": [
+        {
+          "name": "userId",
+          "type": "ObjectId",
+          "required": true,
+          "ref": "User"
+        },
+        {
+          "name": "tokenHash",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "expiresAt",
+          "type": "Date",
+          "required": true
+        },
+        {
+          "name": "revokedAt",
+          "type": "Date",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "tokenHash": 1
+          },
+          "options": {
+            "unique": true,
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "expiresAt": 1
+          },
+          "options": {
+            "expireAfterSeconds": 0,
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "User",
+      "collection": "users",
+      "fields": [
+        {
+          "name": "email",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "passwordHash",
+          "type": "String",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "displayName",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "avatarUrl",
+          "type": "String",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "bio",
+          "type": "String",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "role",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "USER",
+            "ADMIN"
+          ],
+          "default": "USER"
+        },
+        {
+          "name": "status",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "PENDING_VERIFICATION",
+            "ACTIVE",
+            "BLOCKED"
+          ],
+          "default": "PENDING_VERIFICATION"
+        },
+        {
+          "name": "emailVerifiedAt",
+          "type": "Date",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "lastLoginAt",
+          "type": "Date",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "tokenVersion",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "email": 1
+          },
+          "options": {
+            "unique": true,
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "UserRankProfile",
+      "collection": "userrankprofiles",
+      "fields": [
+        {
+          "name": "userId",
+          "type": "ObjectId",
+          "required": true,
+          "ref": "User"
+        },
+        {
+          "name": "currentRankId",
+          "type": "ObjectId",
+          "required": true,
+          "ref": "RankDefinition"
+        },
+        {
+          "name": "totalXp",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "completedJourneyCount",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "totalDistanceMeters",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "totalElevationGain",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "verifiedCheckinCount",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "visitedProvinceCount",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "visitedPlaceCount",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "badgeCount",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "approvedContributionCount",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "lastCalculatedAt",
+          "type": "Date",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "userId": 1
+          },
+          "options": {
+            "unique": true,
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "currentRankId": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "totalXp": -1
+          },
+          "options": {
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "UserSettings",
+      "collection": "usersettings",
+      "fields": [
+        {
+          "name": "userSettingId",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "userId",
+          "type": "ObjectId",
+          "required": true,
+          "ref": "User"
+        },
+        {
+          "name": "language",
+          "type": "String",
+          "required": false,
+          "default": "vi"
+        },
+        {
+          "name": "theme",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "light",
+            "dark"
+          ],
+          "default": "dark"
+        },
+        {
+          "name": "distanceUnit",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "km",
+            "mi"
+          ],
+          "default": "km"
+        },
+        {
+          "name": "notificationEnabled",
+          "type": "Boolean",
+          "required": false,
+          "default": true
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "userId": 1
+          },
+          "options": {
+            "unique": true,
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "XpTransaction",
+      "collection": "xptransactions",
+      "fields": [
+        {
+          "name": "userId",
+          "type": "ObjectId",
+          "required": true,
+          "ref": "User"
+        },
+        {
+          "name": "transactionType",
+          "type": "String",
+          "required": true,
+          "enum": [
+            "EARN",
+            "REVERSAL",
+            "ADMIN_ADJUSTMENT"
+          ],
+          "default": "EARN"
+        },
+        {
+          "name": "sourceType",
+          "type": "String",
+          "required": true,
+          "enum": [
+            "JOURNEY_COMPLETED",
+            "JOURNEY_DISTANCE",
+            "JOURNEY_ELEVATION",
+            "MILESTONE_CHECKIN",
+            "PROVINCE_VISITED",
+            "PLACE_VISITED",
+            "BADGE_EARNED",
+            "ROUTE_APPROVED",
+            "PLACE_APPROVED",
+            "ADMIN_ADJUSTMENT"
+          ]
+        },
+        {
+          "name": "sourceId",
+          "type": "String",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "xpAmount",
+          "type": "Number",
+          "required": true
+        },
+        {
+          "name": "description",
+          "type": "String",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "idempotencyKey",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "idempotencyKey": 1
+          },
+          "options": {
+            "unique": true,
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "userId": 1,
+            "createdAt": -1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "sourceType": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "sourceId": 1
+          },
+          "options": {
+            "background": true
+          }
+        }
+      ]
+    }
+  ],
+  "checkin-service": [
+    {
+      "model": "EventOutbox",
+      "collection": "eventoutboxes",
+      "fields": [
+        {
+          "name": "eventId",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "eventType",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "eventVersion",
+          "type": "Number",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "payload",
+          "type": "Mixed",
+          "required": true
+        },
+        {
+          "name": "status",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "PENDING",
+            "PROCESSING",
+            "PUBLISHED",
+            "FAILED"
+          ],
+          "default": "PENDING"
+        },
+        {
+          "name": "retryCount",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "nextRetryAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "lastError",
+          "type": "String",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "publishedAt",
+          "type": "Date",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "eventId": 1
+          },
+          "options": {
+            "unique": true,
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "status": 1,
+            "nextRetryAt": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "publishedAt": 1
+          },
+          "options": {
+            "expireAfterSeconds": 604800,
+            "partialFilterExpression": {
+              "status": "PUBLISHED"
+            },
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "MilestoneCheckin",
+      "collection": "milestonecheckins",
+      "fields": [
+        {
+          "name": "clientCheckinId",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "journeyId",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "userId",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "trekkingPlaceId",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "trekkingRouteId",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "provinceId",
+          "type": "ObjectId",
+          "required": true
+        },
+        {
+          "name": "milestoneId",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "altitudeMeters",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "milestoneType",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "qualifiesPlaceVisit",
+          "type": "Boolean",
+          "required": false,
+          "default": false
+        },
+        {
+          "name": "location.type",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "Point"
+          ],
+          "default": "Point"
+        },
+        {
+          "name": "location.coordinates",
+          "type": "Array",
+          "required": true
+        },
+        {
+          "name": "accuracyMeters",
+          "type": "Number",
+          "required": true
+        },
+        {
+          "name": "distanceToMilestoneMeters",
+          "type": "Number",
+          "required": true
+        },
+        {
+          "name": "verification.method",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "GPS"
+          ],
+          "default": "GPS"
+        },
+        {
+          "name": "verification.status",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "VERIFIED",
+            "REJECTED",
+            "PENDING_VERIFICATION"
+          ],
+          "default": "VERIFIED"
+        },
+        {
+          "name": "verification.reason",
+          "type": "String",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "syncSource",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "ONLINE",
+            "OFFLINE_SYNC"
+          ],
+          "default": "ONLINE"
+        },
+        {
+          "name": "checkedAt",
+          "type": "Date",
+          "required": true
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "journeyId": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "userId": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "journeyId": 1,
+            "milestoneId": 1,
+            "userId": 1
+          },
+          "options": {
+            "unique": true,
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "clientCheckinId": 1,
+            "userId": 1
+          },
+          "options": {
+            "unique": true,
+            "partialFilterExpression": {
+              "clientCheckinId": {
+                "$exists": true,
+                "$type": "string"
+              }
+            },
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "userId": 1,
+            "checkedAt": -1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "userId": 1,
+            "trekkingPlaceId": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "userId": 1,
+            "provinceId": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "location": "2dsphere"
+          },
+          "options": {
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "PlaceVisit",
+      "collection": "placevisits",
+      "fields": [
+        {
+          "name": "userId",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "trekkingPlaceId",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "provinceId",
+          "type": "ObjectId",
+          "required": true
+        },
+        {
+          "name": "firstVisitedAt",
+          "type": "Date",
+          "required": true
+        },
+        {
+          "name": "lastVisitedAt",
+          "type": "Date",
+          "required": true
+        },
+        {
+          "name": "firstJourneyId",
+          "type": "String",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "lastJourneyId",
+          "type": "String",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "lastCheckinId",
+          "type": "ObjectId",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "visitCount",
+          "type": "Number",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "verificationStatus",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "VERIFIED"
+          ],
+          "default": "VERIFIED"
+        },
+        {
+          "name": "source",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "CHECKIN"
+          ],
+          "default": "CHECKIN"
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "userId": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "trekkingPlaceId": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "provinceId": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "userId": 1,
+            "trekkingPlaceId": 1
+          },
+          "options": {
+            "unique": true,
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "userId": 1,
+            "lastVisitedAt": -1
+          },
+          "options": {
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "Province",
+      "collection": "provinces",
+      "fields": [
+        {
+          "name": "code",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "description",
+          "type": "String",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "region",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "NORTH",
+            "CENTRAL",
+            "SOUTH"
+          ],
+          "default": null
+        },
+        {
+          "name": "mapAsset",
+          "type": "String",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "mapFeatureId",
+          "type": "String",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "center.type",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "Point"
+          ],
+          "default": "Point"
+        },
+        {
+          "name": "center.coordinates",
+          "type": "Array",
+          "required": false,
+          "default": [
+            0,
+            0
+          ]
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "code": 1
+          },
+          "options": {
+            "unique": true,
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "center": "2dsphere"
+          },
+          "options": {
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "ProvinceVisit",
+      "collection": "provincevisits",
+      "fields": [
+        {
+          "name": "userId",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "provinceId",
+          "type": "ObjectId",
+          "required": true
+        },
+        {
+          "name": "manualMarked",
+          "type": "Boolean",
+          "required": false,
+          "default": false
+        },
+        {
+          "name": "verificationStatus",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "SELF_REPORTED",
+            "VERIFIED"
+          ],
+          "default": "SELF_REPORTED"
+        },
+        {
+          "name": "firstVisitedAt",
+          "type": "Date",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "lastVisitedAt",
+          "type": "Date",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "firstJourneyId",
+          "type": "String",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "lastJourneyId",
+          "type": "String",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "verifiedAt",
+          "type": "Date",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "verifiedJourneyId",
+          "type": "String",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "verifiedCheckinId",
+          "type": "ObjectId",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "visitCount",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "userId": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "provinceId": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "userId": 1,
+            "provinceId": 1
+          },
+          "options": {
+            "unique": true,
+            "background": true
+          }
+        }
+      ]
+    }
+  ],
+  "trekking-service": [
+    {
+      "model": "Badge",
+      "collection": "badges",
+      "fields": [
+        {
+          "name": "code",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "description",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "iconUrl",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "category",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "TREKKING",
+            "EXPLORATION",
+            "DISTANCE",
+            "PROVINCE"
+          ]
+        },
+        {
+          "name": "rarity",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "COMMON",
+            "RARE",
+            "EPIC",
+            "LEGENDARY"
+          ]
+        },
+        {
+          "name": "condition",
+          "type": "Mixed",
+          "required": false
+        },
+        {
+          "name": "status",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "ACTIVE",
+            "INACTIVE"
+          ],
+          "default": "ACTIVE"
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "code": 1
+          },
+          "options": {
+            "unique": true,
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "code": 1
+          },
+          "options": {
+            "unique": true,
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "status": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "category": 1
+          },
+          "options": {
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "DetailEvaluate",
+      "collection": "detailevaluates",
+      "fields": [
+        {
+          "name": "trekkingPlaceId",
+          "type": "ObjectId",
+          "required": true,
+          "ref": "TrekkingPlace"
+        },
+        {
+          "name": "userId",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "point",
+          "type": "Number",
+          "required": true
+        },
+        {
+          "name": "content",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "isAnonymous",
+          "type": "Boolean",
+          "required": false,
+          "default": false
+        },
+        {
+          "name": "imagesUrl",
+          "type": "Array",
+          "required": false,
+          "default": []
+        },
+        {
+          "name": "videoUrl",
+          "type": "Array",
+          "required": false,
+          "default": []
+        },
+        {
+          "name": "deleted",
+          "type": "Boolean",
+          "required": false,
+          "default": false
+        },
+        {
+          "name": "editCount",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "removedBy",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "trekkingPlaceId": 1,
+            "userId": 1
+          },
+          "options": {
+            "unique": true,
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "trekkingPlaceId": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "userId": 1
+          },
+          "options": {
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "EventOutbox",
+      "collection": "eventoutboxes",
+      "fields": [
+        {
+          "name": "eventId",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "eventType",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "eventVersion",
+          "type": "Number",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "payload",
+          "type": "Mixed",
+          "required": true
+        },
+        {
+          "name": "status",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "PENDING",
+            "PROCESSING",
+            "PUBLISHED",
+            "FAILED"
+          ],
+          "default": "PENDING"
+        },
+        {
+          "name": "retryCount",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "nextRetryAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "lastError",
+          "type": "String",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "publishedAt",
+          "type": "Date",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "eventId": 1
+          },
+          "options": {
+            "unique": true,
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "status": 1,
+            "nextRetryAt": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "publishedAt": 1
+          },
+          "options": {
+            "expireAfterSeconds": 604800,
+            "partialFilterExpression": {
+              "status": "PUBLISHED"
+            },
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "IdempotencyKey",
+      "collection": "idempotencykeys",
+      "fields": [
+        {
+          "name": "key",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "operation",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "userId",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "status",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "PROCESSING",
+            "COMPLETED"
+          ],
+          "default": "PROCESSING"
+        },
+        {
+          "name": "responseData",
+          "type": "Mixed",
+          "required": false
+        },
+        {
+          "name": "completedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "key": 1,
+            "userId": 1,
+            "operation": 1
+          },
+          "options": {
+            "unique": true,
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "createdAt": 1
+          },
+          "options": {
+            "expireAfterSeconds": 604800,
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "Journey",
+      "collection": "journeys",
+      "fields": [
+        {
+          "name": "userId",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "trekkingPlaceId",
+          "type": "ObjectId",
+          "required": true,
+          "ref": "TrekkingPlace"
+        },
+        {
+          "name": "trekkingRouteId",
+          "type": "ObjectId",
+          "required": true,
+          "ref": "TrekkingRoute"
+        },
+        {
+          "name": "provinceId",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "clientJourneyId",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "note",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "participantCount",
+          "type": "Number",
+          "required": false,
+          "default": 1
+        },
+        {
+          "name": "status",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "PLANNED",
+            "ACTIVE",
+            "PAUSED",
+            "COMPLETED",
+            "CANCELLED"
+          ],
+          "default": "PLANNED"
+        },
+        {
+          "name": "plannedStartAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "plannedEndAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "startedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "completedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "statistics",
+          "type": "Embedded",
+          "required": false,
+          "nested": [
+            {
+              "name": "distanceMeters",
+              "type": "Number"
+            },
+            {
+              "name": "durationSeconds",
+              "type": "Number"
+            },
+            {
+              "name": "elevationGain",
+              "type": "Number"
+            },
+            {
+              "name": "maxAltitude",
+              "type": "Number"
+            },
+            {
+              "name": "averageSpeed",
+              "type": "Number"
+            }
+          ]
+        },
+        {
+          "name": "track",
+          "type": "Embedded",
+          "required": false,
+          "nested": [
+            {
+              "name": "encodedPolyline",
+              "type": "String"
+            }
+          ]
+        },
+        {
+          "name": "checkinCount",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "markerCount",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "userId": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "trekkingPlaceId": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "trekkingRouteId": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "provinceId": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "status": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "createdAt": -1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "userId": 1,
+            "status": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "userId": 1,
+            "createdAt": -1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "userId": 1,
+            "clientJourneyId": 1
+          },
+          "options": {
+            "unique": true,
+            "partialFilterExpression": {
+              "clientJourneyId": {
+                "$type": "string"
+              }
+            },
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "JourneyMarker",
+      "collection": "journeymarkers",
+      "fields": [
+        {
+          "name": "journeyId",
+          "type": "ObjectId",
+          "required": true,
+          "ref": "Journey"
+        },
+        {
+          "name": "userId",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "type",
+          "type": "String",
+          "required": true,
+          "enum": [
+            "VIEWPOINT",
+            "REST_POINT",
+            "WATER_POINT",
+            "DANGER",
+            "INTERSECTION",
+            "CAMP",
+            "PHOTO_SPOT",
+            "LANDMARK",
+            "SUMMIT",
+            "OTHER"
+          ]
+        },
+        {
+          "name": "note",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "location.type",
+          "type": "String",
+          "required": true,
+          "enum": [
+            "Point"
+          ]
+        },
+        {
+          "name": "location.coordinates",
+          "type": "Array",
+          "required": true
+        },
+        {
+          "name": "altitude",
+          "type": "Number",
+          "required": false
+        },
+        {
+          "name": "accuracyMeters",
+          "type": "Number",
+          "required": false
+        },
+        {
+          "name": "images",
+          "type": "Array",
+          "required": false,
+          "default": []
+        },
+        {
+          "name": "markedAt",
+          "type": "Date",
+          "required": true
+        },
+        {
+          "name": "source",
+          "type": "String",
+          "required": false,
+          "default": "USER_CREATED"
+        },
+        {
+          "name": "clientMarkerId",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "location": "2dsphere"
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "journeyId": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "userId": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "journeyId": 1,
+            "markedAt": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "journeyId": 1,
+            "userId": 1,
+            "clientMarkerId": 1
+          },
+          "options": {
+            "unique": true,
+            "sparse": true,
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "Milestone",
+      "collection": "milestones",
+      "fields": [
+        {
+          "name": "trekkingRouteId",
+          "type": "ObjectId",
+          "required": true,
+          "ref": "TrekkingRoute"
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "description",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "type",
+          "type": "String",
+          "required": true,
+          "enum": [
+            "START",
+            "CHECKPOINT",
+            "VIEWPOINT",
+            "REST_POINT",
+            "WATER_POINT",
+            "CAMP",
+            "SUMMIT",
+            "FINISH"
+          ]
+        },
+        {
+          "name": "sequence",
+          "type": "Number",
+          "required": true
+        },
+        {
+          "name": "location.type",
+          "type": "String",
+          "required": true,
+          "enum": [
+            "Point"
+          ]
+        },
+        {
+          "name": "location.coordinates",
+          "type": "Array",
+          "required": true
+        },
+        {
+          "name": "altitude",
+          "type": "Number",
+          "required": false
+        },
+        {
+          "name": "checkinRadiusMeters",
+          "type": "Number",
+          "required": false,
+          "default": 50
+        },
+        {
+          "name": "required",
+          "type": "Boolean",
+          "required": false,
+          "default": true
+        },
+        {
+          "name": "imageUrl",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "location": "2dsphere"
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "trekkingRouteId": 1,
+            "sequence": 1
+          },
+          "options": {
+            "unique": true,
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "OfflineMapPackage",
+      "collection": "offlinemappackages",
+      "fields": [
+        {
+          "name": "name",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "version",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "description",
+          "type": "String",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "checksum",
+          "type": "String",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "objectKey",
+          "type": "String",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "fileSizeBytes",
+          "type": "Number",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "DRAFT",
+            "PUBLISHED",
+            "DEPRECATED"
+          ],
+          "default": "DRAFT"
+        },
+        {
+          "name": "regionCode",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "NORTH",
+            "CENTRAL",
+            "SOUTH",
+            "ALL"
+          ],
+          "default": null
+        },
+        {
+          "name": "publishedAt",
+          "type": "Date",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "createdBy",
+          "type": "String",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "status": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "regionCode": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "createdAt": -1
+          },
+          "options": {
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "PlaceSuggestion",
+      "collection": "placesuggestions",
+      "fields": [
+        {
+          "name": "userId",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "provinceId",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "proposedName",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "address",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "location.type",
+          "type": "String",
+          "required": true,
+          "enum": [
+            "Point"
+          ]
+        },
+        {
+          "name": "location.coordinates",
+          "type": "Array",
+          "required": true
+        },
+        {
+          "name": "description",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "difficulty",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "EASY",
+            "MODERATE",
+            "HARD",
+            "EXPERT"
+          ]
+        },
+        {
+          "name": "tags",
+          "type": "Array",
+          "required": false,
+          "default": []
+        },
+        {
+          "name": "images",
+          "type": "Array",
+          "required": false,
+          "default": []
+        },
+        {
+          "name": "status",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "DRAFT",
+            "PENDING_REVIEW",
+            "NEEDS_REVISION",
+            "APPROVED",
+            "REJECTED",
+            "CANCELLED"
+          ],
+          "default": "PENDING_REVIEW"
+        },
+        {
+          "name": "reviewedBy",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "reviewedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "adminNote",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "resultingPlaceId",
+          "type": "ObjectId",
+          "required": false,
+          "ref": "TrekkingPlace"
+        },
+        {
+          "name": "clientOperationId",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "userId": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "provinceId": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "status": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "createdAt": -1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "clientOperationId": 1
+          },
+          "options": {
+            "unique": true,
+            "sparse": true,
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "ProcessedEvent",
+      "collection": "processedevents",
+      "fields": [
+        {
+          "name": "eventId",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "consumerName",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "processedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "eventId": 1,
+            "consumerName": 1
+          },
+          "options": {
+            "unique": true,
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "processedAt": 1
+          },
+          "options": {
+            "expireAfterSeconds": 2592000,
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "RouteSubmission",
+      "collection": "routesubmissions",
+      "fields": [
+        {
+          "name": "userId",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "contributionKind",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "ROUTE",
+            "MARKERS"
+          ],
+          "default": "ROUTE"
+        },
+        {
+          "name": "sourceJourneyId",
+          "type": "ObjectId",
+          "required": true,
+          "ref": "Journey"
+        },
+        {
+          "name": "trekkingPlaceId",
+          "type": "ObjectId",
+          "required": false,
+          "ref": "TrekkingPlace"
+        },
+        {
+          "name": "proposedName",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "description",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "notes",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "encodedPolyline",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "gpxUrl",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "statistics.distanceMeters",
+          "type": "Number",
+          "required": false
+        },
+        {
+          "name": "statistics.durationSeconds",
+          "type": "Number",
+          "required": false
+        },
+        {
+          "name": "statistics.elevationGain",
+          "type": "Number",
+          "required": false
+        },
+        {
+          "name": "statistics.maxAltitude",
+          "type": "Number",
+          "required": false
+        },
+        {
+          "name": "statistics.averageSpeed",
+          "type": "Number",
+          "required": false
+        },
+        {
+          "name": "images",
+          "type": "Array",
+          "required": false,
+          "default": []
+        },
+        {
+          "name": "markerIds",
+          "type": "Array",
+          "required": false,
+          "default": []
+        },
+        {
+          "name": "status",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "DRAFT",
+            "PENDING_REVIEW",
+            "NEEDS_REVISION",
+            "APPROVED",
+            "REJECTED",
+            "CANCELLED"
+          ],
+          "default": "PENDING_REVIEW"
+        },
+        {
+          "name": "reviewedBy",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "reviewedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "adminNote",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "resultingRouteId",
+          "type": "ObjectId",
+          "required": false,
+          "ref": "TrekkingRoute"
+        },
+        {
+          "name": "clientOperationId",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "userId": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "sourceJourneyId": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "status": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "createdAt": -1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "clientOperationId": 1
+          },
+          "options": {
+            "unique": true,
+            "sparse": true,
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "RouteSubmissionMarker",
+      "collection": "routesubmissionmarkers",
+      "fields": [
+        {
+          "name": "routeSubmissionId",
+          "type": "ObjectId",
+          "required": true,
+          "ref": "RouteSubmission"
+        },
+        {
+          "name": "sourceJourneyMarkerId",
+          "type": "ObjectId",
+          "required": false,
+          "ref": "JourneyMarker"
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "type",
+          "type": "String",
+          "required": true,
+          "enum": [
+            "VIEWPOINT",
+            "REST_POINT",
+            "WATER_POINT",
+            "DANGER",
+            "INTERSECTION",
+            "CAMP",
+            "PHOTO_SPOT",
+            "LANDMARK",
+            "SUMMIT",
+            "OTHER"
+          ]
+        },
+        {
+          "name": "description",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "location.type",
+          "type": "String",
+          "required": true,
+          "enum": [
+            "Point"
+          ]
+        },
+        {
+          "name": "location.coordinates",
+          "type": "Array",
+          "required": true
+        },
+        {
+          "name": "altitude",
+          "type": "Number",
+          "required": false
+        },
+        {
+          "name": "images",
+          "type": "Array",
+          "required": false,
+          "default": []
+        },
+        {
+          "name": "sequence",
+          "type": "Number",
+          "required": false
+        },
+        {
+          "name": "reviewStatus",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "PENDING",
+            "APPROVED",
+            "REJECTED"
+          ],
+          "default": "PENDING"
+        },
+        {
+          "name": "adminNote",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "resultingMilestoneId",
+          "type": "ObjectId",
+          "required": false,
+          "ref": "Milestone"
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "routeSubmissionId": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "reviewStatus": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "routeSubmissionId": 1,
+            "sequence": 1
+          },
+          "options": {
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "TrekkingPlace",
+      "collection": "trekkingplaces",
+      "fields": [
+        {
+          "name": "name",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "slug",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "provinceId",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "address",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "location.type",
+          "type": "String",
+          "required": true,
+          "enum": [
+            "Point"
+          ]
+        },
+        {
+          "name": "location.coordinates",
+          "type": "Array",
+          "required": true
+        },
+        {
+          "name": "description",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "difficulty",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "EASY",
+            "MODERATE",
+            "HARD",
+            "EXPERT"
+          ]
+        },
+        {
+          "name": "averageDurationMinutes",
+          "type": "Number",
+          "required": false
+        },
+        {
+          "name": "elevationMeters",
+          "type": "Number",
+          "required": false
+        },
+        {
+          "name": "images",
+          "type": "Array",
+          "required": false,
+          "default": []
+        },
+        {
+          "name": "imageMapUrl",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "tags",
+          "type": "Array",
+          "required": false,
+          "default": []
+        },
+        {
+          "name": "dataOrigin",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "MANUAL",
+            "USER_CONTRIBUTION",
+            "AI_AGENT"
+          ],
+          "default": "MANUAL"
+        },
+        {
+          "name": "externalRefs",
+          "type": "Mixed",
+          "required": false
+        },
+        {
+          "name": "lastVerifiedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "offlineMap.available",
+          "type": "Boolean",
+          "required": false,
+          "default": false
+        },
+        {
+          "name": "offlineMap.version",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "offlineMap.objectKey",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "offlineMap.sizeBytes",
+          "type": "Number",
+          "required": false
+        },
+        {
+          "name": "offlineMap.checksum",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "offlineMap.minZoom",
+          "type": "Number",
+          "required": false
+        },
+        {
+          "name": "offlineMap.maxZoom",
+          "type": "Number",
+          "required": false
+        },
+        {
+          "name": "offlineMap.bounds.minLat",
+          "type": "Number",
+          "required": false
+        },
+        {
+          "name": "offlineMap.bounds.minLon",
+          "type": "Number",
+          "required": false
+        },
+        {
+          "name": "offlineMap.bounds.maxLat",
+          "type": "Number",
+          "required": false
+        },
+        {
+          "name": "offlineMap.bounds.maxLon",
+          "type": "Number",
+          "required": false
+        },
+        {
+          "name": "ratingAverage",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "ratingCount",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "status",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "ACTIVE",
+            "INACTIVE",
+            "DISABLED"
+          ],
+          "default": "ACTIVE"
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "slug": 1
+          },
+          "options": {
+            "unique": true,
+            "sparse": true,
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "location": "2dsphere"
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "slug": 1
+          },
+          "options": {
+            "unique": true,
+            "sparse": true,
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "provinceId": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "provinceId": 1,
+            "status": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "status": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "tags": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "dataOrigin": 1
+          },
+          "options": {
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "TrekkingRoute",
+      "collection": "trekkingroutes",
+      "fields": [
+        {
+          "name": "trekkingPlaceId",
+          "type": "ObjectId",
+          "required": true,
+          "ref": "TrekkingPlace"
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "description",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "difficulty",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "EASY",
+            "MODERATE",
+            "HARD",
+            "EXPERT"
+          ]
+        },
+        {
+          "name": "distanceMeters",
+          "type": "Number",
+          "required": false
+        },
+        {
+          "name": "estimatedDurationMinutes",
+          "type": "Number",
+          "required": false
+        },
+        {
+          "name": "elevationGain",
+          "type": "Number",
+          "required": false
+        },
+        {
+          "name": "maxElevation",
+          "type": "Number",
+          "required": false
+        },
+        {
+          "name": "imageUrl",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "startLocation.type",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "Point"
+          ]
+        },
+        {
+          "name": "startLocation.coordinates",
+          "type": "Array",
+          "required": false
+        },
+        {
+          "name": "endLocation.type",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "Point"
+          ]
+        },
+        {
+          "name": "endLocation.coordinates",
+          "type": "Array",
+          "required": false
+        },
+        {
+          "name": "path.type",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "LineString"
+          ]
+        },
+        {
+          "name": "path.coordinates",
+          "type": "Array",
+          "required": false
+        },
+        {
+          "name": "offlineMap",
+          "type": "Embedded",
+          "required": false,
+          "nested": [
+            {
+              "name": "available",
+              "type": "Boolean"
+            },
+            {
+              "name": "version",
+              "type": "Number"
+            },
+            {
+              "name": "objectKey",
+              "type": "String"
+            },
+            {
+              "name": "sizeBytes",
+              "type": "Number"
+            },
+            {
+              "name": "checksum",
+              "type": "String"
+            },
+            {
+              "name": "minZoom",
+              "type": "Number"
+            },
+            {
+              "name": "maxZoom",
+              "type": "Number"
+            },
+            {
+              "name": "bounds.minLat",
+              "type": "Number"
+            },
+            {
+              "name": "bounds.minLon",
+              "type": "Number"
+            },
+            {
+              "name": "bounds.maxLat",
+              "type": "Number"
+            },
+            {
+              "name": "bounds.maxLon",
+              "type": "Number"
+            }
+          ]
+        },
+        {
+          "name": "status",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "ACTIVE",
+            "INACTIVE",
+            "DISABLED"
+          ],
+          "default": "ACTIVE"
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "trekkingPlaceId": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "status": 1
+          },
+          "options": {
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "UserBadge",
+      "collection": "userbadges",
+      "fields": [
+        {
+          "name": "userId",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "badgeId",
+          "type": "ObjectId",
+          "required": true,
+          "ref": "Badge"
+        },
+        {
+          "name": "journeyId",
+          "type": "ObjectId",
+          "required": false,
+          "ref": "Journey"
+        },
+        {
+          "name": "earnedAt",
+          "type": "Date",
+          "required": true
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "userId": 1,
+            "badgeId": 1
+          },
+          "options": {
+            "unique": true,
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "userId": 1
+          },
+          "options": {
+            "background": true
+          }
+        }
+      ]
+    }
+  ]
+}

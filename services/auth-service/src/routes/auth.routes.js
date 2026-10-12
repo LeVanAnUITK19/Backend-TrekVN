@@ -11,6 +11,7 @@ const {
   forgotPasswordSchema,
   verifyResetOtpSchema,
   resetPasswordSchema,
+  googleSignInSchema,
 } = require('../validators/auth.validator');
 
 /**
@@ -343,7 +344,7 @@ router.post('/logout', authenticate, authController.logout);
  *               success: false
  *               message: "Token không hợp lệ hoặc đã hết hạn"
  */
-router.get('/verify', authController.verifyToken);
+router.get('/verify', authenticate, authController.verifyToken);
 
 // ─── Password Reset flow ──────────────────────────────────────────────────────
 
@@ -457,5 +458,60 @@ router.post('/verify-reset-otp', validate(verifyResetOtpSchema), authController.
  *               message: "Reset token không hợp lệ hoặc đã hết hạn"
  */
 router.post('/reset-password', validate(resetPasswordSchema), authController.resetPassword);
+
+// ─── Google Sign-In ────────────────────────────────────────────────────────────
+
+/**
+ * @swagger
+ * /api/v1/auth/google:
+ *   post:
+ *     summary: Đăng nhập / Đăng ký bằng Google ID Token
+ *     tags: [Auth]
+ *     description: |
+ *       Backend verify Google ID Token — không tin userId/email từ client.
+ *
+ *       **Flow:**
+ *       - Verify idToken với Google (audience = GOOGLE_CLIENT_ID)
+ *       - Lấy sub, email, name, picture từ verified payload
+ *       - Nếu identity GOOGLE+sub tồn tại → đăng nhập trực tiếp
+ *       - Nếu email chưa tồn tại → tạo User mới + GOOGLE identity + settings + NEWBIE rank
+ *       - Nếu email đã có LOCAL User → link GOOGLE identity vào user cũ (không tạo duplicate)
+ *       - BLOCKED user → 403
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [idToken]
+ *             properties:
+ *               idToken:
+ *                 type: string
+ *                 description: Google ID Token từ Flutter google_sign_in
+ *                 example: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *     responses:
+ *       200:
+ *         description: Đăng nhập thành công
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               data:
+ *                 accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *                 refreshToken: "a3f9b2c1d4e5..."
+ *                 user:
+ *                   userId: "64f1a2b3c4d5e6f7a8b9c0d1"
+ *                   email: "an@gmail.com"
+ *                   displayName: "Nguyễn Văn An"
+ *                   role: "USER"
+ *                   status: "ACTIVE"
+ *       400:
+ *         description: Thiếu idToken hoặc Google Sign-In chưa được cấu hình
+ *       401:
+ *         description: Google ID Token không hợp lệ hoặc đã hết hạn
+ *       403:
+ *         description: Tài khoản đã bị khóa
+ */
+router.post('/google', validate(googleSignInSchema), authController.googleSignIn);
 
 module.exports = router;

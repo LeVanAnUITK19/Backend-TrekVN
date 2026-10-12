@@ -1,0 +1,97 @@
+// Generated physical MongoDB schema. _id is ObjectId; API aliases are not stored fields.
+// Nested fields retain their MongoDB dotted paths. See schemas.json for index options and subdocuments.
+
+Table eventoutboxes {
+  "eventId" varchar [not null]
+  "eventType" varchar [not null]
+  "eventVersion" double
+  "payload" json [not null]
+  "status" varchar
+  "retryCount" double
+  "nextRetryAt" timestamp
+  "lastError" varchar
+  "publishedAt" timestamp
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+
+Table milestonecheckins {
+  "clientCheckinId" varchar
+  "journeyId" varchar [not null]
+  "userId" varchar [not null]
+  "trekkingPlaceId" varchar [not null]
+  "trekkingRouteId" varchar [not null]
+  "provinceId" varchar [not null]
+  "milestoneId" varchar [not null]
+  "altitudeMeters" double
+  "milestoneType" varchar [not null]
+  "qualifiesPlaceVisit" boolean
+  "location.type" varchar
+  "location.coordinates" json [not null]
+  "accuracyMeters" double [not null]
+  "distanceToMilestoneMeters" double [not null]
+  "verification.method" varchar
+  "verification.status" varchar
+  "verification.reason" varchar
+  "syncSource" varchar
+  "checkedAt" timestamp [not null]
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+
+Table placevisits {
+  "userId" varchar [not null]
+  "trekkingPlaceId" varchar [not null]
+  "provinceId" varchar [not null]
+  "firstVisitedAt" timestamp [not null]
+  "lastVisitedAt" timestamp [not null]
+  "firstJourneyId" varchar
+  "lastJourneyId" varchar
+  "lastCheckinId" varchar
+  "visitCount" double
+  "verificationStatus" varchar
+  "source" varchar
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+
+Table provinces {
+  "code" varchar [not null]
+  "name" varchar [not null]
+  "description" varchar
+  "region" varchar
+  "mapAsset" varchar
+  "mapFeatureId" varchar
+  "center.type" varchar
+  "center.coordinates" json
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+
+Table provincevisits {
+  "userId" varchar [not null]
+  "provinceId" varchar [not null]
+  "manualMarked" boolean
+  "verificationStatus" varchar
+  "firstVisitedAt" timestamp
+  "lastVisitedAt" timestamp
+  "firstJourneyId" varchar
+  "lastJourneyId" varchar
+  "verifiedAt" timestamp
+  "verifiedJourneyId" varchar
+  "verifiedCheckinId" varchar
+  "visitCount" double
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+

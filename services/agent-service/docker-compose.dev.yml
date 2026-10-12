@@ -1,0 +1,72 @@
+version: "3.9"
+
+# ──────────────────────────────────────────────────────────────────────────────
+# TrekViet Agent Service — Local Development Compose
+#
+# Starts:
+#   - agent-service (Python FastAPI, port 8000)
+#   - agent-mongodb  (MongoDB for agent DB only, port 27018)
+#
+# Does NOT start the other services (auth, trekking, checkin).
+# Those run separately or via the root docker-compose.
+#
+# Usage:
+#   docker-compose -f docker-compose.dev.yml up
+# ──────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  agent-mongodb:
+    image: mongo:7.0
+    container_name: trekviet-agent-mongodb
+    restart: unless-stopped
+    ports:
+      - "27018:27017"       # expose on 27018 to avoid collision with main MongoDB
+    volumes:
+      - agent-mongodb-data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: trekviet_agent
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  agent-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: trekviet-agent-service
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      # Hot-reload source in development
+      - ./app:/app/app:ro
+      # Map Builder temp directory (writable)
+      - agent-map-work:/tmp/trekviet-agent
+    env_file:
+      - .env
+    environment:
+      # Override MongoDB URI to use the local agent-mongodb container
+      AGENT_MONGODB_URI: mongodb://agent-mongodb:27017
+      AGENT_MONGODB_DB: trekviet_agent
+      APP_ENV: development
+      MAP_WORK_ROOT: /tmp/trekviet-agent
+      MAP_PIPELINE_MODE: full
+      MAP_TOOL_BACKEND: native
+    depends_on:
+      agent-mongodb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  agent-mongodb-data:
+    driver: local
+  agent-map-work:
+    driver: local

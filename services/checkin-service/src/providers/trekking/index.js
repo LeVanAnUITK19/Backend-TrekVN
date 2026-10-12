@@ -2,11 +2,11 @@ const logger = require('../../config/logger');
 
 /**
  * Factory — trả về TrekkingProvider instance dựa theo ENV.
- * TREKKING_PROVIDER=mock  → MockTrekkingProvider (mặc định)
+ * TREKKING_PROVIDER=mock  → MockTrekkingProvider (chỉ dùng test/demo)
  * TREKKING_PROVIDER=http  → HttpTrekkingProvider
  */
 const getTrekkingProvider = () => {
-  const providerType = (process.env.TREKKING_PROVIDER || 'mock').toLowerCase();
+  const providerType = (process.env.TREKKING_PROVIDER || 'http').toLowerCase();
 
   if (providerType === 'http') {
     const HttpTrekkingProvider = require('./HttpTrekkingProvider');

@@ -96,12 +96,12 @@ describe('POST /api/v1/auth/login — error paths', () => {
     expect(res.body.message).toMatch(/chưa được xác minh/i);
   });
 
-  it('tài khoản SUSPENDED → 403', async () => {
-    await createActiveUser({ email: 'suspended@example.com', password: 'Pass@123', status: 'SUSPENDED' });
+  it('tài khoản BLOCKED → 403', async () => {
+    await createActiveUser({ email: 'blocked@example.com', password: 'Pass@123', status: 'BLOCKED' });
 
     const res = await request(app)
       .post('/api/v1/auth/login')
-      .send({ email: 'suspended@example.com', password: 'Pass@123' });
+      .send({ email: 'blocked@example.com', password: 'Pass@123' });
 
     expect(res.status).toBe(403);
     expect(res.body.message).toMatch(/bị khóa/i);

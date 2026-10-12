@@ -1,6 +1,8 @@
 # CheckIn Service — API Documentation
 
-**Base URL:** `http://localhost:3002/api/v1`  
+**Review 2026-10-12:** [All implemented routes](api-route-inventory.md), [OpenAPI snapshot](openapi/checkin-service.json), [physical MongoDB fields/indexes](database/README.md). Gateway journey check-ins use `/api/v1/checkins/journeys/{journeyId}`.
+
+**Base URL:** `http://localhost:3002/api/v1`
 **Swagger UI:** `http://localhost:3002/api-docs`
 
 ---
@@ -64,7 +66,7 @@ Token cấp bởi **auth-service**. CheckIn Service tự verify JWT bằng `JWT_
 
 ### POST /checkins 🔒
 
-**Used by:** online GPS milestone check-in.  
+**Used by:** online GPS milestone check-in.
 **Automatically:** verifies ProvinceVisit (UNVISITED/SELF_REPORTED → VERIFIED), creates/updates PlaceVisit when `qualifiesPlaceVisit=true`.
 
 **Luồng:**
@@ -240,7 +242,7 @@ Trả về tất cả check-in của user trong journey, sắp xếp `checkedAt`
 - Province selector bottom sheet ("Tỉnh thành đã đi")
 - Xác định màu UNVISITED / SELF_REPORTED / VERIFIED
 
-Trả về **TOÀN BỘ** tỉnh trong collection `provinces`, không chỉ các tỉnh đã visit.  
+Trả về **TOÀN BỘ** tỉnh trong collection `provinces`, không chỉ các tỉnh đã visit.
 Mỗi tỉnh được merge với `ProvinceVisit` của user hiện tại.
 
 **Performance:** chỉ 2 queries (provinces + province_visits cho user) rồi merge trong memory.
@@ -359,7 +361,7 @@ Chi tiết tỉnh + trạng thái visit của user. `visit` = null nếu chưa �
 
 **Used by:** Home screen widget "Địa điểm đến gần đây".
 
-Trả về địa điểm trekking user đến gần đây. Chỉ bao gồm địa điểm có `PlaceVisit` từ check-in VERIFIED.  
+Trả về địa điểm trekking user đến gần đây. Chỉ bao gồm địa điểm có `PlaceVisit` từ check-in VERIFIED.
 User **không thể** manually mark trekking place.
 
 **Query:** `?limit=5` (max 20)
@@ -385,22 +387,66 @@ User **không thể** manually mark trekking place.
 
 ### GET /visits/places/me 🔒
 
-Danh sách tất cả địa điểm đã đến (có pagination).
+Danh sách tất cả địa điểm đã đến (có pagination), sort theo `lastVisitedAt` mới nhất.
 
-**Query:** `?page=1&limit=20`
+**Query params:**
+
+| Param | Default | Mô tả |
+|-------|---------|-------|
+| `page` | 1 | Số trang |
+| `limit` | 20 | Số bản ghi / trang (max 100) |
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "items": [
+      {
+        "placeVisitId": "64f1a2b3c4d5e6f7a8b9c0d3",
+        "trekkingPlaceId": "place_langbiang",
+        "provinceId": "6849a1b2c3d4e5f6a7b8c9d0",
+        "firstVisitedAt": "2026-08-10T06:00:00.000Z",
+        "lastVisitedAt": "2026-09-21T07:00:00.000Z",
+        "visitCount": 2
+      }
+    ],
+    "total": 15,
+    "page": 1,
+    "limit": 20
+  }
+}
+```
 
 ---
 
 ### GET /visits/places/me/:placeId 🔒
 
-Trạng thái visit một địa điểm cụ thể. `placeId` là `trekkingPlaceId` (string, không phải ObjectId).  
+Trạng thái visit một địa điểm cụ thể. `placeId` là `trekkingPlaceId` (string, không phải ObjectId).
 Trả về `null` nếu chưa từng đến.
+
+**Path param:** `placeId` — `trekkingPlaceId` string (ví dụ `place_langbiang`)
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "trekkingPlaceId": "place_langbiang",
+    "visitCount": 2,
+    "firstVisitedAt": "2026-08-10T06:00:00.000Z",
+    "lastVisitedAt": "2026-09-21T07:00:00.000Z"
+  }
+}
+```
+
+`data` = `null` nếu user chưa từng đến địa điểm này.
 
 ---
 
 ### GET /visits/me/summary 🔒
 
-Tổng hợp số liệu — dùng cho Profile/Statistics.  
+Tổng hợp số liệu — dùng cho Profile/Statistics.
 `visitedProvinceCount` thống nhất với `GET /visits/provinces/me → summary.visitedCount`.
 
 **Response 200:**
@@ -423,6 +469,113 @@ Tổng hợp số liệu — dùng cho Profile/Statistics.
 ```json
 { "status": "ok", "service": "checkin-service" }
 ```
+
+---
+
+## Province Management (Admin/Seed)
+
+---
+
+### POST /visits/provinces 🔒
+
+**Mô tả:** Thêm tỉnh mới vào hệ thống — dùng khi seed dữ liệu hoặc admin thêm tỉnh.
+**Authentication:** Yêu cầu Bearer token.
+
+**Request Body:**
+```json
+{
+  "code": "lam_dong",
+  "name": "Lâm Đồng",
+  "description": "Tỉnh thuộc vùng Tây Nguyên",
+  "region": "SOUTH",
+  "mapAsset": null,
+  "mapFeatureId": "VN-LD",
+  "center": {
+    "coordinates": [108.4419, 11.9465]
+  }
+}
+```
+
+| Field | Required | Mô tả |
+|-------|----------|-------|
+| `code` | ✓ | Mã tỉnh (lowercase, trim) — phải unique |
+| `name` | ✓ | Tên tỉnh |
+| `description` | — | Mô tả (cho phép null/"") |
+| `region` | — | `NORTH` \| `CENTRAL` \| `SOUTH` |
+| `mapAsset` | — | Asset file bản đồ (cho phép null/"") |
+| `mapFeatureId` | — | ID match với GeoJSON feature (ví dụ `VN-LD`) |
+| `center.coordinates` | — | `[longitude, latitude]` |
+
+**Response 201:**
+```json
+{
+  "success": true,
+  "message": "Đã thêm tỉnh",
+  "data": {
+    "provinceId": "6849a1b2c3d4e5f6a7b8c9d0",
+    "code": "lam_dong",
+    "name": "Lâm Đồng",
+    "region": "SOUTH",
+    "mapFeatureId": "VN-LD",
+    "center": { "type": "Point", "coordinates": [108.4419, 11.9465] }
+  }
+}
+```
+
+**Errors:**
+
+| Status | Code | Khi nào |
+|--------|------|---------|
+| 400 | `VALIDATION_ERROR` | Thiếu `code`/`name`, `region` sai enum |
+| 400 | `PROVINCE_CODE_EXISTS` | `code` đã tồn tại trong collection |
+| 401 | `AUTH_REQUIRED` | Chưa xác thực |
+
+---
+
+### PATCH /visits/provinces/:provinceId 🔒
+
+**Mô tả:** Cập nhật thông tin tỉnh — dùng để sửa metadata (mapFeatureId, tên, vùng...).
+**Authentication:** Yêu cầu Bearer token.
+
+**Path param:** `provinceId` — MongoDB ObjectId string
+
+**Request Body** _(ít nhất 1 field):_
+```json
+{
+  "name": "Lâm Đồng (updated)",
+  "description": "Mô tả mới",
+  "region": "SOUTH",
+  "mapAsset": null,
+  "mapFeatureId": "VN-LD",
+  "center": {
+    "coordinates": [108.4419, 11.9465]
+  }
+}
+```
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "message": "Đã cập nhật tỉnh",
+  "data": {
+    "provinceId": "6849a1b2c3d4e5f6a7b8c9d0",
+    "code": "lam_dong",
+    "name": "Lâm Đồng (updated)",
+    "region": "SOUTH",
+    "mapFeatureId": "VN-LD"
+  }
+}
+```
+
+**Errors:**
+
+| Status | Code | Khi nào |
+|--------|------|---------|
+| 400 | `VALIDATION_ERROR` | Không có field nào, `region` sai enum |
+| 400 | `PROVINCE_CODE_EXISTS` | `code` mới đã trùng với tỉnh khác |
+| 401 | `AUTH_REQUIRED` | Chưa xác thực |
+| 404 | `PROVINCE_NOT_FOUND` | `provinceId` không tồn tại |
 
 ---
 
@@ -466,3 +619,69 @@ Tổng hợp số liệu — dùng cho Profile/Statistics.
 - **MongoDB Atlas** — database `checkIn-service-trekVN`
 - `provinces` collection phải được seed với 34 tỉnh trước khi sử dụng (xem `src/mocks/provinces.json`)
 - Các ID `trekkingPlaceId`, `journeyId` là logical references đến trekking-service — không có FK vật lý
+
+---
+
+## Canonical Journey Checkins Endpoint (v4.0)
+
+### GET /checkins/journeys/:journeyId
+
+**Mô tả:** Lấy danh sách check-in trong một Journey. Đây là **canonical endpoint** dùng qua API Gateway.
+
+> **Lý do cần endpoint mới:** API Gateway route `/api/v1/journeys/*` tới trekking-service, nên `/api/v1/journeys/:id/checkins` sẽ không đến checkin-service. Endpoint `/api/v1/checkins/journeys/:journeyId` đi qua `/api/v1/checkins/*` và được route đúng tới checkin-service.
+
+**Authentication:** 🔒 Bắt buộc.
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "milestoneCheckinId": "64f1a2b3c4d5e6f7a8b9c0d1",
+      "milestoneId": "milestone_langbiang_summit",
+      "milestoneType": "SUMMIT",
+      "checkedAt": "2026-09-21T07:00:00.000Z",
+      "verification": { "status": "VERIFIED" }
+    }
+  ]
+}
+```
+
+> **Frontend migration:** Thay `/api/v1/journeys/:journeyId/checkins` → `/api/v1/checkins/journeys/:journeyId`
+
+---
+
+## Events Published (v4.0)
+
+Sau mỗi verified check-in, checkin-service publish các events lên RabbitMQ:
+
+| Event | Routing Key | Điều kiện |
+|-------|-------------|-----------|
+| `CHECKIN_VERIFIED` | `checkin.verified` | Sau mỗi check-in VERIFIED |
+| `PROVINCE_FIRST_VISITED` | `province.first.visited` | Lần đầu tiên VERIFIED tỉnh này |
+| `PLACE_FIRST_VISITED` | `place.first.visited` | Lần đầu tiên VERIFIED địa điểm này |
+
+**Payload `CHECKIN_VERIFIED`:**
+```json
+{
+  "eventId": "uuid",
+  "eventType": "CHECKIN_VERIFIED",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-21T07:00:00.000Z",
+  "payload": {
+    "userId": "...",
+    "checkinId": "...",
+    "journeyId": "...",
+    "milestoneId": "...",
+    "milestoneType": "SUMMIT",
+    "trekkingRouteId": "...",
+    "trekkingPlaceId": "...",
+    "provinceId": "...",
+    "firstProvinceVisit": false,
+    "firstPlaceVisit": true
+  }
+}
+```
+
+> Env: `RABBITMQ_ENABLED=true` để publish (default `false`).

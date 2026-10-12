@@ -1,0 +1,138 @@
+name: Reusable - Python Agent DevSecOps
+
+on:
+  workflow_call:
+    inputs:
+      service:
+        required: true
+        type: string
+      python-version:
+        required: false
+        type: string
+        default: '3.12'
+
+jobs:
+  test-security-quality:
+    name: Ruff, pytest, security and quality
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: services/${{ inputs.service }}
+    steps:
+      - name: Checkout full history for Sonar analysis
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ inputs.python-version }}
+          cache: pip
+          cache-dependency-path: |
+            services/${{ inputs.service }}/requirements.txt
+            services/${{ inputs.service }}/requirements-dev.txt
+
+      - name: Install dependencies and test tooling
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Lint with Ruff
+        run: ruff check app tests
+
+      - name: Unit tests and XML coverage
+        run: pytest -q --cov=app --cov-report=xml:coverage.xml --cov-report=term-missing
+
+      - name: Save coverage report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ inputs.service }}
+          path: services/${{ inputs.service }}/coverage.xml
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Trivy filesystem - vulnerabilities, secrets and misconfiguration
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: services/${{ inputs.service }}
+          scanners: vuln,secret,misconfig
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          format: table
+
+      - name: Require Sonar token
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          if [ -z "$SONAR_TOKEN" ]; then
+            echo '::error::Configure repository secret SONAR_TOKEN before enabling mandatory Sonar Quality Gate.'
+            exit 1
+          fi
+
+      - name: SonarQube scan and Quality Gate
+        uses: SonarSource/sonarqube-scan-action@v8.3.0
+        with:
+          projectBaseDir: services/${{ inputs.service }}
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+
+  docker-image:
+    name: Build, scan, publish image
+    needs: test-security-quality
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Define immutable image tag
+        id: image
+        env:
+          SERVICE: ${{ inputs.service }}
+        run: |
+          OWNER="$(printf '%s' "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')"
+          echo "ref=ghcr.io/${OWNER}/trekviet-${SERVICE}:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Docker build (service-local build context)
+        env:
+          SERVICE: ${{ inputs.service }}
+          IMAGE_REF: ${{ steps.image.outputs.ref }}
+        run: |
+          docker build \
+            --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+            --file "services/${SERVICE}/Dockerfile" \
+            --tag "$IMAGE_REF" \
+            "services/${SERVICE}"
+
+      - name: Trivy image vulnerability gate
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: ${{ steps.image.outputs.ref }}
+          scanners: vuln
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          format: table
+
+      - name: Login to GitHub Container Registry (main only)
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        env:
+          GHCR_TOKEN: ${{ github.token }}
+        run: |
+          printf '%s' "$GHCR_TOKEN" | docker login ghcr.io \
+            --username "$GITHUB_ACTOR" --password-stdin
+
+      - name: Publish the scanned image (main only)
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        env:
+          IMAGE_REF: ${{ steps.image.outputs.ref }}
+        run: docker push "$IMAGE_REF"

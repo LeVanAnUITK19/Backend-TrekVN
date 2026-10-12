@@ -12,6 +12,14 @@ const create = (userId, tokenHash, expiresAt) =>
 const findByHash = (tokenHash) =>
   RefreshToken.findOne({ tokenHash, revokedAt: null, expiresAt: { $gt: new Date() } });
 
+// Only one concurrent request may consume an active refresh token.
+const consumeByHash = (tokenHash) =>
+  RefreshToken.findOneAndUpdate(
+    { tokenHash, revokedAt: null, expiresAt: { $gt: new Date() } },
+    { $set: { revokedAt: new Date() } },
+    { new: false }
+  );
+
 /**
  * Revoke một token cụ thể
  */
@@ -24,4 +32,4 @@ const revokeByHash = (tokenHash) =>
 const revokeAllByUserId = (userId) =>
   RefreshToken.updateMany({ userId, revokedAt: null }, { revokedAt: new Date() });
 
-module.exports = { create, findByHash, revokeByHash, revokeAllByUserId };
+module.exports = { create, findByHash, consumeByHash, revokeByHash, revokeAllByUserId };

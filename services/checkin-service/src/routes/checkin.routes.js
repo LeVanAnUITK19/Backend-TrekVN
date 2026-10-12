@@ -420,6 +420,49 @@ router.post('/', authenticate, validate(createCheckinSchema), checkinController.
 
 /**
  * @swagger
+ * /api/v1/checkins/journeys/{journeyId}:
+ *   get:
+ *     summary: Danh sách check-in trong một Journey (canonical endpoint qua Gateway)
+ *     description: |
+ *       **Canonical endpoint** cho GET journey checkins qua API Gateway.
+ *
+ *       Lý do cần endpoint này: API Gateway route `/api/v1/journeys/*` tới trekking-service,
+ *       nên `/api/v1/journeys/:id/checkins` sẽ không đến checkin-service.
+ *       Endpoint `/api/v1/checkins/journeys/:journeyId` đi qua `/api/v1/checkins/*`
+ *       và được route đúng tới checkin-service.
+ *
+ *       Kết quả giống hệt GET /journeys/:journeyId/checkins.
+ *     tags: [CheckIn]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: journeyId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID hành trình trekking
+ *     responses:
+ *       200:
+ *         description: Danh sách milestone check-in trong journey (có thể rỗng)
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               data:
+ *                 - milestoneCheckinId: "64f1a2b3c4d5e6f7a8b9c0d1"
+ *                   milestoneId: "milestone_langbiang_summit"
+ *                   milestoneType: "SUMMIT"
+ *                   checkedAt: "2026-09-21T07:00:00.000Z"
+ *                   verification:
+ *                     status: "VERIFIED"
+ *       401:
+ *         description: Chưa xác thực
+ */
+router.get('/journeys/:journeyId', authenticate, checkinController.getJourneyCheckins);
+
+/**
+ * @swagger
  * /api/v1/checkins/{checkinId}:
  *   get:
  *     summary: Chi tiết một check-in (chỉ chủ sở hữu)

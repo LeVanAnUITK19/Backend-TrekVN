@@ -48,9 +48,7 @@ const logout = async (req, res, next) => {
 
 const verifyToken = (req, res, next) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    const decoded = authService.verifyToken(token);
-    res.json({ success: true, data: decoded });
+    res.json({ success: true, data: req.user });
   } catch (err) { next(err); }
 };
 
@@ -98,6 +96,36 @@ const changePassword = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+const uploadAvatar = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'Không có file ảnh được gửi lên' });
+    }
+    const { uploadAvatar: upload } = require('../services/upload.service');
+    const avatarUrl = await upload(req.file.buffer, req.user.id);
+    const user = await authService.updateProfile(req.user.id, { avatarUrl });
+    res.json({ success: true, data: user });
+  } catch (err) { next(err); }
+};
+
+const updateBio = async (req, res, next) => {
+  try {
+    const user = await authService.updateProfile(req.user.id, { bio: req.body.bio });
+    res.json({ success: true, data: user });
+  } catch (err) { next(err); }
+};
+
+// ─── Google Sign-In ───────────────────────────────────────────────────────────
+
+const googleSignIn = async (req, res, next) => {
+  try {
+    const { idToken } = req.body;
+    const { googleSignIn: doGoogleSignIn } = require('../services/googleAuth.service');
+    const result = await doGoogleSignIn(idToken);
+    res.json({ success: true, data: result });
+  } catch (err) { next(err); }
+};
+
 // ─── Settings ─────────────────────────────────────────────────────────────────
 
 const getSettings = async (req, res, next) => {
@@ -118,6 +146,7 @@ module.exports = {
   register, verifyEmail, resendVerificationOtp,
   login, refresh, logout, verifyToken,
   forgotPassword, verifyResetOtp, resetPassword,
-  getMe, updateMe, changePassword,
+  googleSignIn,
+  getMe, updateMe, changePassword, uploadAvatar, updateBio,
   getSettings, updateSettings,
 };

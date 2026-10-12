@@ -3,8 +3,7 @@ const milestones = require('../../mocks/milestones.json');
 
 /**
  * MockTrekkingProvider — đọc dữ liệu từ src/mocks/milestones.json.
- * Dùng khi TREKKING_PROVIDER=mock (mặc định trong development).
- * Sau này thay bằng HttpTrekkingProvider khi trekking-service sẵn sàng.
+ * Chỉ dùng khi đặt TREKKING_PROVIDER=mock cho test/demo.
  */
 class MockTrekkingProvider extends TrekkingProvider {
   // eslint-disable-next-line require-await

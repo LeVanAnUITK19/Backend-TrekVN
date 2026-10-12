@@ -1,0 +1,123 @@
+// ======================================================
+// TREKVIET - COMMUNITY SERVICE
+// ======================================================
+//
+// Cross-service references nằm trong ../server.dbml
+//
+// ======================================================
+
+
+// ======================================================
+// POSTS
+// ======================================================
+
+Table posts {
+  postId varchar [pk]
+
+  authorId varchar [not null]
+
+  content text
+
+  // Danh sách URL ảnh.
+  // Giới hạn <= 5 tại application layer.
+  images json
+
+  // NORMAL
+  // JOURNEY_SHARE
+  // BADGE_SHARE
+  type varchar [default: 'NORMAL']
+
+  journeyId varchar
+
+  trekkingPlaceId varchar
+
+  reactionCount int [default: 0]
+
+  commentCount int [default: 0]
+
+  // PUBLIC | PRIVATE
+  visibility varchar [default: 'PUBLIC']
+
+  createdAt timestamp
+  updatedAt timestamp
+
+  indexes {
+    authorId
+    journeyId
+    trekkingPlaceId
+  }
+}
+
+
+// ======================================================
+// COMMENTS
+// ======================================================
+
+Table comments {
+  commentId varchar [pk]
+
+  postId varchar [not null]
+
+  authorId varchar [not null]
+
+  // Null = comment gốc.
+  // Có giá trị = reply comment.
+  parentCommentId varchar
+
+  content text [not null]
+
+  deleted boolean [default: false]
+
+  createdAt timestamp
+  updatedAt timestamp
+
+  indexes {
+    postId
+    authorId
+  }
+}
+
+
+// ======================================================
+// REACTIONS
+// ======================================================
+
+Table reactions {
+  reactionId varchar [pk]
+
+  postId varchar [not null]
+
+  userId varchar [not null]
+
+  // LIKE
+  type varchar [default: 'LIKE']
+
+  createdAt timestamp
+  updatedAt timestamp
+
+  indexes {
+    (postId, userId) [unique]
+  }
+}
+
+
+// ======================================================
+// INTERNAL RELATIONSHIPS
+// ======================================================
+
+Ref: comments.postId > posts.postId
+
+Ref: reactions.postId > posts.postId
+
+Ref: comments.parentCommentId > comments.commentId
+
+
+// ======================================================
+// VISUAL GROUP
+// ======================================================
+
+TableGroup community_service {
+  posts
+  comments
+  reactions
+}

@@ -3,10 +3,12 @@ const router = express.Router();
 const authController = require('../controllers/auth.controller');
 const { authenticate } = require('../middlewares/auth');
 const { validate } = require('../middlewares/validate');
+const upload = require('../middlewares/upload');
 const {
   updateProfileSchema,
   updateSettingsSchema,
   changePasswordSchema,
+  updateBioSchema,
 } = require('../validators/auth.validator');
 
 /**
@@ -240,5 +242,96 @@ router.get('/me/settings', authenticate, authController.getSettings);
  *               errors: ["\"theme\" must be one of [light, dark]"]
  */
 router.patch('/me/settings', authenticate, validate(updateSettingsSchema), authController.updateSettings);
+
+// ─── Avatar ───────────────────────────────────────────────────────────────────
+
+/**
+ * @swagger
+ * /api/v1/users/me/avatar:
+ *   post:
+ *     summary: Tải ảnh đại diện lên Cloudinary
+ *     description: |
+ *       Upload ảnh avatar lên Cloudinary. Ảnh được resize về 400×400, crop face,
+ *       tối ưu chất lượng tự động. Mỗi user chỉ có 1 slot avatar — upload mới sẽ overwrite cũ.
+ *
+ *       **Giới hạn:** JPEG / PNG / WebP / GIF, tối đa 5 MB.
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [avatar]
+ *             properties:
+ *               avatar:
+ *                 type: string
+ *                 format: binary
+ *                 description: File ảnh (JPEG/PNG/WebP/GIF, tối đa 5MB)
+ *     responses:
+ *       200:
+ *         description: Upload thành công — trả về user với avatarUrl mới
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               data:
+ *                 userId: "64f1a2b3c4d5e6f7a8b9c0d1"
+ *                 displayName: "Nguyễn Văn An"
+ *                 avatarUrl: "https://res.cloudinary.com/dfp5hzdsy/image/upload/v1234/trekvn/avatars/user_64f1.jpg"
+ *       400:
+ *         description: Không có file hoặc loại file không hợp lệ
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: false
+ *               message: "Chỉ chấp nhận ảnh JPEG, PNG, WebP hoặc GIF"
+ *       401:
+ *         description: Chưa xác thực
+ */
+router.post('/me/avatar', authenticate, upload.single('avatar'), authController.uploadAvatar);
+
+// ─── Bio ─────────────────────────────────────────────────────────────────────
+
+/**
+ * @swagger
+ * /api/v1/users/me/bio:
+ *   patch:
+ *     summary: Cập nhật bio (giới thiệu bản thân)
+ *     description: Cập nhật bio của user. Tối đa 500 ký tự. Truyền `null` hoặc `""` để xóa bio.
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [bio]
+ *             properties:
+ *               bio:
+ *                 type: string
+ *                 maxLength: 500
+ *                 nullable: true
+ *                 example: "Yêu thích khám phá núi rừng Việt Nam 🏔️"
+ *     responses:
+ *       200:
+ *         description: Cập nhật thành công
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               data:
+ *                 userId: "64f1a2b3c4d5e6f7a8b9c0d1"
+ *                 bio: "Yêu thích khám phá núi rừng Việt Nam 🏔️"
+ *       400:
+ *         description: Bio quá dài (>500 ký tự)
+ *       401:
+ *         description: Chưa xác thực
+ */
+router.patch('/me/bio', authenticate, validate(updateBioSchema), authController.updateBio);
 
 module.exports = router;

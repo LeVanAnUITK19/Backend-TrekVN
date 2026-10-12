@@ -11,7 +11,7 @@ const { ServiceUnavailableError } = require('../../utils/errors');
 class HttpTrekkingProvider extends TrekkingProvider {
   constructor() {
     super();
-    this.baseUrl = process.env.TREKKING_SERVICE_URL || 'http://trekking-service:3003';
+    this.baseUrl = process.env.TREKKING_SERVICE_URL || 'http://localhost:3003';
     this.timeoutMs = parseInt(process.env.TREKKING_HTTP_TIMEOUT_MS) || 5000;
   }
 

@@ -1,0 +1,2241 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "auth-service",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3001"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      },
+      "serviceToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Service-Token"
+      }
+    }
+  },
+  "paths": {
+    "/api/v1/auth/register": {
+      "post": {
+        "summary": "Đăng ký tài khoản mới (Bước 1 — gửi OTP)",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 6
+                  },
+                  "displayName": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  }
+                },
+                "required": [
+                  "email",
+                  "password",
+                  "displayName"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OTP đã được gửi tới email",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "message": "OTP xác minh đã được gửi đến email của bạn",
+                    "expiresAt": "2024-01-15T08:10:00.000Z"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Email đã tồn tại hoặc validation lỗi",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "emailExists": {
+                    "value": {
+                      "success": false,
+                      "message": "Email đã được sử dụng"
+                    }
+                  },
+                  "validation": {
+                    "value": {
+                      "success": false,
+                      "message": "Validation error",
+                      "errors": [
+                        "\"email\" must be a valid email"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/auth/verify-email": {
+      "post": {
+        "summary": "Xác minh OTP đăng ký (Bước 2) — trả về token nếu thành công",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "otp": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "email",
+                  "otp"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Xác minh thành công, tài khoản được kích hoạt",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                    "refreshToken": "a3f9b2c1d4e5...",
+                    "user": {
+                      "userId": "64f1a2b3c4d5e6f7a8b9c0d1",
+                      "email": "an@gmail.com",
+                      "displayName": "Nguyễn Văn An",
+                      "status": "ACTIVE",
+                      "emailVerifiedAt": "2024-01-15T08:05:00.000Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "OTP không đúng hoặc đã hết hạn",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "wrong": {
+                    "value": {
+                      "success": false,
+                      "message": "OTP không đúng. Còn 4 lần thử"
+                    }
+                  },
+                  "expired": {
+                    "value": {
+                      "success": false,
+                      "message": "OTP không hợp lệ hoặc đã hết hạn"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Vượt quá số lần thử",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": false,
+                  "message": "Vượt quá số lần thử. Vui lòng yêu cầu OTP mới"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/auth/resend-verification-otp": {
+      "post": {
+        "summary": "Gửi lại OTP xác minh email",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  }
+                },
+                "required": [
+                  "email"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OTP đã được gửi lại",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "message": "OTP đã được gửi lại",
+                    "expiresAt": "2024-01-15T08:15:00.000Z"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Email đã được xác minh rồi",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": false,
+                  "message": "Email đã được xác minh"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Email không tồn tại",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": false,
+                  "message": "Email không tồn tại trong hệ thống"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "summary": "Đăng nhập vào hệ thống",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "email",
+                  "password"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Đăng nhập thành công",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                    "refreshToken": "a3f9b2c1d4e5...",
+                    "user": {
+                      "userId": "64f1a2b3c4d5e6f7a8b9c0d1",
+                      "email": "an@gmail.com",
+                      "displayName": "Nguyễn Văn An",
+                      "role": "USER",
+                      "status": "ACTIVE"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sai email hoặc mật khẩu",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": false,
+                  "message": "Email hoặc mật khẩu không đúng"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tài khoản chưa xác minh hoặc bị khóa",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "notVerified": {
+                    "value": {
+                      "success": false,
+                      "message": "Tài khoản chưa được xác minh email"
+                    }
+                  },
+                  "suspended": {
+                    "value": {
+                      "success": false,
+                      "message": "Tài khoản đã bị khóa"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "summary": "Cấp accessToken mới (Refresh Token Rotation)",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "refreshToken"
+                ],
+                "properties": {
+                  "refreshToken": {
+                    "type": "string",
+                    "example": "a3f9b2c1d4e5..."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token mới được cấp (token cũ bị revoke)",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                    "refreshToken": "b4g0c3d5e6f7..."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Refresh token không hợp lệ hoặc đã hết hạn",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": false,
+                  "message": "Refresh token không hợp lệ hoặc đã hết hạn"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "summary": "Đăng xuất — revoke refresh token hiện tại",
+        "tags": [
+          "Auth"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "refreshToken": {
+                    "type": "string",
+                    "description": "Nếu không cung cấp, toàn bộ sessions sẽ bị revoke",
+                    "example": "a3f9b2c1d4e5..."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Đăng xuất thành công",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "message": "Đăng xuất thành công"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": false,
+                  "message": "Authorization token required"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/verify": {
+      "get": {
+        "summary": "Xác thực accessToken (dùng nội bộ bởi API Gateway)",
+        "tags": [
+          "Auth"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Token hợp lệ",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "id": "64f1a2b3c4d5e6f7a8b9c0d1",
+                    "email": "an@gmail.com",
+                    "role": "USER",
+                    "iat": 1700000000,
+                    "exp": 1700000900
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token không hợp lệ",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": false,
+                  "message": "Token không hợp lệ hoặc đã hết hạn"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/forgot-password": {
+      "post": {
+        "summary": "Yêu cầu OTP để reset mật khẩu (Bước 1)",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  }
+                },
+                "required": [
+                  "email"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Phản hồi luôn thành công (không tiết lộ email tồn tại hay không)",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "message": "Nếu email tồn tại, OTP sẽ được gửi đến hộp thư của bạn",
+                    "expiresAt": "2024-01-15T08:10:00.000Z"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/auth/verify-reset-otp": {
+      "post": {
+        "summary": "Xác minh OTP reset password (Bước 2) — trả về resetToken",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "otp": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "email",
+                  "otp"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OTP hợp lệ, trả về resetToken (hiệu lực 15 phút)",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "resetToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "OTP không đúng hoặc hết hạn",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": false,
+                  "message": "OTP không hợp lệ hoặc đã hết hạn"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/auth/reset-password": {
+      "post": {
+        "summary": "Đặt mật khẩu mới bằng resetToken (Bước 3)",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "resetToken": {
+                    "type": "string"
+                  },
+                  "newPassword": {
+                    "type": "string",
+                    "minLength": 6
+                  }
+                },
+                "required": [
+                  "resetToken",
+                  "newPassword"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Mật khẩu đã được đặt lại thành công",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "message": "Mật khẩu đã được đặt lại thành công"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Reset token không hợp lệ hoặc đã hết hạn",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": false,
+                  "message": "Reset token không hợp lệ hoặc đã hết hạn"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/auth/google": {
+      "post": {
+        "summary": "Đăng nhập / Đăng ký bằng Google ID Token",
+        "tags": [
+          "Auth"
+        ],
+        "description": "Backend verify Google ID Token — không tin userId/email từ client.\n\n**Flow:**\n- Verify idToken với Google (audience = GOOGLE_CLIENT_ID)\n- Lấy sub, email, name, picture từ verified payload\n- Nếu identity GOOGLE+sub tồn tại → đăng nhập trực tiếp\n- Nếu email chưa tồn tại → tạo User mới + GOOGLE identity + settings + NEWBIE rank\n- Nếu email đã có LOCAL User → link GOOGLE identity vào user cũ (không tạo duplicate)\n- BLOCKED user → 403\n",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "idToken": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "idToken"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Đăng nhập thành công",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                    "refreshToken": "a3f9b2c1d4e5...",
+                    "user": {
+                      "userId": "64f1a2b3c4d5e6f7a8b9c0d1",
+                      "email": "an@gmail.com",
+                      "displayName": "Nguyễn Văn An",
+                      "role": "USER",
+                      "status": "ACTIVE"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Thiếu idToken hoặc Google Sign-In chưa được cấu hình"
+          },
+          "401": {
+            "description": "Google ID Token không hợp lệ hoặc đã hết hạn"
+          },
+          "403": {
+            "description": "Tài khoản đã bị khóa"
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/users/me": {
+      "get": {
+        "summary": "Lấy thông tin profile của user hiện tại",
+        "tags": [
+          "Users"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thông tin profile",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "userId": "64f1a2b3c4d5e6f7a8b9c0d1",
+                    "email": "an@gmail.com",
+                    "displayName": "Nguyễn Văn An",
+                    "avatarUrl": "https://example.com/avatar.jpg",
+                    "bio": "Yêu thích leo núi và khám phá",
+                    "role": "USER",
+                    "status": "ACTIVE",
+                    "emailVerifiedAt": "2024-01-15T08:05:00.000Z",
+                    "createdAt": "2024-01-15T08:00:00.000Z",
+                    "updatedAt": "2024-01-15T08:00:00.000Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": false,
+                  "message": "Authorization token required"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Cập nhật profile",
+        "tags": [
+          "Users"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "displayName": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  },
+                  "avatarUrl": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "uri"
+                  },
+                  "bio": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 500
+                  }
+                },
+                "minimum": 1
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cập nhật thành công",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "userId": "64f1a2b3c4d5e6f7a8b9c0d1",
+                    "email": "an@gmail.com",
+                    "displayName": "Nguyễn Văn An (updated)",
+                    "avatarUrl": "https://example.com/new-avatar.jpg",
+                    "bio": "Yêu thích trekking và thiên nhiên Việt Nam",
+                    "role": "USER",
+                    "status": "ACTIVE"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation lỗi",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": false,
+                  "message": "Validation error",
+                  "errors": [
+                    "\"displayName\" length must be at least 2 characters long"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/me/password": {
+      "patch": {
+        "summary": "Đổi mật khẩu khi đang đăng nhập",
+        "tags": [
+          "Users"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "currentPassword": {
+                    "type": "string"
+                  },
+                  "newPassword": {
+                    "type": "string",
+                    "minLength": 6
+                  }
+                },
+                "required": [
+                  "currentPassword",
+                  "newPassword"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Đổi mật khẩu thành công, toàn bộ sessions bị revoke",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "message": "Đổi mật khẩu thành công. Vui lòng đăng nhập lại"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Mật khẩu hiện tại sai hoặc mật khẩu mới trùng cũ",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "wrongCurrent": {
+                    "value": {
+                      "success": false,
+                      "message": "Mật khẩu hiện tại không đúng"
+                    }
+                  },
+                  "samePassword": {
+                    "value": {
+                      "success": false,
+                      "message": "Mật khẩu mới phải khác mật khẩu hiện tại"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": false,
+                  "message": "Authorization token required"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/me/settings": {
+      "get": {
+        "summary": "Lấy cài đặt cá nhân",
+        "tags": [
+          "Users"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cài đặt của user",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "userSettingId": "64f1a2b3c4d5e6f7a8b9c0d2",
+                    "userId": "64f1a2b3c4d5e6f7a8b9c0d1",
+                    "language": "vi",
+                    "theme": "dark",
+                    "distanceUnit": "km",
+                    "notificationEnabled": true,
+                    "createdAt": "2024-01-15T08:00:00.000Z",
+                    "updatedAt": "2024-01-15T08:00:00.000Z"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Cập nhật cài đặt cá nhân",
+        "tags": [
+          "Users"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "language": {
+                    "type": "string",
+                    "enum": [
+                      "vi",
+                      "en"
+                    ]
+                  },
+                  "theme": {
+                    "type": "string",
+                    "enum": [
+                      "light",
+                      "dark"
+                    ]
+                  },
+                  "distanceUnit": {
+                    "type": "string",
+                    "enum": [
+                      "km",
+                      "mi"
+                    ]
+                  },
+                  "notificationEnabled": {
+                    "type": "boolean"
+                  }
+                },
+                "minimum": 1
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cập nhật thành công",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "userSettingId": "64f1a2b3c4d5e6f7a8b9c0d2",
+                    "userId": "64f1a2b3c4d5e6f7a8b9c0d1",
+                    "language": "en",
+                    "theme": "light",
+                    "distanceUnit": "km",
+                    "notificationEnabled": false,
+                    "updatedAt": "2024-01-16T10:30:00.000Z"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation lỗi",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": false,
+                  "message": "Validation error",
+                  "errors": [
+                    "\"theme\" must be one of [light, dark]"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/me/avatar": {
+      "post": {
+        "summary": "Tải ảnh đại diện lên Cloudinary",
+        "description": "Upload ảnh avatar lên Cloudinary. Ảnh được resize về 400×400, crop face,\ntối ưu chất lượng tự động. Mỗi user chỉ có 1 slot avatar — upload mới sẽ overwrite cũ.\n\n**Giới hạn:** JPEG / PNG / WebP / GIF, tối đa 5 MB.\n",
+        "tags": [
+          "Users"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "avatar"
+                ],
+                "properties": {
+                  "avatar": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "File ảnh (JPEG/PNG/WebP/GIF, tối đa 5MB)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Upload thành công — trả về user với avatarUrl mới",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "userId": "64f1a2b3c4d5e6f7a8b9c0d1",
+                    "displayName": "Nguyễn Văn An",
+                    "avatarUrl": "https://res.cloudinary.com/dfp5hzdsy/image/upload/v1234/trekvn/avatars/user_64f1.jpg"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Không có file hoặc loại file không hợp lệ",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": false,
+                  "message": "Chỉ chấp nhận ảnh JPEG, PNG, WebP hoặc GIF"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực"
+          }
+        }
+      }
+    },
+    "/api/v1/users/me/bio": {
+      "patch": {
+        "summary": "Cập nhật bio (giới thiệu bản thân)",
+        "description": "Cập nhật bio của user. Tối đa 500 ký tự. Truyền `null` hoặc `\"\"` để xóa bio.",
+        "tags": [
+          "Users"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "bio": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "bio"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cập nhật thành công",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "userId": "64f1a2b3c4d5e6f7a8b9c0d1",
+                    "bio": "Yêu thích khám phá núi rừng Việt Nam 🏔️"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bio quá dài (>500 ký tự)"
+          },
+          "401": {
+            "description": "Chưa xác thực"
+          }
+        }
+      }
+    },
+    "/api/v1/gamification/ranks": {
+      "get": {
+        "summary": "Lấy danh sách toàn bộ rank",
+        "tags": [
+          "Gamification"
+        ],
+        "responses": {
+          "200": {
+            "description": "Danh sách rank sắp xếp theo level tăng dần",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string",
+                            "example": "NEWBIE"
+                          },
+                          "name": {
+                            "type": "string",
+                            "example": "Newbie"
+                          },
+                          "level": {
+                            "type": "integer",
+                            "example": 1
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "minXp": {
+                            "type": "integer",
+                            "example": 0
+                          },
+                          "iconUrl": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "requirements": {
+                            "type": "object",
+                            "properties": {
+                              "completedJourneys": {
+                                "type": "integer"
+                              },
+                              "visitedProvinces": {
+                                "type": "integer"
+                              },
+                              "badges": {
+                                "type": "integer"
+                              },
+                              "distanceMeters": {
+                                "type": "integer"
+                              },
+                              "approvedContributions": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/gamification/ranks/{rankCode}": {
+      "get": {
+        "summary": "Lấy chi tiết một rank theo code",
+        "tags": [
+          "Gamification"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "rankCode",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "NEWBIE",
+                "HIKER",
+                "EXPLORER",
+                "TREKKER",
+                "PATHFINDER",
+                "MOUNTAINEER",
+                "ADVENTURER",
+                "ELITE_TREKKER",
+                "TREK_MASTER",
+                "TREK_LEGEND"
+              ]
+            },
+            "example": "MOUNTAINEER"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chi tiết rank",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "example": "MOUNTAINEER"
+                        },
+                        "name": {
+                          "type": "string",
+                          "example": "Mountaineer"
+                        },
+                        "level": {
+                          "type": "integer",
+                          "example": 6
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "iconUrl": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "requirements": {
+                          "type": "object",
+                          "properties": {
+                            "minXp": {
+                              "type": "integer"
+                            },
+                            "minCompletedJourneys": {
+                              "type": "integer"
+                            },
+                            "minVisitedProvinces": {
+                              "type": "integer"
+                            },
+                            "minBadgeCount": {
+                              "type": "integer"
+                            },
+                            "minDistanceMeters": {
+                              "type": "integer"
+                            },
+                            "minApprovedContributions": {
+                              "type": "integer"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Rank không tồn tại"
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/gamification/users/{userId}": {
+      "get": {
+        "summary": "Xem gamification profile công khai của user khác",
+        "tags": [
+          "Gamification"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "64f1a2b3c4d5e6f7a8b9c0d1"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profile công khai (chỉ có thông tin public)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "userId": {
+                          "type": "string"
+                        },
+                        "rank": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "level": {
+                              "type": "integer"
+                            },
+                            "iconUrl": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          }
+                        },
+                        "totalXp": {
+                          "type": "integer"
+                        },
+                        "statistics": {
+                          "type": "object",
+                          "properties": {
+                            "completedJourneys": {
+                              "type": "integer"
+                            },
+                            "distanceMeters": {
+                              "type": "integer"
+                            },
+                            "visitedProvinces": {
+                              "type": "integer"
+                            },
+                            "badgeCount": {
+                              "type": "integer"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Người dùng không tồn tại"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/gamification/me": {
+      "get": {
+        "summary": "Lấy hồ sơ rank hiện tại của bản thân (dùng cho màn Profile)",
+        "tags": [
+          "Gamification"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Hồ sơ rank đầy đủ kèm thống kê",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "rank": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "example": "PATHFINDER"
+                            },
+                            "name": {
+                              "type": "string",
+                              "example": "Pathfinder"
+                            },
+                            "level": {
+                              "type": "integer",
+                              "example": 5
+                            },
+                            "iconUrl": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          }
+                        },
+                        "totalXp": {
+                          "type": "integer",
+                          "example": 7850
+                        },
+                        "statistics": {
+                          "type": "object",
+                          "properties": {
+                            "completedJourneys": {
+                              "type": "integer"
+                            },
+                            "totalDistanceMeters": {
+                              "type": "integer"
+                            },
+                            "totalElevationGain": {
+                              "type": "integer"
+                            },
+                            "verifiedCheckins": {
+                              "type": "integer"
+                            },
+                            "visitedProvinces": {
+                              "type": "integer"
+                            },
+                            "visitedPlaces": {
+                              "type": "integer"
+                            },
+                            "badgeCount": {
+                              "type": "integer"
+                            },
+                            "approvedContributions": {
+                              "type": "integer"
+                            }
+                          }
+                        },
+                        "nextRank": {
+                          "type": "object",
+                          "nullable": true,
+                          "properties": {
+                            "code": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "level": {
+                              "type": "integer"
+                            },
+                            "minXp": {
+                              "type": "integer"
+                            }
+                          }
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực"
+          },
+          "404": {
+            "description": "Hồ sơ gamification chưa được khởi tạo"
+          }
+        }
+      }
+    },
+    "/api/v1/gamification/me/progress": {
+      "get": {
+        "summary": "Lấy tiến trình lên rank tiếp theo",
+        "tags": [
+          "Gamification"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chi tiết từng điều kiện cần đạt để lên rank kế tiếp",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "currentRank": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "level": {
+                              "type": "integer"
+                            }
+                          }
+                        },
+                        "nextRank": {
+                          "type": "object",
+                          "nullable": true,
+                          "properties": {
+                            "code": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "level": {
+                              "type": "integer"
+                            }
+                          }
+                        },
+                        "requirements": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "object",
+                            "properties": {
+                              "current": {
+                                "type": "integer"
+                              },
+                              "required": {
+                                "type": "integer"
+                              },
+                              "completed": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        },
+                        "overallProgressPercent": {
+                          "type": "integer",
+                          "example": 82
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực"
+          }
+        }
+      }
+    },
+    "/api/v1/gamification/me/xp-history": {
+      "get": {
+        "summary": "Lịch sử XP (cursor-based pagination)",
+        "tags": [
+          "Gamification"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "maximum": 100
+            },
+            "description": "Số lượng item mỗi trang"
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "type": "string"
+            },
+            "description": "ISO date string của item cuối cùng trang trước (để lấy trang tiếp theo)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Danh sách giao dịch XP theo thứ tự mới nhất trước",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "xpTransactionId": {
+                            "type": "string"
+                          },
+                          "transactionType": {
+                            "type": "string",
+                            "enum": [
+                              "EARN",
+                              "REVERSAL",
+                              "ADMIN_ADJUSTMENT"
+                            ]
+                          },
+                          "sourceType": {
+                            "type": "string"
+                          },
+                          "sourceId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "xpAmount": {
+                            "type": "integer"
+                          },
+                          "description": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "nextCursor": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực"
+          }
+        }
+      }
+    },
+    "/api/v1/gamification/me/rank-history": {
+      "get": {
+        "summary": "Lịch sử thay đổi rank",
+        "tags": [
+          "Gamification"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Danh sách các lần thay đổi rank theo thứ tự mới nhất trước",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "previousRank": {
+                            "type": "object",
+                            "nullable": true,
+                            "properties": {
+                              "code": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "newRank": {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "xpAtChange": {
+                            "type": "integer"
+                          },
+                          "changeType": {
+                            "type": "string",
+                            "enum": [
+                              "PROMOTION",
+                              "DEMOTION",
+                              "RECALCULATION"
+                            ]
+                          },
+                          "changedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "summary": "GET /api/v1/auth/me",
+        "description": "Implemented in services/auth-service/src/routes/admin.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/dashboard": {
+      "get": {
+        "summary": "GET /api/v1/admin/dashboard",
+        "description": "Implemented in services/auth-service/src/routes/admin.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/statistics": {
+      "get": {
+        "summary": "GET /api/v1/admin/statistics",
+        "description": "Implemented in services/auth-service/src/routes/admin.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/users": {
+      "get": {
+        "summary": "GET /api/v1/admin/users",
+        "description": "Implemented in services/auth-service/src/routes/admin.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "POST /api/v1/admin/users",
+        "description": "Implemented in services/auth-service/src/routes/admin.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/users/{id}": {
+      "get": {
+        "summary": "GET /api/v1/admin/users/{id}",
+        "description": "Implemented in services/auth-service/src/routes/admin.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "patch": {
+        "summary": "PATCH /api/v1/admin/users/{id}",
+        "description": "Implemented in services/auth-service/src/routes/admin.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/users/{id}/rank-profile": {
+      "get": {
+        "summary": "GET /api/v1/admin/users/{id}/rank-profile",
+        "description": "Implemented in services/auth-service/src/routes/admin.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/users/{id}/xp-transactions": {
+      "get": {
+        "summary": "GET /api/v1/admin/users/{id}/xp-transactions",
+        "description": "Implemented in services/auth-service/src/routes/admin.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/users/{id}/rank-history": {
+      "get": {
+        "summary": "GET /api/v1/admin/users/{id}/rank-history",
+        "description": "Implemented in services/auth-service/src/routes/admin.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/ranks": {
+      "get": {
+        "summary": "GET /api/v1/admin/ranks",
+        "description": "Implemented in services/auth-service/src/routes/admin.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/users/{id}/block": {
+      "post": {
+        "summary": "POST /api/v1/admin/users/{id}/block",
+        "description": "Implemented in services/auth-service/src/routes/admin.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/users/{id}/unblock": {
+      "post": {
+        "summary": "POST /api/v1/admin/users/{id}/unblock",
+        "description": "Implemented in services/auth-service/src/routes/admin.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/users/{id}/xp-adjustments": {
+      "post": {
+        "summary": "POST /api/v1/admin/users/{id}/xp-adjustments",
+        "description": "Implemented in services/auth-service/src/routes/admin.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/ranks/{id}": {
+      "patch": {
+        "summary": "PATCH /api/v1/admin/ranks/{id}",
+        "description": "Implemented in services/auth-service/src/routes/admin.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/audit-logs": {
+      "get": {
+        "summary": "GET /api/v1/admin/audit-logs",
+        "description": "Implemented in services/auth-service/src/routes/admin.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/internal/v1/users/lookup": {
+      "post": {
+        "summary": "POST /internal/v1/users/lookup",
+        "description": "Implemented in services/auth-service/src/routes/internal.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "serviceToken": []
+          }
+        ]
+      }
+    },
+    "/internal/v1/gamification/events": {
+      "post": {
+        "summary": "POST /internal/v1/gamification/events",
+        "description": "Implemented in services/auth-service/src/routes/internal.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "serviceToken": []
+          }
+        ]
+      }
+    },
+    "/internal/v1/audit-logs": {
+      "post": {
+        "summary": "POST /internal/v1/audit-logs",
+        "description": "Implemented in services/auth-service/src/routes/internal.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "serviceToken": []
+          }
+        ]
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Users",
+      "description": "Quản lý profile và settings của người dùng"
+    },
+    {
+      "name": "Gamification",
+      "description": "Hệ thống rank, XP và thống kê trekking của người dùng"
+    },
+    {
+      "name": "Auth",
+      "description": "Đăng ký, đăng nhập và quản lý token"
+    }
+  ]
+}

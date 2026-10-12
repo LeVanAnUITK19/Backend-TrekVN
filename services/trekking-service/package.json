@@ -1,0 +1,62 @@
+{
+  "name": "trekking-service",
+  "version": "1.0.0",
+  "description": "TrekVN Trekking Service - manages places, routes, milestones, journeys, markers, contributions",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "jest --runInBand --forceExit",
+    "test:unit": "jest tests/unit --runInBand --forceExit",
+    "test:integration": "jest tests/integration --runInBand --forceExit",
+    "test:watch": "jest --runInBand --watch",
+    "test:coverage": "jest --runInBand --forceExit --coverage",
+    "lint": "eslint src/**/*.js tests/**/*.js",
+    "lint:fix": "eslint src/**/*.js tests/**/*.js --fix",
+    "test:ci": "jest --runInBand --forceExit --coverage"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.3",
+    "axios": "^1.6.0",
+    "cloudinary": "^2.11.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.4",
+    "helmet": "^7.0.0",
+    "joi": "^17.11.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^7.6.3",
+    "morgan": "^1.10.0",
+    "multer": "^2.4.0",
+    "swagger-jsdoc": "^6.3.0",
+    "swagger-ui-express": "^5.0.1",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.51.0",
+    "jest": "^30.5.2",
+    "mongodb-memory-server": "^9.1.6",
+    "supertest": "^6.3.3"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "setupFiles": [
+      "./tests/setup/env.js"
+    ],
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ],
+    "testTimeout": 60000,
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "!src/index.js",
+      "!src/server.js",
+      "!src/config/logger.js"
+    ],
+    "coverageReporters": [
+      "text",
+      "lcov"
+    ]
+  }
+}

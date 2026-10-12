@@ -1,0 +1,70 @@
+"""Repository for place_candidates collection."""
+
+from __future__ import annotations
+
+from typing import Any, Optional
+
+from motor.motor_asyncio import AsyncIOMotorDatabase
+
+from app.utils.serialize import sanitize_doc, sanitize_docs
+from app.utils.time import utcnow
+from .task_history import TaskHistoryRepositoryMixin
+
+
+class PlaceCandidateRepository(TaskHistoryRepositoryMixin):
+    def __init__(self, db: AsyncIOMotorDatabase):
+        self._col = db["place_candidates"]
+
+    async def create(self, doc: dict[str, Any]) -> dict:
+        now = utcnow()
+        doc.setdefault("createdAt", now)
+        doc.setdefault("updatedAt", now)
+        await self._col.insert_one(doc)
+        return sanitize_doc(doc)  # type: ignore[return-value]
+
+    async def find_by_id(self, candidate_id: str) -> Optional[dict]:
+        return sanitize_doc(await self._col.find_one({"placeCandidateId": candidate_id}))
+
+    async def find_by_job_id(self, job_id: str) -> Optional[dict]:
+        return sanitize_doc(await self._col.find_one({"jobId": job_id}))
+
+    async def find_list(
+        self,
+        admin_id: Optional[str] = None,
+        status: Optional[str] = None,
+        skip: int = 0,
+        limit: int = 20,
+    ) -> list[dict]:
+        q: dict = {}
+        if admin_id:
+            q["adminId"] = admin_id
+        if status:
+            q["status"] = status
+        cursor = self._col.find(q).sort("createdAt", -1).skip(skip).limit(limit)
+        return sanitize_docs(await cursor.to_list(length=limit))
+
+    async def count(
+        self, admin_id: Optional[str] = None, status: Optional[str] = None
+    ) -> int:
+        q: dict = {}
+        if admin_id:
+            q["adminId"] = admin_id
+        if status:
+            q["status"] = status
+        return await self._col.count_documents(q)
+
+    async def update(self, candidate_id: str, data: dict[str, Any]) -> Optional[dict]:
+        data["updatedAt"] = utcnow()
+        return sanitize_doc(await self._col.find_one_and_update(
+            {"placeCandidateId": candidate_id},
+            {"$set": data},
+            return_document=True,
+        ))
+
+    async def update_by_job_id(self, job_id: str, data: dict[str, Any]) -> Optional[dict]:
+        data["updatedAt"] = utcnow()
+        return sanitize_doc(await self._col.find_one_and_update(
+            {"jobId": job_id},
+            {"$set": data},
+            return_document=True,
+        ))

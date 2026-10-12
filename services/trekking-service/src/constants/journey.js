@@ -1,0 +1,27 @@
+'use strict';
+
+const JOURNEY_STATUS = {
+  PLANNED: 'PLANNED',
+  ACTIVE: 'ACTIVE',
+  PAUSED: 'PAUSED',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED',
+};
+
+/**
+ * State machine: key = current state, value = allowed next states.
+ */
+const JOURNEY_TRANSITIONS = {
+  [JOURNEY_STATUS.PLANNED]: [JOURNEY_STATUS.ACTIVE, JOURNEY_STATUS.CANCELLED],
+  [JOURNEY_STATUS.ACTIVE]: [JOURNEY_STATUS.PAUSED, JOURNEY_STATUS.COMPLETED, JOURNEY_STATUS.CANCELLED],
+  [JOURNEY_STATUS.PAUSED]: [JOURNEY_STATUS.ACTIVE, JOURNEY_STATUS.CANCELLED],
+  [JOURNEY_STATUS.COMPLETED]: [],
+  [JOURNEY_STATUS.CANCELLED]: [],
+};
+
+const canTransition = (from, to) => {
+  const allowed = JOURNEY_TRANSITIONS[from] || [];
+  return allowed.includes(to);
+};
+
+module.exports = { JOURNEY_STATUS, JOURNEY_TRANSITIONS, canTransition };

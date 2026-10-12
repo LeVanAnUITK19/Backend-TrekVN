@@ -2,23 +2,19 @@ require('dotenv').config();
 const { connectDB } = require('./config/database');
 const createApp = require('./app');
 const logger = require('./config/logger');
+const gamificationConsumer = require('./events/consumers/gamification.consumer');
 
 const PORT = process.env.PORT || 3001;
 
-/**
- * Khởi động HTTP server:
- *  1. Kết nối MongoDB
- *  2. Tạo Express app
- *  3. Lắng nghe port
- *
- * Tách ra file riêng (không gọi listen trong app.js) để:
- *  - Test có thể import app mà không start server thật
- *  - Dễ graceful shutdown
- */
 const startServer = async () => {
   await connectDB();
 
   const app = createApp();
+
+  // Start gamification event consumer
+  gamificationConsumer.start().catch((err) =>
+    logger.error(`[GamificationConsumer] Failed to start: ${err.message}`)
+  );
 
   const server = app.listen(PORT, () => {
     logger.info(`Auth Service running on port ${PORT}`);
@@ -26,9 +22,10 @@ const startServer = async () => {
   });
 
   // ─── Graceful shutdown ──────────────────────────────────────────────────────
-  const shutdown = (signal) => {
+  const shutdown = async (signal) => {
     logger.info(`${signal} received — shutting down gracefully`);
-    server.close(() => {
+    server.close(async () => {
+      await gamificationConsumer.close();
       logger.info('HTTP server closed');
       process.exit(0);
     });
