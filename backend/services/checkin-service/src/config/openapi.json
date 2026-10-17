@@ -1,0 +1,1814 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "checkin-service",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3002"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      },
+      "serviceToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Service-Token"
+      }
+    },
+    "schemas": {
+      "ProvinceWithVisitStatus": {
+        "type": "object",
+        "description": "Province data merged với trạng thái visit của user",
+        "properties": {
+          "provinceId": {
+            "type": "string",
+            "example": "6849a1b2c3d4e5f6a7b8c9d0"
+          },
+          "code": {
+            "type": "string",
+            "example": "lam_dong"
+          },
+          "name": {
+            "type": "string",
+            "example": "Lâm Đồng"
+          },
+          "region": {
+            "type": "string",
+            "enum": [
+              "NORTH",
+              "CENTRAL",
+              "SOUTH"
+            ],
+            "example": "SOUTH"
+          },
+          "mapFeatureId": {
+            "type": "string",
+            "description": "ID dùng để match với GeoJSON feature trong Flutter map",
+            "example": "VN-LD"
+          },
+          "center": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "example": "Point"
+              },
+              "coordinates": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "example": [
+                  108.4419,
+                  11.9465
+                ]
+              }
+            }
+          },
+          "visitStatus": {
+            "type": "string",
+            "enum": [
+              "UNVISITED",
+              "SELF_REPORTED",
+              "VERIFIED"
+            ],
+            "description": "UNVISITED = chưa đánh dấu và chưa có check-in\nSELF_REPORTED = user tự tick thủ công\nVERIFIED = đã xác minh bằng GPS check-in\n",
+            "example": "VERIFIED"
+          },
+          "manualMarked": {
+            "type": "boolean",
+            "example": false
+          },
+          "visitCount": {
+            "type": "integer",
+            "example": 2
+          },
+          "firstVisitedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "lastVisitedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "ProvinceListResponse": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "object",
+            "properties": {
+              "totalProvinces": {
+                "type": "integer",
+                "description": "Tổng số tỉnh trong collection (34 với dataset hiện tại)",
+                "example": 34
+              },
+              "visitedCount": {
+                "type": "integer",
+                "description": "Số tỉnh có SELF_REPORTED hoặc VERIFIED",
+                "example": 10
+              },
+              "verifiedCount": {
+                "type": "integer",
+                "description": "Số tỉnh VERIFIED bằng GPS check-in",
+                "example": 4
+              },
+              "selfReportedCount": {
+                "type": "integer",
+                "description": "Số tỉnh SELF_REPORTED (chưa VERIFIED)",
+                "example": 6
+              }
+            }
+          },
+          "provinces": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProvinceWithVisitStatus"
+            }
+          }
+        }
+      },
+      "PlaceVisit": {
+        "type": "object",
+        "properties": {
+          "placeVisitId": {
+            "type": "string",
+            "example": "64f1a2b3c4d5e6f7a8b9c0d3"
+          },
+          "trekkingPlaceId": {
+            "type": "string",
+            "example": "place_langbiang"
+          },
+          "provinceId": {
+            "type": "string",
+            "example": "6849a1b2c3d4e5f6a7b8c9d0"
+          },
+          "firstVisitedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastVisitedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "visitCount": {
+            "type": "integer",
+            "example": 3
+          },
+          "verificationStatus": {
+            "type": "string",
+            "enum": [
+              "VERIFIED"
+            ],
+            "example": "VERIFIED"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "CHECKIN"
+            ],
+            "example": "CHECKIN"
+          }
+        }
+      },
+      "VisitSummary": {
+        "type": "object",
+        "properties": {
+          "visitedProvinceCount": {
+            "type": "integer",
+            "description": "Thống nhất với ProvinceListResponse.summary.visitedCount",
+            "example": 10
+          },
+          "verifiedProvinceCount": {
+            "type": "integer",
+            "example": 4
+          },
+          "visitedPlaceCount": {
+            "type": "integer",
+            "example": 15
+          },
+          "checkinCount": {
+            "type": "integer",
+            "example": 57
+          }
+        }
+      },
+      "MilestoneCheckin": {
+        "type": "object",
+        "properties": {
+          "milestoneCheckinId": {
+            "type": "string",
+            "example": "64f1a2b3c4d5e6f7a8b9c0d1"
+          },
+          "journeyId": {
+            "type": "string",
+            "example": "journey_langbiang_2026"
+          },
+          "userId": {
+            "type": "string",
+            "example": "user_abc123"
+          },
+          "milestoneId": {
+            "type": "string",
+            "example": "milestone_langbiang_summit"
+          },
+          "milestoneType": {
+            "type": "string",
+            "example": "SUMMIT"
+          },
+          "trekkingPlaceId": {
+            "type": "string",
+            "example": "place_langbiang"
+          },
+          "trekkingRouteId": {
+            "type": "string",
+            "example": "route_langbiang_01"
+          },
+          "provinceId": {
+            "type": "string",
+            "example": "6849a1b2c3d4e5f6a7b8c9d0"
+          },
+          "qualifiesPlaceVisit": {
+            "type": "boolean",
+            "example": true
+          },
+          "location": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "example": "Point"
+              },
+              "coordinates": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "example": [
+                  108.441,
+                  12.05
+                ]
+              }
+            }
+          },
+          "accuracyMeters": {
+            "type": "number",
+            "example": 8
+          },
+          "distanceToMilestoneMeters": {
+            "type": "number",
+            "example": 3.14
+          },
+          "verification": {
+            "type": "object",
+            "properties": {
+              "method": {
+                "type": "string",
+                "example": "GPS"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "VERIFIED",
+                  "REJECTED",
+                  "PENDING_VERIFICATION"
+                ],
+                "example": "VERIFIED"
+              },
+              "reason": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          },
+          "syncSource": {
+            "type": "string",
+            "enum": [
+              "ONLINE",
+              "OFFLINE_SYNC"
+            ],
+            "example": "ONLINE"
+          },
+          "checkedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-09-21T07:00:00.000Z"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PaginatedCheckins": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MilestoneCheckin"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "example": 57
+          },
+          "page": {
+            "type": "integer",
+            "example": 1
+          },
+          "limit": {
+            "type": "integer",
+            "example": 20
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "example": "CHECKIN_OUT_OF_RADIUS"
+              },
+              "message": {
+                "type": "string",
+                "example": "Bạn đang ở ngoài bán kính check-in"
+              },
+              "details": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/api/v1/checkins/me": {
+      "get": {
+        "summary": "Lịch sử check-in của user",
+        "description": "Trả về danh sách tất cả milestone check-in của user đang đăng nhập.\nHỗ trợ filter theo journey, place, route và status. Kết quả được phân trang.\n",
+        "tags": [
+          "CheckIn"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "maximum": 100
+            }
+          },
+          {
+            "in": "query",
+            "name": "journeyId",
+            "schema": {
+              "type": "string"
+            },
+            "example": "journey_langbiang_2026"
+          },
+          {
+            "in": "query",
+            "name": "placeId",
+            "schema": {
+              "type": "string"
+            },
+            "example": "place_langbiang"
+          },
+          {
+            "in": "query",
+            "name": "routeId",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "VERIFIED",
+                "REJECTED",
+                "PENDING_VERIFICATION"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Danh sách check-in có pagination",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "items": [
+                      {
+                        "milestoneCheckinId": "64f1a2b3c4d5e6f7a8b9c0d1",
+                        "milestoneId": "milestone_langbiang_summit",
+                        "verification": {
+                          "status": "VERIFIED"
+                        },
+                        "checkedAt": "2026-09-21T07:00:00.000Z"
+                      }
+                    ],
+                    "total": 57,
+                    "page": 1,
+                    "limit": 20
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/checkins/sync": {
+      "post": {
+        "summary": "Đồng bộ offline check-ins (idempotent)",
+        "description": "**Used by:** SQLite offline check-in synchronization.\n\nXử lý batch check-in được tạo offline (Flutter SQLite) và gửi lên khi có mạng.\n\n- Mỗi item trong batch xử lý **độc lập** — một item lỗi không làm toàn bộ batch fail.\n- **Idempotent**: gửi lại cùng `clientCheckinId` trả về `serverCheckinId` cũ, không tạo bản ghi mới.\n- `clientCheckinId` **bắt buộc** cho mỗi item.\n- GPS validation, radius check, PlaceVisit và ProvinceVisit update vẫn áp dụng đầy đủ.\n",
+        "tags": [
+          "CheckIn"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "clientCheckinId": {
+                          "type": "string"
+                        },
+                        "journeyId": {
+                          "type": "string"
+                        },
+                        "milestoneId": {
+                          "type": "string"
+                        },
+                        "latitude": {
+                          "type": "number",
+                          "minimum": -90,
+                          "maximum": 90
+                        },
+                        "longitude": {
+                          "type": "number",
+                          "minimum": -180,
+                          "maximum": 180
+                        },
+                        "accuracyMeters": {
+                          "type": "number"
+                        },
+                        "checkedAt": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "clientCheckinId",
+                        "journeyId",
+                        "milestoneId",
+                        "latitude",
+                        "longitude",
+                        "accuracyMeters",
+                        "checkedAt"
+                      ]
+                    },
+                    "minItems": 1,
+                    "maxItems": 100
+                  }
+                },
+                "required": [
+                  "items"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Kết quả từng item (batch không bao giờ fail toàn bộ)",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "results": [
+                      {
+                        "clientCheckinId": "local_checkin_001",
+                        "serverCheckinId": "64f1a2b3c4d5e6f7a8b9c0d1",
+                        "status": "VERIFIED"
+                      },
+                      {
+                        "clientCheckinId": "local_bad",
+                        "status": "FAILED",
+                        "error": {
+                          "code": "MILESTONE_NOT_FOUND",
+                          "message": "Milestone \"milestone_xyz\" không tồn tại"
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation lỗi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/checkins": {
+      "post": {
+        "summary": "Tạo check-in online",
+        "description": "**Used by:** online GPS milestone check-in.\nAutomatically verifies ProvinceVisit (UNVISITED/SELF_REPORTED → VERIFIED).\nCreates/updates PlaceVisit when `qualifiesPlaceVisit = true`.\n\n**Luồng xử lý:**\n1. Xác thực JWT → `userId` từ token (client không được gửi userId).\n2. Lấy metadata milestone từ TrekkingProvider (server-side, không tin client).\n3. Kiểm tra `accuracyMeters ≤ CHECKIN_MAX_GPS_ACCURACY_METERS`.\n4. Tính Haversine distance userGPS ↔ milestoneGPS.\n5. Nếu distance > `checkinRadiusMeters` → `422 CHECKIN_OUT_OF_RADIUS`.\n6. Kiểm tra duplicate `(journeyId, milestoneId, userId)`.\n7. Lưu `MilestoneCheckin` VERIFIED.\n8. Nếu `qualifiesPlaceVisit=true` → cập nhật `PlaceVisit`.\n9. Cập nhật `ProvinceVisit` thành VERIFIED.\n",
+        "tags": [
+          "CheckIn"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "journeyId": {
+                    "type": "string"
+                  },
+                  "milestoneId": {
+                    "type": "string"
+                  },
+                  "latitude": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  },
+                  "longitude": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  },
+                  "accuracyMeters": {
+                    "type": "number"
+                  },
+                  "checkedAt": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "journeyId",
+                  "milestoneId",
+                  "latitude",
+                  "longitude",
+                  "accuracyMeters",
+                  "checkedAt"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Check-in thành công — VERIFIED",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "message": "Check-in thành công",
+                  "data": {
+                    "milestoneCheckinId": "64f1a2b3c4d5e6f7a8b9c0d1",
+                    "journeyId": "journey_langbiang_2026",
+                    "milestoneId": "milestone_langbiang_summit",
+                    "milestoneType": "SUMMIT",
+                    "trekkingPlaceId": "place_langbiang",
+                    "provinceId": "6849a1b2c3d4e5f6a7b8c9d0",
+                    "qualifiesPlaceVisit": true,
+                    "distanceToMilestoneMeters": 0,
+                    "verification": {
+                      "method": "GPS",
+                      "status": "VERIFIED"
+                    },
+                    "syncSource": "ONLINE",
+                    "checkedAt": "2026-09-21T07:00:00.000Z"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation lỗi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Milestone không tồn tại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "success": false,
+                  "error": {
+                    "code": "MILESTONE_NOT_FOUND",
+                    "message": "Milestone \"milestone_xyz\" không tồn tại",
+                    "details": {}
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Đã check-in milestone này trong journey này rồi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "success": false,
+                  "error": {
+                    "code": "CHECKIN_ALREADY_EXISTS",
+                    "message": "Bạn đã check-in milestone này trong hành trình này rồi",
+                    "details": {
+                      "checkinId": "64f1a2b3c4d5e6f7a8b9c0d1"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Vi phạm business rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "outOfRadius": {
+                    "summary": "Ngoài bán kính",
+                    "value": {
+                      "success": false,
+                      "error": {
+                        "code": "CHECKIN_OUT_OF_RADIUS",
+                        "message": "Bạn đang ở ngoài bán kính check-in (342m > 50m)",
+                        "details": {
+                          "distanceMeters": 342,
+                          "radiusMeters": 50
+                        }
+                      }
+                    }
+                  },
+                  "gpsAccuracy": {
+                    "summary": "GPS không đủ chính xác",
+                    "value": {
+                      "success": false,
+                      "error": {
+                        "code": "GPS_ACCURACY_TOO_LOW",
+                        "message": "Độ chính xác GPS quá thấp (120m). Tối đa cho phép: 50m",
+                        "details": {
+                          "provided": 120,
+                          "maximum": 50
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Không kết nối được trekking-service (khi TREKKING_PROVIDER=http)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/checkins/journeys/{journeyId}": {
+      "get": {
+        "summary": "Danh sách check-in trong một Journey (canonical endpoint qua Gateway)",
+        "description": "**Canonical endpoint** cho GET journey checkins qua API Gateway.\n\nLý do cần endpoint này: API Gateway route `/api/v1/journeys/*` tới trekking-service,\nnên `/api/v1/journeys/:id/checkins` sẽ không đến checkin-service.\nEndpoint `/api/v1/checkins/journeys/:journeyId` đi qua `/api/v1/checkins/*`\nvà được route đúng tới checkin-service.\n\nKết quả giống hệt GET /journeys/:journeyId/checkins.\n",
+        "tags": [
+          "CheckIn"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "journeyId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID hành trình trekking"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Danh sách milestone check-in trong journey (có thể rỗng)",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": [
+                    {
+                      "milestoneCheckinId": "64f1a2b3c4d5e6f7a8b9c0d1",
+                      "milestoneId": "milestone_langbiang_summit",
+                      "milestoneType": "SUMMIT",
+                      "checkedAt": "2026-09-21T07:00:00.000Z",
+                      "verification": {
+                        "status": "VERIFIED"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực"
+          }
+        }
+      }
+    },
+    "/api/v1/checkins/{checkinId}": {
+      "get": {
+        "summary": "Chi tiết một check-in (chỉ chủ sở hữu)",
+        "description": "User chỉ được xem check-in của chính mình.\nTrả về 403 nếu checkin thuộc user khác.\n",
+        "tags": [
+          "CheckIn"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "checkinId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "64f1a2b3c4d5e6f7a8b9c0d1"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chi tiết check-in",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "milestoneCheckinId": "64f1a2b3c4d5e6f7a8b9c0d1",
+                    "milestoneId": "milestone_langbiang_summit",
+                    "verification": {
+                      "status": "VERIFIED"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Check-in thuộc về user khác",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "success": false,
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "Bạn không có quyền xem check-in này",
+                    "details": {}
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy check-in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "success": false,
+                  "error": {
+                    "code": "CHECKIN_NOT_FOUND",
+                    "message": "Không tìm thấy check-in",
+                    "details": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/visits/me/summary": {
+      "get": {
+        "summary": "Tổng hợp số liệu ghé thăm của user",
+        "description": "Dùng cho màn hình Profile/Statistics.\n`visitedProvinceCount` thống nhất với `GET /visits/provinces/me → summary.visitedCount`.\n",
+        "tags": [
+          "Visits"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Summary",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "visitedProvinceCount": 10,
+                    "verifiedProvinceCount": 4,
+                    "visitedPlaceCount": 15,
+                    "checkinCount": 57
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/visits/provinces/me": {
+      "get": {
+        "summary": "Toàn bộ 34 tỉnh với trạng thái visit của user",
+        "description": "**Used by:**\n- Home Vietnam map (tô màu tỉnh theo visitStatus)\n- Counter \"10 / 34 tỉnh\" trên Home\n- Province selector bottom sheet (\"Tỉnh thành đã đi\")\n- Xác định màu UNVISITED / SELF_REPORTED / VERIFIED cho từng tỉnh\n\nTrả về **TOÀN BỘ** tỉnh trong collection provinces, không chỉ các tỉnh đã visit.\nMỗi tỉnh được merge với ProvinceVisit của user hiện tại.\nNếu user chưa visit → `visitStatus = UNVISITED`, `visitCount = 0`, dates = null.\n\n**Performance:** chỉ 2 queries (provinces + province_visits) rồi merge trong memory.\n\n**mapFeatureId** dùng để Flutter match với GeoJSON polygon:\n```\nGET /visits/provinces/me → mapFeatureId → match GeoJSON feature → visitStatus → tô màu\n```\n",
+        "tags": [
+          "Visits"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Toàn bộ 34 tỉnh với visitStatus của user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ProvinceListResponse"
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "data": {
+                    "summary": {
+                      "totalProvinces": 34,
+                      "visitedCount": 10,
+                      "verifiedCount": 4,
+                      "selfReportedCount": 6
+                    },
+                    "provinces": [
+                      {
+                        "provinceId": "6849a1b2c3d4e5f6a7b8c9d0",
+                        "code": "lam_dong",
+                        "name": "Lâm Đồng",
+                        "region": "SOUTH",
+                        "mapFeatureId": "VN-LD",
+                        "center": {
+                          "type": "Point",
+                          "coordinates": [
+                            108.4419,
+                            11.9465
+                          ]
+                        },
+                        "visitStatus": "VERIFIED",
+                        "manualMarked": false,
+                        "visitCount": 2,
+                        "firstVisitedAt": "2026-09-21T07:00:00.000Z",
+                        "lastVisitedAt": "2026-09-21T09:30:00.000Z"
+                      },
+                      {
+                        "provinceId": "6849a1b2c3d4e5f6a7b8c9d3",
+                        "code": "da_nang",
+                        "name": "Đà Nẵng",
+                        "region": "CENTRAL",
+                        "mapFeatureId": "VN-DN",
+                        "center": {
+                          "type": "Point",
+                          "coordinates": [
+                            108.2022,
+                            16.0544
+                          ]
+                        },
+                        "visitStatus": "SELF_REPORTED",
+                        "manualMarked": true,
+                        "visitCount": 0,
+                        "firstVisitedAt": null,
+                        "lastVisitedAt": null
+                      },
+                      {
+                        "provinceId": "6849a1b2c3d4e5f6a7b8c9d4",
+                        "code": "ha_noi",
+                        "name": "Hà Nội",
+                        "region": "NORTH",
+                        "mapFeatureId": "VN-HN",
+                        "center": {
+                          "type": "Point",
+                          "coordinates": [
+                            105.8412,
+                            21.0245
+                          ]
+                        },
+                        "visitStatus": "UNVISITED",
+                        "manualMarked": false,
+                        "visitCount": 0,
+                        "firstVisitedAt": null,
+                        "lastVisitedAt": null
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/visits/provinces/me/{provinceId}": {
+      "get": {
+        "summary": "Chi tiết trạng thái user với một tỉnh",
+        "description": "Trả về thông tin Province kèm trạng thái visit của user.\n`visit` = null nếu user chưa đến/tick tỉnh này.\n",
+        "tags": [
+          "Visits"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provinceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "6849a1b2c3d4e5f6a7b8c9d0"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chi tiết province + visit status",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "visited": {
+                    "summary": "User đã visit",
+                    "value": {
+                      "success": true,
+                      "data": {
+                        "province": {
+                          "provinceId": "6849a1b2c3d4e5f6a7b8c9d0",
+                          "code": "lam_dong",
+                          "name": "Lâm Đồng",
+                          "region": "SOUTH",
+                          "mapFeatureId": "VN-LD"
+                        },
+                        "visit": {
+                          "verificationStatus": "VERIFIED",
+                          "visitCount": 2,
+                          "firstVisitedAt": "2026-09-21T07:00:00.000Z"
+                        }
+                      }
+                    }
+                  },
+                  "notVisited": {
+                    "summary": "User chưa visit",
+                    "value": {
+                      "success": true,
+                      "data": {
+                        "province": {
+                          "provinceId": "6849a1b2c3d4e5f6a7b8c9d0",
+                          "code": "lam_dong",
+                          "name": "Lâm Đồng"
+                        },
+                        "visit": null
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy tỉnh",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "success": false,
+                  "error": {
+                    "code": "PROVINCE_NOT_FOUND",
+                    "message": "Không tìm thấy tỉnh",
+                    "details": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Tick/bỏ tick tỉnh thủ công (self-reported)",
+        "description": "Cho phép user đánh dấu tỉnh họ đã từng ghé thăm nhưng chưa có check-in GPS.\n\n**Rules:**\n- `visited: true` → `manualMarked=true`, `verificationStatus=SELF_REPORTED` (nếu chưa VERIFIED)\n- `visited: false` + SELF_REPORTED → **xóa** record, trả về `data: null`\n- `visited: false` + VERIFIED → **giữ** record, chỉ set `manualMarked=false`\n  (VERIFIED không thể downgrade)\n",
+        "tags": [
+          "Visits"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provinceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "6849a1b2c3d4e5f6a7b8c9d0"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "visited": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "visited"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cập nhật thành công",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "ticked": {
+                    "summary": "Đã tick → SELF_REPORTED",
+                    "value": {
+                      "success": true,
+                      "message": "Đã đánh dấu tỉnh",
+                      "data": {
+                        "manualMarked": true,
+                        "verificationStatus": "SELF_REPORTED"
+                      }
+                    }
+                  },
+                  "untickSelfReported": {
+                    "summary": "Bỏ tick SELF_REPORTED → record xóa",
+                    "value": {
+                      "success": true,
+                      "message": "Đã bỏ đánh dấu tỉnh",
+                      "data": null
+                    }
+                  },
+                  "untickVerified": {
+                    "summary": "Bỏ tick VERIFIED → record giữ nguyên",
+                    "value": {
+                      "success": true,
+                      "message": "Đã bỏ đánh dấu tỉnh",
+                      "data": {
+                        "manualMarked": false,
+                        "verificationStatus": "VERIFIED"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation lỗi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy tỉnh",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/visits/places/me/recent": {
+      "get": {
+        "summary": "Địa điểm đến gần đây (Home screen)",
+        "description": "**Used by:** Home screen widget \"Địa điểm đến gần đây\".\n\nTrả về danh sách địa điểm trekking user đến gần đây nhất.\nChỉ bao gồm địa điểm có PlaceVisit được tạo bởi check-in VERIFIED.\nUser không thể tự manually mark trekking place.\n",
+        "tags": [
+          "Visits"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 5,
+              "maximum": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Danh sách place visits gần đây",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": [
+                    {
+                      "placeVisitId": "64f1a2b3c4d5e6f7a8b9c0d3",
+                      "trekkingPlaceId": "place_langbiang",
+                      "provinceId": "6849a1b2c3d4e5f6a7b8c9d0",
+                      "lastVisitedAt": "2026-09-21T09:30:00.000Z",
+                      "visitCount": 2,
+                      "verificationStatus": "VERIFIED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/visits/places/me": {
+      "get": {
+        "summary": "Danh sách tất cả địa điểm đã đến (pagination)",
+        "description": "Trả về tất cả địa điểm trekking user đã ghé thăm, sắp xếp theo `lastVisitedAt` mới nhất.\nĐịa điểm chỉ xuất hiện khi user có ít nhất 1 check-in VERIFIED `qualifiesPlaceVisit=true` tại đó.\n",
+        "tags": [
+          "Visits"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Danh sách place visits có pagination",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "items": [
+                      {
+                        "placeVisitId": "64f1a2b3c4d5e6f7a8b9c0d3",
+                        "trekkingPlaceId": "place_langbiang",
+                        "provinceId": "6849a1b2c3d4e5f6a7b8c9d0",
+                        "firstVisitedAt": "2026-08-10T06:00:00.000Z",
+                        "lastVisitedAt": "2026-09-21T07:00:00.000Z",
+                        "visitCount": 2
+                      }
+                    ],
+                    "total": 15,
+                    "page": 1,
+                    "limit": 20
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/visits/places/me/{placeId}": {
+      "get": {
+        "summary": "Trạng thái visit của một địa điểm cụ thể",
+        "description": "Kiểm tra user đã đến địa điểm này chưa.\nTrả về `null` nếu chưa từng đến.\n",
+        "tags": [
+          "Visits"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "placeId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "trekkingPlaceId (string, không phải ObjectId)",
+            "example": "place_langbiang"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trạng thái visit (null nếu chưa đến)",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "visited": {
+                    "summary": "Đã đến",
+                    "value": {
+                      "success": true,
+                      "data": {
+                        "trekkingPlaceId": "place_langbiang",
+                        "visitCount": 2,
+                        "firstVisitedAt": "2026-08-10T06:00:00.000Z",
+                        "lastVisitedAt": "2026-09-21T07:00:00.000Z"
+                      }
+                    }
+                  },
+                  "notVisited": {
+                    "summary": "Chưa đến",
+                    "value": {
+                      "success": true,
+                      "data": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/visits/provinces": {
+      "post": {
+        "summary": "Thêm tỉnh mới vào hệ thống",
+        "tags": [
+          "Visits"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "region": {
+                    "type": "string",
+                    "enum": [
+                      "NORTH",
+                      "CENTRAL",
+                      "SOUTH"
+                    ],
+                    "nullable": true
+                  },
+                  "mapAsset": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "mapFeatureId": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "center": {
+                    "type": "object",
+                    "properties": {
+                      "coordinates": {
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        },
+                        "maxItems": 2,
+                        "minItems": 2
+                      }
+                    }
+                  }
+                },
+                "required": [
+                  "code",
+                  "name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Tỉnh mới được tạo"
+          },
+          "400": {
+            "description": "Validation lỗi hoặc code đã tồn tại"
+          }
+        }
+      }
+    },
+    "/api/v1/visits/provinces/{provinceId}": {
+      "patch": {
+        "summary": "Cập nhật thông tin tỉnh",
+        "tags": [
+          "Visits"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provinceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "region": {
+                    "type": "string",
+                    "enum": [
+                      "NORTH",
+                      "CENTRAL",
+                      "SOUTH"
+                    ],
+                    "nullable": true
+                  },
+                  "mapAsset": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "mapFeatureId": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "center": {
+                    "type": "object",
+                    "properties": {
+                      "coordinates": {
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        },
+                        "maxItems": 2,
+                        "minItems": 2
+                      }
+                    }
+                  }
+                },
+                "minimum": 1
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cập nhật thành công"
+          },
+          "404": {
+            "description": "Không tìm thấy tỉnh"
+          }
+        }
+      }
+    },
+    "/api/v1/journeys/{journeyId}/checkins": {
+      "get": {
+        "summary": "Danh sách check-in trong một Journey",
+        "description": "Lấy tất cả milestone check-in của user trong một hành trình trekking cụ thể.\nKết quả sắp xếp theo `checkedAt` tăng dần (thứ tự thời gian thực hiện).\nChỉ trả về check-in của user đang đăng nhập — không trả về check-in của user khác trong cùng journey.\n",
+        "tags": [
+          "Journeys"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "journeyId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID hành trình trekking",
+            "example": "journey_langbiang_2026"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Danh sách milestone check-in trong journey (có thể rỗng)",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": [
+                    {
+                      "milestoneCheckinId": "64f1a2b3c4d5e6f7a8b9c0d1",
+                      "milestoneId": "milestone_langbiang_start",
+                      "milestoneType": "START",
+                      "checkedAt": "2026-09-21T06:00:00.000Z",
+                      "verification": {
+                        "status": "VERIFIED"
+                      },
+                      "distanceToMilestoneMeters": 15
+                    },
+                    {
+                      "milestoneCheckinId": "64f1a2b3c4d5e6f7a8b9c0d2",
+                      "milestoneId": "milestone_langbiang_summit",
+                      "milestoneType": "SUMMIT",
+                      "checkedAt": "2026-09-21T09:00:00.000Z",
+                      "verification": {
+                        "status": "VERIFIED"
+                      },
+                      "distanceToMilestoneMeters": 0
+                    },
+                    {
+                      "milestoneCheckinId": "64f1a2b3c4d5e6f7a8b9c0d3",
+                      "milestoneId": "milestone_langbiang_finish",
+                      "milestoneType": "FINISH",
+                      "checkedAt": "2026-09-21T11:30:00.000Z",
+                      "verification": {
+                        "status": "VERIFIED"
+                      },
+                      "distanceToMilestoneMeters": 8
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa xác thực",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "success": false,
+                  "error": {
+                    "code": "AUTH_REQUIRED",
+                    "message": "Authorization token required",
+                    "details": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/v1/users/{userId}/stats": {
+      "get": {
+        "summary": "GET /internal/v1/users/{userId}/stats",
+        "description": "Implemented in services/checkin-service/src/routes/internal.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "serviceToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/internal/v1/dashboard": {
+      "get": {
+        "summary": "GET /internal/v1/dashboard",
+        "description": "Implemented in services/checkin-service/src/routes/internal.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/internal/v1/provinces": {
+      "get": {
+        "summary": "GET /internal/v1/provinces",
+        "description": "Implemented in services/checkin-service/src/routes/internal.routes.js. See the service Markdown API guide for business rules. This generated operation describes routing and authentication; request/response details still require an explicit JSDoc contract.",
+        "x-contract-detail": "route-only",
+        "responses": {
+          "200": {
+            "description": "Successful operation; see service API guide for response fields."
+          }
+        },
+        "security": [
+          {
+            "serviceToken": []
+          }
+        ]
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Visits",
+      "description": "Lịch sử ghé thăm tỉnh/thành phố và địa điểm trekking"
+    },
+    {
+      "name": "Journeys",
+      "description": "Check-in trong một hành trình trekking"
+    },
+    {
+      "name": "CheckIn",
+      "description": "Check-in GPS tại milestone trekking — online và offline sync"
+    }
+  ]
+}

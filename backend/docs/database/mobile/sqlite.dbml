@@ -1,0 +1,748 @@
+// ======================================================
+// TREKVIET - SQLITE LOCAL DATABASE
+// ======================================================
+//
+// Mobile offline-first database.
+//
+// Chứa:
+// - Local user
+// - Cached server data
+// - Journey
+// - GPS track
+// - User-created markers
+// - Marker media
+// - Offline check-in
+// - Offline maps
+// - Sync queue
+// - User contributions
+//
+// ======================================================
+
+
+// ======================================================
+// LOCAL USER
+// ======================================================
+
+Table local_user {
+  userId varchar [pk]
+
+  displayName varchar
+  avatarUrl varchar
+  email varchar
+
+  // Cached gamification profile
+  currentRankCode varchar
+  currentRankName varchar
+  currentRankLevel int
+
+  totalXp bigint [default: 0]
+
+  nextRankCode varchar
+  nextRankXp bigint
+
+  rankUpdatedAt timestamp
+
+
+  cachedAt timestamp
+  updatedAt timestamp
+}
+
+
+// ======================================================
+// CACHE TREKKING PLACES
+// ======================================================
+
+Table cached_places {
+  trekkingPlaceId varchar [pk]
+
+  provinceId varchar
+
+  name varchar [not null]
+  slug varchar
+
+  address varchar
+
+  latitude double
+  longitude double
+
+  description text
+
+  difficulty varchar
+
+  averageDurationMinutes int
+
+  // Optional: độ cao đại diện của địa điểm / đỉnh núi (mét)
+  elevationMeters int
+
+  imageUrl varchar
+  // Ảnh preview/minimap nếu backend có.
+  imageMapUrl varchar
+
+  ratingAverage double
+  ratingCount int
+
+  // Metadata tối thiểu để UI biết địa điểm có offline map mới hay không.
+  offlineMapAvailable boolean [default: false]
+  offlineMapVersion int
+  offlineMapSizeBytes integer
+
+  status varchar
+
+  cachedAt timestamp
+  updatedAt timestamp
+}
+
+
+// ======================================================
+// CACHE ROUTES
+// ======================================================
+
+Table cached_routes {
+  trekkingRouteId varchar [pk]
+
+  trekkingPlaceId varchar [not null]
+
+  name varchar [not null]
+  description text
+
+  difficulty varchar
+
+  distanceMeters int
+
+  estimatedDurationMinutes int
+
+  elevationGain int
+  maxElevation int
+
+  startLatitude double
+  startLongitude double
+
+  endLatitude double
+  endLongitude double
+
+  // Dùng để vẽ route chuẩn offline.
+  encodedPolyline text
+
+  mapVersion int
+
+  cachedAt timestamp
+  updatedAt timestamp
+
+  indexes {
+    trekkingPlaceId
+  }
+}
+
+
+// ======================================================
+// CACHE OFFICIAL MILESTONES
+// ======================================================
+
+Table cached_milestones {
+  milestoneId varchar [pk]
+
+  trekkingRouteId varchar [not null]
+
+  name varchar [not null]
+  description text
+
+  // START
+  // CHECKPOINT
+  // VIEWPOINT
+  // REST_POINT
+  // WATER_POINT
+  // CAMP
+  // SUMMIT
+  // FINISH
+  type varchar [not null]
+
+  sequenceNumber int [not null]
+
+  latitude double [not null]
+  longitude double [not null]
+
+  altitude double
+
+  checkinRadiusMeters double [default: 50]
+
+  required boolean [default: true]
+
+  imageUrl varchar
+
+  cachedAt timestamp
+  updatedAt timestamp
+
+  indexes {
+    trekkingRouteId
+    (trekkingRouteId, sequenceNumber) [unique]
+  }
+}
+
+
+// ======================================================
+// LOCAL PROVINCE METADATA
+// ======================================================
+
+Table cached_provinces {
+  provinceId varchar [pk]
+
+  code varchar
+
+  name varchar [not null]
+
+  region varchar
+
+  // mapFeatureId dùng để ánh xạ với GeoJSON / MapLibre
+  mapFeatureId varchar
+
+  cachedAt timestamp
+  updatedAt timestamp
+}
+
+
+// ======================================================
+// LOCAL JOURNEYS
+// ======================================================
+
+Table local_journeys {
+  localJourneyId varchar [pk]
+
+  // Journey ID trên server.
+  // Null nếu tạo offline và chưa sync.
+  serverJourneyId varchar
+
+  userId varchar [not null]
+
+  trekkingPlaceId varchar [not null]
+  trekkingRouteId varchar [not null]
+
+  provinceId varchar
+
+  name varchar [not null]
+
+  // PLANNED
+  // ACTIVE
+  // PAUSED
+  // COMPLETED
+  // CANCELLED
+  status varchar [not null, default: 'PLANNED']
+
+  note text
+
+  participantCount int [default: 1]
+
+  plannedStartAt timestamp
+
+  startedAt timestamp
+  completedAt timestamp
+
+  distanceMeters double [default: 0]
+
+  durationSeconds int [default: 0]
+
+  elevationGain double [default: 0]
+
+  maxAltitude double
+
+  checkinCount int [default: 0]
+
+  markerCount int [default: 0]
+
+  // PENDING
+  // SYNCED
+  // FAILED
+  syncStatus varchar [default: 'PENDING']
+
+  createdAt timestamp
+  updatedAt timestamp
+
+  indexes {
+    userId
+    trekkingRouteId
+    status
+    syncStatus
+  }
+}
+
+
+// ======================================================
+// USER-CREATED JOURNEY MARKERS
+// ======================================================
+
+Table local_journey_markers {
+  localMarkerId varchar [pk]
+
+  // ID trên server sau khi sync
+  serverMarkerId varchar
+
+  localJourneyId varchar [not null]
+
+  userId varchar [not null]
+
+  name varchar [not null]
+
+  // VIEWPOINT
+  // REST_POINT
+  // WATER_POINT
+  // CAMP
+  // DANGER
+  // INTERSECTION
+  // SUMMIT
+  // LANDMARK
+  // OTHER
+  type varchar [not null, default: 'OTHER']
+
+  note text
+
+  latitude double [not null]
+  longitude double [not null]
+
+  altitude double
+
+  accuracyMeters double
+
+  markedAt timestamp [not null]
+
+  // LOCAL_ONLY
+  // PENDING_SYNC
+  // SYNCED
+  // FAILED
+  syncStatus varchar [default: 'LOCAL_ONLY']
+
+  createdAt timestamp [not null]
+  updatedAt timestamp
+
+  indexes {
+    localJourneyId
+    userId
+    syncStatus
+    (localJourneyId, markedAt)
+  }
+}
+
+
+// ======================================================
+// JOURNEY MARKER MEDIA
+// ======================================================
+
+Table local_marker_media {
+  localMarkerMediaId varchar [pk]
+
+  localMarkerId varchar [not null]
+
+  // IMAGE
+  type varchar [default: 'IMAGE']
+
+  // Đường dẫn file trong thiết bị
+  localPath varchar [not null]
+
+  // URL sau khi upload
+  remoteUrl varchar
+
+  fileSizeBytes integer
+
+  mimeType varchar
+
+  // LOCAL
+  // PENDING_UPLOAD
+  // UPLOADED
+  // FAILED
+  uploadStatus varchar [default: 'LOCAL']
+
+  createdAt timestamp [not null]
+
+  indexes {
+    localMarkerId
+    uploadStatus
+  }
+}
+
+
+// ======================================================
+// GPS TRACK
+// ======================================================
+
+Table track_points {
+  trackPointId integer [pk, increment]
+
+  localJourneyId varchar [not null]
+
+  latitude double [not null]
+  longitude double [not null]
+
+  altitude double
+
+  accuracy double
+
+  speed double
+
+  // Hướng di chuyển 0 - 360 độ
+  heading double
+
+  recordedAt timestamp [not null]
+
+  indexes {
+    localJourneyId
+    (localJourneyId, recordedAt)
+  }
+}
+
+
+// ======================================================
+// OFFLINE CHECK-IN
+// ======================================================
+
+Table offline_checkins {
+  localCheckinId varchar [pk]
+
+  // Server ID sau khi sync
+  serverCheckinId varchar
+
+  localJourneyId varchar [not null]
+
+  milestoneId varchar [not null]
+
+  userId varchar [not null]
+
+  latitude double [not null]
+  longitude double [not null]
+
+  accuracyMeters double
+
+  distanceToTargetMeters double
+
+  // VERIFIED
+  // REJECTED
+  // PENDING_VERIFICATION
+  verificationStatus varchar
+
+  checkedAt timestamp [not null]
+
+  // PENDING
+  // SYNCED
+  // FAILED
+  syncStatus varchar [default: 'PENDING']
+
+  createdAt timestamp
+  updatedAt timestamp
+
+  indexes {
+    localJourneyId
+    milestoneId
+    syncStatus
+    (localJourneyId, milestoneId, userId) [unique]
+  }
+}
+
+
+// ======================================================
+// VISITED PROVINCES
+// ======================================================
+
+Table visited_provinces {
+  provinceId varchar [pk]
+
+  name varchar [not null]
+
+  firstVisitedAt timestamp
+
+  lastVisitedAt timestamp
+
+  visitCount int [default: 1]
+
+  source varchar
+
+  // PENDING
+  // SYNCED
+  // FAILED
+  syncStatus varchar [default: 'SYNCED']
+
+  updatedAt timestamp
+}
+
+
+// ======================================================
+// DOWNLOADED OFFLINE MAPS
+// ======================================================
+
+Table downloaded_maps {
+  mapId varchar [pk]
+
+  // PLACE | ROUTE
+  // scope=PLACE -> trekkingPlaceId bắt buộc.
+  // scope=ROUTE -> trekkingRouteId bắt buộc.
+  scope varchar [not null]
+
+  trekkingPlaceId varchar
+
+  trekkingRouteId varchar
+
+  mapName varchar [not null]
+
+  // Ví dụ:
+  // /maps/nui_ba_den_v1/map.mbtiles
+  // hoặc thư mục/package đã giải nén theo format app.
+  localPath varchar [not null]
+
+  mapVersion int
+
+  sizeBytes integer
+
+  minZoom int
+  maxZoom int
+
+  // Optional BBOX (verbose cho Flutter MapLibre camera)
+  minLatitude double
+  minLongitude double
+
+  maxLatitude double
+  maxLongitude double
+
+  checksum varchar
+
+  downloadedAt timestamp
+
+  lastUsedAt timestamp
+
+  // DOWNLOADING | READY | OUTDATED | FAILED
+  status varchar [default: 'READY']
+
+  indexes {
+    scope
+    trekkingRouteId
+    trekkingPlaceId
+    (scope, trekkingPlaceId)
+    (scope, trekkingRouteId)
+  }
+}
+
+
+// ======================================================
+// SYNC QUEUE
+// ======================================================
+
+Table sync_queue {
+  syncQueueId integer [pk, increment]
+
+  // JOURNEY
+  // CHECKIN
+  // PROVINCE_VISIT
+  // ROUTE_SUBMISSION
+  // PLACE_SUGGESTION
+  // JOURNEY_MARKER
+  // MARKER_MEDIA
+  entityType varchar [not null]
+
+  // ID local của entity
+  entityId varchar [not null]
+
+  // CREATE
+  // UPDATE
+  // DELETE
+  operation varchar [not null]
+
+  // JSON request body
+  payload text
+
+  // PENDING
+  // PROCESSING
+  // FAILED
+  status varchar [default: 'PENDING']
+
+  retryCount int [default: 0]
+
+  idempotencyKey varchar [not null, unique]
+
+  // IMMEDIATE
+  // NORMAL
+  // OFF_PEAK
+  // BULK
+  priority varchar [default: 'NORMAL']
+
+  nextRetryAt timestamp
+  scheduledAfter timestamp
+
+  payloadSizeBytes integer
+
+  createdAt timestamp [not null]
+
+  lastAttemptAt timestamp
+
+  lastError text
+
+  indexes {
+    status
+    entityType
+    (entityType, entityId)
+  }
+}
+
+
+// ======================================================
+// LOCAL CONTRIBUTIONS
+// ======================================================
+
+Table local_contributions {
+  localContributionId varchar [pk]
+
+  serverContributionId varchar
+
+  userId varchar [not null]
+
+  // ROUTE_SUBMISSION | PLACE_SUGGESTION
+  type varchar [not null]
+
+  sourceLocalJourneyId varchar
+
+  sourceServerJourneyId varchar
+
+  payload text [not null]
+
+  // DRAFT
+  // PENDING_REVIEW
+  // NEEDS_REVISION
+  // APPROVED
+  // REJECTED
+  // CANCELLED
+  serverStatus varchar [default: 'DRAFT']
+
+  // PENDING
+  // PROCESSING
+  // SYNCED
+  // FAILED
+  // DEFERRED
+  syncStatus varchar [default: 'PENDING']
+
+  adminNote text
+
+  resultingEntityId varchar
+
+  createdAt timestamp
+  updatedAt timestamp
+
+  lastSyncedAt timestamp
+
+  indexes {
+    userId
+    type
+    serverStatus
+    syncStatus
+  }
+}
+
+
+// ======================================================
+// RELATIONSHIPS
+// ======================================================
+
+
+// ---------- CACHE ----------
+
+Ref: cached_routes.trekkingPlaceId >
+     cached_places.trekkingPlaceId
+
+Ref: cached_milestones.trekkingRouteId >
+     cached_routes.trekkingRouteId
+
+
+// ---------- LOCAL JOURNEY ----------
+
+Ref: local_journeys.userId >
+     local_user.userId
+
+Ref: local_journeys.trekkingPlaceId >
+     cached_places.trekkingPlaceId
+
+Ref: local_journeys.trekkingRouteId >
+     cached_routes.trekkingRouteId
+
+Ref: local_journeys.provinceId >
+     cached_provinces.provinceId
+
+
+// ---------- USER-CREATED MARKERS ----------
+
+Ref: local_journey_markers.localJourneyId >
+     local_journeys.localJourneyId
+
+Ref: local_journey_markers.userId >
+     local_user.userId
+
+Ref: local_marker_media.localMarkerId >
+     local_journey_markers.localMarkerId
+
+
+// ---------- GPS TRACK ----------
+
+Ref: track_points.localJourneyId >
+     local_journeys.localJourneyId
+
+
+// ---------- OFFLINE CHECK-IN ----------
+
+Ref: offline_checkins.localJourneyId >
+     local_journeys.localJourneyId
+
+Ref: offline_checkins.milestoneId >
+     cached_milestones.milestoneId
+
+Ref: offline_checkins.userId >
+     local_user.userId
+
+
+// ---------- VISITED PROVINCES ----------
+
+Ref: visited_provinces.provinceId >
+     cached_provinces.provinceId
+
+
+// ---------- OFFLINE MAP ----------
+
+Ref: downloaded_maps.trekkingPlaceId >
+     cached_places.trekkingPlaceId
+
+Ref: downloaded_maps.trekkingRouteId >
+     cached_routes.trekkingRouteId
+
+
+// ---------- CONTRIBUTIONS ----------
+
+Ref: local_contributions.userId >
+     local_user.userId
+
+Ref: local_contributions.sourceLocalJourneyId >
+     local_journeys.localJourneyId
+
+
+// ======================================================
+// VISUAL GROUPS
+// ======================================================
+
+TableGroup local_identity {
+  local_user
+}
+
+TableGroup local_cache {
+  cached_provinces
+  cached_places
+  cached_routes
+  cached_milestones
+}
+
+TableGroup local_journey_tracking {
+  local_journeys
+  track_points
+  local_journey_markers
+  local_marker_media
+  offline_checkins
+}
+
+TableGroup local_offline_data {
+  visited_provinces
+  downloaded_maps
+}
+
+TableGroup local_sync {
+  sync_queue
+  local_contributions
+}

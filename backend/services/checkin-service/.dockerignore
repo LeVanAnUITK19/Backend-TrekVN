@@ -1,0 +1,30 @@
+# ─── Dependencies (sẽ được cài lại trong Docker) ─────────────────────────────
+node_modules/
+
+# ─── Secrets — KHÔNG BAO GIỜ đưa vào image ───────────────────────────────────
+.env
+.env.*
+
+# ─── Logs & Coverage ─────────────────────────────────────────────────────────
+*.log
+logs/
+coverage/
+.nyc_output/
+
+# ─── Dev/build artifacts ─────────────────────────────────────────────────────
+dist/
+build/
+
+# ─── Git ─────────────────────────────────────────────────────────────────────
+.git/
+.gitignore
+
+# ─── Editor & OS ─────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ─── Docker files (không cần bên trong image) ────────────────────────────────
+Dockerfile
+.dockerignore

@@ -1,0 +1,135 @@
+// ======================================================
+// TREKVIET SERVER DATABASE - ENTRY POINT
+// ======================================================
+//
+// IMPORTANT:
+// Các database thuộc nhiều logical MongoDB services.
+//
+// References giữa service chỉ mang tính conceptual,
+// không phải MongoDB-enforced foreign keys.
+//
+// ======================================================
+
+
+// ======================================================
+// IMPORT SERVICES
+// ======================================================
+
+use * from './services/auth.dbml'
+
+use * from './services/checkin.dbml'
+
+use * from './services/trekking.dbml'
+
+use * from './services/community.dbml'
+
+// Agent DB (trekviet_agent) — physical DB riêng biệt.
+// Cross-refs bên dưới là conceptual IDs, không enforced.
+use * from './services/agent.dbml'
+
+
+// ======================================================
+// CROSS-SERVICE RELATIONSHIPS
+// ======================================================
+
+
+// ------------------------------------------------------
+// CHECK-IN / TREKKING -> AUTH
+// ------------------------------------------------------
+
+Ref: province_visits.userId > users.userId
+
+Ref: milestone_checkins.userId > users.userId
+
+Ref: journeys.userId > users.userId
+
+Ref: journey_markers.userId > users.userId
+
+Ref: detail_evaluates.userId > users.userId
+
+Ref: user_badges.userId > users.userId
+
+Ref: route_submissions.userId > users.userId
+
+Ref: route_submissions.reviewedBy > users.userId
+
+Ref: place_suggestions.userId > users.userId
+
+Ref: place_suggestions.reviewedBy > users.userId
+
+Ref: place_visits.userId > users.userId
+
+
+// ------------------------------------------------------
+// COMMUNITY -> AUTH
+// ------------------------------------------------------
+
+Ref: posts.authorId > users.userId
+
+Ref: comments.authorId > users.userId
+
+Ref: reactions.userId > users.userId
+
+
+// ------------------------------------------------------
+// TREKKING -> CHECK-IN
+// ------------------------------------------------------
+
+Ref: trekking_places.provinceId > provinces.provinceId
+
+Ref: journeys.provinceId > provinces.provinceId
+
+Ref: place_suggestions.provinceId > provinces.provinceId
+
+
+// ------------------------------------------------------
+// CHECK-IN -> TREKKING
+// ------------------------------------------------------
+
+Ref: milestone_checkins.journeyId > journeys.journeyId
+
+Ref: milestone_checkins.trekkingRouteId >
+     trekking_routes.trekkingRouteId
+
+Ref: milestone_checkins.milestoneId >
+     milestones.milestoneId
+
+Ref: province_visits.firstJourneyId >
+     journeys.journeyId
+
+Ref: place_visits.trekkingPlaceId >
+     trekking_places.trekkingPlaceId
+
+
+// ------------------------------------------------------
+// COMMUNITY -> TREKKING
+// ------------------------------------------------------
+
+Ref: posts.journeyId > journeys.journeyId
+
+Ref: posts.trekkingPlaceId >
+     trekking_places.trekkingPlaceId
+
+
+// ------------------------------------------------------
+// AGENT -> AUTH / TREKKING (conceptual — cross-DB)
+// ------------------------------------------------------
+
+Ref: conversations.adminId > users.userId
+
+Ref: messages.adminId > users.userId
+
+Ref: agent_runs.adminId > users.userId
+
+Ref: place_candidates.adminId > users.userId
+
+Ref: place_candidates.targetPlaceId >
+     trekking_places.trekkingPlaceId
+
+Ref: map_jobs.adminId > users.userId
+
+Ref: map_jobs.trekkingPlaceId >
+     trekking_places.trekkingPlaceId
+
+Ref: map_jobs.trekkingRouteId >
+     trekking_routes.trekkingRouteId

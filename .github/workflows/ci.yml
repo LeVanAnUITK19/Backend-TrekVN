@@ -1,0 +1,113 @@
+name: TrekViet - CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: trekviet-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Detect changed services
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      auth: ${{ steps.filter.outputs.auth }}
+      checkin: ${{ steps.filter.outputs.checkin }}
+      trekking: ${{ steps.filter.outputs.trekking }}
+      community: ${{ steps.filter.outputs.community }}
+      agent: ${{ steps.filter.outputs.agent }}
+      gateway: ${{ steps.filter.outputs.gateway }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Detect changes
+        id: filter
+        uses: dorny/paths-filter@v4
+        with:
+          filters: .github/filters.yml
+
+  auth:
+    name: Auth service
+    permissions:
+      contents: read
+      packages: write
+    needs: changes
+    if: ${{ needs.changes.outputs.auth == 'true' || github.event_name == 'workflow_dispatch' }}
+    uses: ./.github/workflows/reusable-node.yml
+    with:
+      service: auth-service
+    secrets: inherit
+
+  checkin:
+    name: Checkin service
+    permissions:
+      contents: read
+      packages: write
+    needs: changes
+    if: ${{ needs.changes.outputs.checkin == 'true' || github.event_name == 'workflow_dispatch' }}
+    uses: ./.github/workflows/reusable-node.yml
+    with:
+      service: checkin-service
+    secrets: inherit
+
+  trekking:
+    name: Trekking service
+    permissions:
+      contents: read
+      packages: write
+    needs: changes
+    if: ${{ needs.changes.outputs.trekking == 'true' || github.event_name == 'workflow_dispatch' }}
+    uses: ./.github/workflows/reusable-node.yml
+    with:
+      service: trekking-service
+    secrets: inherit
+
+  gateway:
+    name: API gateway
+    permissions:
+      contents: read
+      packages: write
+    needs: changes
+    if: ${{ needs.changes.outputs.gateway == 'true' || github.event_name == 'workflow_dispatch' }}
+    uses: ./.github/workflows/reusable-node.yml
+    with:
+      service: api-gateway
+    secrets: inherit
+
+  agent:
+    name: Python agent service
+    permissions:
+      contents: read
+      packages: write
+    needs: changes
+    if: ${{ needs.changes.outputs.agent == 'true' || github.event_name == 'workflow_dispatch' }}
+    uses: ./.github/workflows/reusable-python.yml
+    with:
+      service: agent-service
+    secrets: inherit
+
+  ci-result:
+    name: CI result (required check)
+    if: ${{ always() }}
+    needs: [changes, auth, checkin, trekking, gateway, agent]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Fail if any required job failed or was cancelled
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: |
+          echo "$NEEDS_JSON" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          echo "$NEEDS_JSON" | jq -e 'all(.[]; .result == "success" or .result == "skipped")' >/dev/null

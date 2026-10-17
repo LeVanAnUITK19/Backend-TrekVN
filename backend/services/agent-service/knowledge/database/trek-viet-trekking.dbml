@@ -1,0 +1,295 @@
+// Generated physical MongoDB schema. _id is ObjectId; API aliases are not stored fields.
+// Nested fields retain their MongoDB dotted paths. See schemas.json for index options and subdocuments.
+
+Table badges {
+  "code" varchar [not null]
+  "name" varchar [not null]
+  "description" varchar
+  "iconUrl" varchar
+  "category" varchar
+  "rarity" varchar
+  "condition" json
+  "status" varchar
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+
+Table detailevaluates {
+  "trekkingPlaceId" varchar [not null]
+  "userId" varchar [not null]
+  "point" double [not null]
+  "content" varchar
+  "isAnonymous" boolean
+  "imagesUrl" json
+  "videoUrl" json
+  "deleted" boolean
+  "editCount" double
+  "removedBy" varchar
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+
+Table eventoutboxes {
+  "eventId" varchar [not null]
+  "eventType" varchar [not null]
+  "eventVersion" double
+  "payload" json [not null]
+  "status" varchar
+  "retryCount" double
+  "nextRetryAt" timestamp
+  "lastError" varchar
+  "publishedAt" timestamp
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+
+Table idempotencykeys {
+  "key" varchar [not null]
+  "operation" varchar [not null]
+  "userId" varchar [not null]
+  "status" varchar
+  "responseData" json
+  "completedAt" timestamp
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+
+Table journeys {
+  "userId" varchar [not null]
+  "trekkingPlaceId" varchar [not null]
+  "trekkingRouteId" varchar [not null]
+  "provinceId" varchar
+  "clientJourneyId" varchar
+  "name" varchar [not null]
+  "note" varchar
+  "participantCount" double
+  "status" varchar
+  "plannedStartAt" timestamp
+  "plannedEndAt" timestamp
+  "startedAt" timestamp
+  "completedAt" timestamp
+  "statistics" json
+  "track" json
+  "checkinCount" double
+  "markerCount" double
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+
+Table journeymarkers {
+  "journeyId" varchar [not null]
+  "userId" varchar [not null]
+  "name" varchar [not null]
+  "type" varchar [not null]
+  "note" varchar
+  "location.type" varchar [not null]
+  "location.coordinates" json [not null]
+  "altitude" double
+  "accuracyMeters" double
+  "images" json
+  "markedAt" timestamp [not null]
+  "source" varchar
+  "clientMarkerId" varchar
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+
+Table milestones {
+  "trekkingRouteId" varchar [not null]
+  "name" varchar [not null]
+  "description" varchar
+  "type" varchar [not null]
+  "sequence" double [not null]
+  "location.type" varchar [not null]
+  "location.coordinates" json [not null]
+  "altitude" double
+  "checkinRadiusMeters" double
+  "required" boolean
+  "imageUrl" varchar
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+
+Table offlinemappackages {
+  "name" varchar [not null]
+  "version" varchar [not null]
+  "description" varchar
+  "checksum" varchar
+  "objectKey" varchar
+  "fileSizeBytes" double
+  "status" varchar
+  "regionCode" varchar
+  "publishedAt" timestamp
+  "createdBy" varchar
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+
+Table placesuggestions {
+  "userId" varchar [not null]
+  "provinceId" varchar [not null]
+  "proposedName" varchar [not null]
+  "address" varchar
+  "location.type" varchar [not null]
+  "location.coordinates" json [not null]
+  "description" varchar [not null]
+  "difficulty" varchar
+  "tags" json
+  "images" json
+  "status" varchar
+  "reviewedBy" varchar
+  "reviewedAt" timestamp
+  "adminNote" varchar
+  "resultingPlaceId" varchar
+  "clientOperationId" varchar
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+
+Table processedevents {
+  "eventId" varchar [not null]
+  "consumerName" varchar [not null]
+  "processedAt" timestamp
+  "_id" varchar [pk]
+  "__v" double
+}
+
+Table routesubmissions {
+  "userId" varchar [not null]
+  "contributionKind" varchar
+  "sourceJourneyId" varchar [not null]
+  "trekkingPlaceId" varchar
+  "proposedName" varchar
+  "description" varchar
+  "notes" varchar
+  "encodedPolyline" varchar
+  "gpxUrl" varchar
+  "statistics.distanceMeters" double
+  "statistics.durationSeconds" double
+  "statistics.elevationGain" double
+  "statistics.maxAltitude" double
+  "statistics.averageSpeed" double
+  "images" json
+  "markerIds" json
+  "status" varchar
+  "reviewedBy" varchar
+  "reviewedAt" timestamp
+  "adminNote" varchar
+  "resultingRouteId" varchar
+  "clientOperationId" varchar
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+
+Table routesubmissionmarkers {
+  "routeSubmissionId" varchar [not null]
+  "sourceJourneyMarkerId" varchar
+  "name" varchar [not null]
+  "type" varchar [not null]
+  "description" varchar
+  "location.type" varchar [not null]
+  "location.coordinates" json [not null]
+  "altitude" double
+  "images" json
+  "sequence" double
+  "reviewStatus" varchar
+  "adminNote" varchar
+  "resultingMilestoneId" varchar
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+
+Table trekkingplaces {
+  "name" varchar [not null]
+  "slug" varchar
+  "provinceId" varchar [not null]
+  "address" varchar
+  "location.type" varchar [not null]
+  "location.coordinates" json [not null]
+  "description" varchar
+  "difficulty" varchar
+  "averageDurationMinutes" double
+  "elevationMeters" double
+  "images" json
+  "imageMapUrl" varchar
+  "tags" json
+  "dataOrigin" varchar
+  "externalRefs" json
+  "lastVerifiedAt" timestamp
+  "offlineMap.available" boolean
+  "offlineMap.version" double
+  "offlineMap.objectKey" varchar
+  "offlineMap.sizeBytes" double
+  "offlineMap.checksum" varchar
+  "offlineMap.minZoom" double
+  "offlineMap.maxZoom" double
+  "offlineMap.bounds.minLat" double
+  "offlineMap.bounds.minLon" double
+  "offlineMap.bounds.maxLat" double
+  "offlineMap.bounds.maxLon" double
+  "ratingAverage" double
+  "ratingCount" double
+  "status" varchar
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+
+Table trekkingroutes {
+  "trekkingPlaceId" varchar [not null]
+  "name" varchar [not null]
+  "description" varchar
+  "difficulty" varchar
+  "distanceMeters" double
+  "estimatedDurationMinutes" double
+  "elevationGain" double
+  "maxElevation" double
+  "imageUrl" varchar
+  "startLocation.type" varchar
+  "startLocation.coordinates" json
+  "endLocation.type" varchar
+  "endLocation.coordinates" json
+  "path.type" varchar
+  "path.coordinates" json
+  "offlineMap" json
+  "status" varchar
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+
+Table userbadges {
+  "userId" varchar [not null]
+  "badgeId" varchar [not null]
+  "journeyId" varchar
+  "earnedAt" timestamp [not null]
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+

@@ -1,0 +1,240 @@
+[
+  {
+    "code": "ha_noi",
+    "name": "Hà Nội",
+    "region": "NORTH",
+    "mapFeatureId": "VN-HN",
+    "center": { "type": "Point", "coordinates": [105.8412, 21.0245] }
+  },
+  {
+    "code": "ha_giang",
+    "name": "Hà Giang",
+    "region": "NORTH",
+    "mapFeatureId": "VN-02",
+    "center": { "type": "Point", "coordinates": [104.9836, 22.8026] }
+  },
+  {
+    "code": "cao_bang",
+    "name": "Cao Bằng",
+    "region": "NORTH",
+    "mapFeatureId": "VN-04",
+    "center": { "type": "Point", "coordinates": [106.2572, 22.665] }
+  },
+  {
+    "code": "bac_kan",
+    "name": "Bắc Kạn",
+    "region": "NORTH",
+    "mapFeatureId": "VN-06",
+    "center": { "type": "Point", "coordinates": [105.834, 22.1472] }
+  },
+  {
+    "code": "tuyen_quang",
+    "name": "Tuyên Quang",
+    "region": "NORTH",
+    "mapFeatureId": "VN-07",
+    "center": { "type": "Point", "coordinates": [105.2133, 21.8078] }
+  },
+  {
+    "code": "lao_cai",
+    "name": "Lào Cai",
+    "region": "NORTH",
+    "mapFeatureId": "VN-LO",
+    "center": { "type": "Point", "coordinates": [104.0, 22.3364] }
+  },
+  {
+    "code": "yen_bai",
+    "name": "Yên Bái",
+    "region": "NORTH",
+    "mapFeatureId": "VN-YB",
+    "center": { "type": "Point", "coordinates": [104.8698, 21.7168] }
+  },
+  {
+    "code": "thai_nguyen",
+    "name": "Thái Nguyên",
+    "region": "NORTH",
+    "mapFeatureId": "VN-69",
+    "center": { "type": "Point", "coordinates": [105.8412, 21.594] }
+  },
+  {
+    "code": "lang_son",
+    "name": "Lạng Sơn",
+    "region": "NORTH",
+    "mapFeatureId": "VN-LS",
+    "center": { "type": "Point", "coordinates": [106.7615, 21.8537] }
+  },
+  {
+    "code": "quang_ninh",
+    "name": "Quảng Ninh",
+    "region": "NORTH",
+    "mapFeatureId": "VN-QN",
+    "center": { "type": "Point", "coordinates": [107.2925, 21.0064] }
+  },
+  {
+    "code": "hoa_binh",
+    "name": "Hòa Bình",
+    "region": "NORTH",
+    "mapFeatureId": "VN-HB",
+    "center": { "type": "Point", "coordinates": [105.338, 20.6861] }
+  },
+  {
+    "code": "hai_phong",
+    "name": "Hải Phòng",
+    "region": "NORTH",
+    "mapFeatureId": "VN-HP",
+    "center": { "type": "Point", "coordinates": [106.6881, 20.8449] }
+  },
+  {
+    "code": "thanh_hoa",
+    "name": "Thanh Hóa",
+    "region": "CENTRAL",
+    "mapFeatureId": "VN-TH",
+    "center": { "type": "Point", "coordinates": [105.7767, 19.8079] }
+  },
+  {
+    "code": "nghe_an",
+    "name": "Nghệ An",
+    "region": "CENTRAL",
+    "mapFeatureId": "VN-NA",
+    "center": { "type": "Point", "coordinates": [104.9282, 19.2342] }
+  },
+  {
+    "code": "ha_tinh",
+    "name": "Hà Tĩnh",
+    "region": "CENTRAL",
+    "mapFeatureId": "VN-HT",
+    "center": { "type": "Point", "coordinates": [105.6881, 18.3559] }
+  },
+  {
+    "code": "quang_binh",
+    "name": "Quảng Bình",
+    "region": "CENTRAL",
+    "mapFeatureId": "VN-QB",
+    "center": { "type": "Point", "coordinates": [106.3484, 17.4689] }
+  },
+  {
+    "code": "quang_tri",
+    "name": "Quảng Trị",
+    "region": "CENTRAL",
+    "mapFeatureId": "VN-QT",
+    "center": { "type": "Point", "coordinates": [106.8831, 16.7403] }
+  },
+  {
+    "code": "thua_thien_hue",
+    "name": "Thừa Thiên Huế",
+    "region": "CENTRAL",
+    "mapFeatureId": "VN-52",
+    "center": { "type": "Point", "coordinates": [107.5905, 16.4637] }
+  },
+  {
+    "code": "da_nang",
+    "name": "Đà Nẵng",
+    "region": "CENTRAL",
+    "mapFeatureId": "VN-DN",
+    "center": { "type": "Point", "coordinates": [108.2022, 16.0544] }
+  },
+  {
+    "code": "quang_nam",
+    "name": "Quảng Nam",
+    "region": "CENTRAL",
+    "mapFeatureId": "VN-QNM",
+    "center": { "type": "Point", "coordinates": [108.0, 15.5394] }
+  },
+  {
+    "code": "quang_ngai",
+    "name": "Quảng Ngãi",
+    "region": "CENTRAL",
+    "mapFeatureId": "VN-QNG",
+    "center": { "type": "Point", "coordinates": [108.804, 15.1214] }
+  },
+  {
+    "code": "binh_dinh",
+    "name": "Bình Định",
+    "region": "CENTRAL",
+    "mapFeatureId": "VN-31",
+    "center": { "type": "Point", "coordinates": [108.9022, 14.1665] }
+  },
+  {
+    "code": "phu_yen",
+    "name": "Phú Yên",
+    "region": "CENTRAL",
+    "mapFeatureId": "VN-PY",
+    "center": { "type": "Point", "coordinates": [109.0928, 13.0882] }
+  },
+  {
+    "code": "khanh_hoa",
+    "name": "Khánh Hòa",
+    "region": "CENTRAL",
+    "mapFeatureId": "VN-34",
+    "center": { "type": "Point", "coordinates": [109.1931, 12.2585] }
+  },
+  {
+    "code": "kon_tum",
+    "name": "Kon Tum",
+    "region": "CENTRAL",
+    "mapFeatureId": "VN-KO",
+    "center": { "type": "Point", "coordinates": [108.0, 14.7939] }
+  },
+  {
+    "code": "gia_lai",
+    "name": "Gia Lai",
+    "region": "CENTRAL",
+    "mapFeatureId": "VN-GL",
+    "center": { "type": "Point", "coordinates": [108.0, 13.8079] }
+  },
+  {
+    "code": "dak_lak",
+    "name": "Đắk Lắk",
+    "region": "CENTRAL",
+    "mapFeatureId": "VN-DL",
+    "center": { "type": "Point", "coordinates": [108.0, 12.6996] }
+  },
+  {
+    "code": "dak_nong",
+    "name": "Đắk Nông",
+    "region": "CENTRAL",
+    "mapFeatureId": "VN-DK",
+    "center": { "type": "Point", "coordinates": [107.6905, 12.0046] }
+  },
+  {
+    "code": "lam_dong",
+    "name": "Lâm Đồng",
+    "region": "CENTRAL",
+    "mapFeatureId": "VN-LD",
+    "center": { "type": "Point", "coordinates": [108.4419, 11.9465] }
+  },
+  {
+    "code": "ho_chi_minh",
+    "name": "Hồ Chí Minh",
+    "region": "SOUTH",
+    "mapFeatureId": "VN-SG",
+    "center": { "type": "Point", "coordinates": [106.6602, 10.7769] }
+  },
+  {
+    "code": "binh_thuan",
+    "name": "Bình Thuận",
+    "region": "SOUTH",
+    "mapFeatureId": "VN-BT",
+    "center": { "type": "Point", "coordinates": [107.9207, 11.0904] }
+  },
+  {
+    "code": "ninh_thuan",
+    "name": "Ninh Thuận",
+    "region": "SOUTH",
+    "mapFeatureId": "VN-NT",
+    "center": { "type": "Point", "coordinates": [108.9877, 11.5645] }
+  },
+  {
+    "code": "ba_ria_vung_tau",
+    "name": "Bà Rịa - Vũng Tàu",
+    "region": "SOUTH",
+    "mapFeatureId": "VN-BR",
+    "center": { "type": "Point", "coordinates": [107.2433, 10.5417] }
+  },
+  {
+    "code": "can_tho",
+    "name": "Cần Thơ",
+    "region": "SOUTH",
+    "mapFeatureId": "VN-CT",
+    "center": { "type": "Point", "coordinates": [105.7469, 10.0341] }
+  }
+]

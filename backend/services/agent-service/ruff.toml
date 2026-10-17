@@ -1,0 +1,5 @@
+# Catch syntax errors and undefined names without introducing a formatting migration.
+exclude = [".venv", ".task-history-qa*", ".map-builder-qa*", "pytest-cache-files-*"]
+
+[lint]
+select = ["E9", "F63", "F7", "F82"]

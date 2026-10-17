@@ -1,0 +1,37 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: npm
+    directory: /backend/services/auth-service
+    schedule:
+      interval: weekly
+  - package-ecosystem: npm
+    directory: /backend/services/checkin-service
+    schedule:
+      interval: weekly
+  - package-ecosystem: npm
+    directory: /backend/services/trekking-service
+    schedule:
+      interval: weekly
+  - package-ecosystem: npm
+    directory: /backend/services/api-gateway
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: pip
+    directory: /backend/services/agent-service
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: terraform
+    directory: /backend/infrastructure/terraform/environments/dev
+    schedule:
+      interval: weekly
+  - package-ecosystem: terraform
+    directory: /backend/infrastructure/terraform/bootstrap-state
+    schedule:
+      interval: weekly

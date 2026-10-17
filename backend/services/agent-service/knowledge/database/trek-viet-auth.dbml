@@ -1,0 +1,168 @@
+// Generated physical MongoDB schema. _id is ObjectId; API aliases are not stored fields.
+// Nested fields retain their MongoDB dotted paths. See schemas.json for index options and subdocuments.
+
+Table auditlogs {
+  "adminId" varchar [not null]
+  "adminName" varchar [not null]
+  "adminEmail" varchar [not null]
+  "action" varchar [not null]
+  "entityType" varchar [not null]
+  "entityId" varchar
+  "beforeSummary" json
+  "afterSummary" json
+  "result" varchar
+  "ipAddress" varchar
+  "note" varchar
+  "timestamp" timestamp
+  "_id" varchar [pk]
+  "__v" double
+}
+
+Table authidentities {
+  "userId" varchar [not null]
+  "provider" varchar [not null]
+  "providerUserId" varchar
+  "passwordHash" varchar
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+
+Table otpverifications {
+  "userId" varchar
+  "email" varchar [not null]
+  "purpose" varchar [not null]
+  "otpHash" varchar [not null]
+  "expiresAt" timestamp [not null]
+  "attempts" double
+  "status" varchar
+  "usedAt" timestamp
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+
+Table passwordresettokens {
+  "tokenHash" varchar [not null]
+  "userId" varchar [not null]
+  "expiresAt" timestamp [not null]
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+
+Table processedevents {
+  "eventId" varchar [not null]
+  "consumerName" varchar [not null]
+  "processedAt" timestamp
+  "_id" varchar [pk]
+  "__v" double
+}
+
+Table rankdefinitions {
+  "code" varchar [not null]
+  "name" varchar [not null]
+  "description" varchar
+  "level" double [not null]
+  "minXp" double [not null]
+  "minCompletedJourneys" double
+  "minVisitedProvinces" double
+  "minBadgeCount" double
+  "minDistanceMeters" double
+  "minApprovedContributions" double
+  "iconUrl" varchar
+  "status" varchar
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+
+Table rankhistories {
+  "userId" varchar [not null]
+  "previousRankId" varchar
+  "newRankId" varchar [not null]
+  "xpAtChange" double [not null]
+  "changeType" varchar
+  "changedAt" timestamp [not null]
+  "createdAt" timestamp
+  "_id" varchar [pk]
+  "__v" double
+}
+
+Table refreshtokens {
+  "userId" varchar [not null]
+  "tokenHash" varchar [not null]
+  "expiresAt" timestamp [not null]
+  "revokedAt" timestamp
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+
+Table users {
+  "email" varchar [not null]
+  "passwordHash" varchar
+  "displayName" varchar [not null]
+  "avatarUrl" varchar
+  "bio" varchar
+  "role" varchar
+  "status" varchar
+  "emailVerifiedAt" timestamp
+  "lastLoginAt" timestamp
+  "tokenVersion" double
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+
+Table userrankprofiles {
+  "userId" varchar [not null]
+  "currentRankId" varchar [not null]
+  "totalXp" double
+  "completedJourneyCount" double
+  "totalDistanceMeters" double
+  "totalElevationGain" double
+  "verifiedCheckinCount" double
+  "visitedProvinceCount" double
+  "visitedPlaceCount" double
+  "badgeCount" double
+  "approvedContributionCount" double
+  "lastCalculatedAt" timestamp
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+
+Table usersettings {
+  "userSettingId" varchar
+  "userId" varchar [not null]
+  "language" varchar
+  "theme" varchar
+  "distanceUnit" varchar
+  "notificationEnabled" boolean
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+
+Table xptransactions {
+  "userId" varchar [not null]
+  "transactionType" varchar [not null]
+  "sourceType" varchar [not null]
+  "sourceId" varchar
+  "xpAmount" double [not null]
+  "description" varchar
+  "idempotencyKey" varchar [not null]
+  "createdAt" timestamp
+  "_id" varchar [pk]
+  "__v" double
+}
+

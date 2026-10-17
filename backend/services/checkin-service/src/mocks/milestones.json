@@ -1,0 +1,72 @@
+[
+  {
+    "milestoneId": "milestone_langbiang_summit",
+    "trekkingRouteId": "route_langbiang_01",
+    "trekkingPlaceId": "place_langbiang",
+    "provinceId": "6849a1b2c3d4e5f6a7b8c9d0",
+    "name": "Đỉnh Langbiang",
+    "type": "SUMMIT",
+    "location": {
+      "type": "Point",
+      "coordinates": [108.441, 12.05]
+    },
+    "checkinRadiusMeters": 50,
+    "qualifiesPlaceVisit": true
+  },
+  {
+    "milestoneId": "milestone_langbiang_start",
+    "trekkingRouteId": "route_langbiang_01",
+    "trekkingPlaceId": "place_langbiang",
+    "provinceId": "6849a1b2c3d4e5f6a7b8c9d0",
+    "name": "Điểm xuất phát Langbiang",
+    "type": "START",
+    "location": {
+      "type": "Point",
+      "coordinates": [108.435, 12.044]
+    },
+    "checkinRadiusMeters": 100,
+    "qualifiesPlaceVisit": false
+  },
+  {
+    "milestoneId": "milestone_langbiang_finish",
+    "trekkingRouteId": "route_langbiang_01",
+    "trekkingPlaceId": "place_langbiang",
+    "provinceId": "6849a1b2c3d4e5f6a7b8c9d0",
+    "name": "Điểm kết thúc Langbiang",
+    "type": "FINISH",
+    "location": {
+      "type": "Point",
+      "coordinates": [108.436, 12.045]
+    },
+    "checkinRadiusMeters": 100,
+    "qualifiesPlaceVisit": true
+  },
+  {
+    "milestoneId": "milestone_fansipan_summit",
+    "trekkingRouteId": "route_fansipan_01",
+    "trekkingPlaceId": "place_fansipan",
+    "provinceId": "6849a1b2c3d4e5f6a7b8c9d1",
+    "name": "Đỉnh Fansipan",
+    "type": "SUMMIT",
+    "location": {
+      "type": "Point",
+      "coordinates": [103.776, 22.303]
+    },
+    "checkinRadiusMeters": 50,
+    "qualifiesPlaceVisit": true
+  },
+  {
+    "milestoneId": "milestone_tacu_summit",
+    "trekkingRouteId": "route_tacu_01",
+    "trekkingPlaceId": "place_tacu",
+    "provinceId": "6849a1b2c3d4e5f6a7b8c9d2",
+    "name": "Đỉnh Tà Cú",
+    "type": "SUMMIT",
+    "location": {
+      "type": "Point",
+      "coordinates": [107.877, 10.783]
+    },
+    "checkinRadiusMeters": 75,
+    "qualifiesPlaceVisit": true
+  }
+]

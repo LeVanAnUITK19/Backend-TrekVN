@@ -1,0 +1,31 @@
+# A change to shared CI configuration runs all service pipelines.
+auth:
+  - 'backend/services/auth-service/**'
+  - '.github/workflows/**'
+  - '.github/filters.yml'
+  - 'backend/ci/**'
+  - 'backend/shared/**'
+checkin:
+  - 'backend/services/checkin-service/**'
+  - '.github/workflows/**'
+  - '.github/filters.yml'
+  - 'backend/ci/**'
+  - 'backend/shared/**'
+trekking:
+  - 'backend/services/trekking-service/**'
+  - '.github/workflows/**'
+  - '.github/filters.yml'
+  - 'backend/ci/**'
+  - 'backend/shared/**'
+gateway:
+  - 'backend/services/api-gateway/**'
+  - '.github/workflows/**'
+  - '.github/filters.yml'
+  - 'backend/ci/**'
+  - 'backend/shared/**'
+agent:
+  - 'backend/services/agent-service/**'
+  - '.github/workflows/**'
+  - '.github/filters.yml'
+  - 'backend/ci/**'
+  - 'backend/shared/**'
