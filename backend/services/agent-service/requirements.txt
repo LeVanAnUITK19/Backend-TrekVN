@@ -21,7 +21,7 @@ botocore==1.37.33
 
 # ── Utilities ─────────────────────────────────────────────────────────────────
 python-multipart==0.0.32   # for FastAPI form data (map artifact download)
-aiofiles==24.1.0            # async file I/O
+aiofiles==25.1.0            # async file I/O
 Unidecode==1.3.8            # Vietnamese text → ASCII slug (slugify)
 
 # ── Tests ─────────────────────────────────────────────────────────────────────
