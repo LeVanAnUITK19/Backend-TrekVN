@@ -8,8 +8,8 @@ WORKDIR /app
 # Chỉ copy manifest trước để tận dụng Docker layer cache
 COPY package*.json ./
 
-# npm ci đảm bảo cài đúng version theo package-lock.json
-RUN npm ci --omit=dev --ignore-scripts
+# npm install for production (workaround for transitive peer dependency issues)
+RUN npm install --omit=dev --ignore-scripts && npm prune --omit=dev
 
 # ════════════════════════════════════════════════════════
 #  Stage 2 — runner: image production cuối cùng
