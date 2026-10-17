@@ -22,7 +22,7 @@ jobs:
         working-directory: backend/services/${{ inputs.service }}
     steps:
       - name: Checkout full history for Sonar analysis
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -87,7 +87,7 @@ jobs:
       packages: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Define immutable image tag
         id: image
