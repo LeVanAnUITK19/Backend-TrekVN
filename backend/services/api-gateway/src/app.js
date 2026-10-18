@@ -20,8 +20,9 @@ app.use(corsMiddleware);
 // Rate limiting — configurable via env vars.
 // Returns HTTP 429 + Retry-After header for client sync policy (NFR-SYNC-01, BR-22).
 // Health endpoints are excluded.
+// Disabled if DISABLE_RATE_LIMIT=true for testing.
 // ---------------------------------------------------------------------------
-if (process.env.NODE_ENV !== 'test') {
+if (process.env.NODE_ENV !== 'test' && process.env.DISABLE_RATE_LIMIT !== 'true') {
   const limiter = rateLimit({
     windowMs: env.RATE_LIMIT_WINDOW_MS,
     max: env.RATE_LIMIT_MAX_REQUESTS,
