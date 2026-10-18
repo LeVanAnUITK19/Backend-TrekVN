@@ -1,0 +1,100 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'trekvn-demo'
+    environment: 'render'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+# Load rules once and periodically evaluate them
+rule_files:
+  - "alerts.yml"
+
+# Scrape configurations
+scrape_configs:
+  # ─── Prometheus itself ────────────────────────────────────────────────────────
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # ─── TrekVN Services on Render ────────────────────────────────────────────────
+  
+  # API Gateway
+  - job_name: 'api-gateway'
+    metrics_path: '/metrics'
+    scheme: https
+    static_configs:
+      - targets:
+          - 'api-gateway-trekvn.onrender.com'
+        labels:
+          service: 'api-gateway'
+          tier: 'gateway'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # Auth Service
+  - job_name: 'auth-service'
+    metrics_path: '/metrics'
+    scheme: https
+    static_configs:
+      - targets:
+          - 'backend-trekvn.onrender.com'
+        labels:
+          service: 'auth-service'
+          tier: 'backend'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # Checkin Service
+  - job_name: 'checkin-service'
+    metrics_path: '/metrics'
+    scheme: https
+    static_configs:
+      - targets:
+          - 'checkin-service-trekvn.onrender.com'
+        labels:
+          service: 'checkin-service'
+          tier: 'backend'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # Trekking Service
+  - job_name: 'trekking-service'
+    metrics_path: '/metrics'
+    scheme: https
+    static_configs:
+      - targets:
+          - 'trekking-service-trekvn.onrender.com'
+        labels:
+          service: 'trekking-service'
+          tier: 'backend'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # Agent Service (Python FastAPI)
+  - job_name: 'agent-service'
+    metrics_path: '/metrics'
+    scheme: https
+    static_configs:
+      - targets:
+          - 'agent-service-trekvn.onrender.com'
+        labels:
+          service: 'agent-service'
+          tier: 'backend'
+          language: 'python'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # ─── Node Exporter (if running) ───────────────────────────────────────────────
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets:
+          - 'node-exporter:9100'
+        labels:
+          instance: 'monitoring-host'

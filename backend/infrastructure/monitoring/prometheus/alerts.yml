@@ -1,0 +1,109 @@
+groups:
+  - name: trekvn_services
+    interval: 30s
+    rules:
+      # ─── Service Health ─────────────────────────────────────────────────────
+      - alert: ServiceDown
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "{{ $labels.job }} ({{ $labels.instance }}) has been down for more than 2 minutes."
+
+      # ─── High Error Rate ────────────────────────────────────────────────────
+      - alert: HighErrorRate
+        expr: |
+          (
+            rate(trekvn_gateway_http_requests_total{status_code=~"5.."}[5m])
+            /
+            rate(trekvn_gateway_http_requests_total[5m])
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate on {{ $labels.service }}"
+          description: "Error rate is {{ $value | humanizePercentage }} on {{ $labels.service }}."
+
+      # ─── High Response Time ─────────────────────────────────────────────────
+      - alert: HighResponseTime
+        expr: |
+          histogram_quantile(0.95,
+            rate(trekvn_gateway_http_request_duration_seconds_bucket[5m])
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High response time on {{ $labels.service }}"
+          description: "95th percentile response time is {{ $value }}s on {{ $labels.service }} {{ $labels.route }}."
+
+      # ─── Rate Limit Exceeded ────────────────────────────────────────────────
+      - alert: RateLimitHigh
+        expr: rate(trekvn_gateway_rate_limit_hits_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High rate limit hits on {{ $labels.path }}"
+          description: "Rate limit is being hit {{ $value }} times/sec on {{ $labels.path }}."
+
+      # ─── High Memory Usage ──────────────────────────────────────────────────
+      - alert: HighMemoryUsage
+        expr: |
+          (
+            process_resident_memory_bytes
+            /
+            (1024 * 1024 * 1024)
+          ) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.job }}"
+          description: "Memory usage is {{ $value }}GB on {{ $labels.job }}."
+
+      # ─── High CPU Usage ─────────────────────────────────────────────────────
+      - alert: HighCPUUsage
+        expr: rate(process_cpu_seconds_total[5m]) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on {{ $labels.job }}"
+          description: "CPU usage is {{ $value | humanizePercentage }} on {{ $labels.job }}."
+
+      # ─── Proxy Errors ───────────────────────────────────────────────────────
+      - alert: ProxyErrorsHigh
+        expr: rate(trekvn_gateway_proxy_errors_total[5m]) > 1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High proxy errors to {{ $labels.service }}"
+          description: "Proxy errors to {{ $labels.service }} are {{ $value }}/sec. Check upstream connectivity."
+
+      # ─── Event Loop Lag ─────────────────────────────────────────────────────
+      - alert: EventLoopLag
+        expr: nodejs_eventloop_lag_seconds > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High event loop lag on {{ $labels.job }}"
+          description: "Event loop lag is {{ $value }}s on {{ $labels.job }}. May indicate blocking operations."
+
+  - name: database
+    interval: 30s
+    rules:
+      # ─── MongoDB Connection Issues ──────────────────────────────────────────
+      - alert: MongoDBConnectionFailed
+        expr: mongodb_connections_current == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "MongoDB connection failed on {{ $labels.job }}"
+          description: "Service {{ $labels.job }} has no active MongoDB connections."

@@ -1,0 +1,210 @@
+name: Deploy to Render (Manual)
+
+# Chỉ chạy khi manual trigger từ GitHub Actions UI
+on:
+  workflow_dispatch:
+    inputs:
+      services:
+        description: 'Services to deploy (comma-separated: all, api-gateway, auth-service, checkin-service, trekking-service, agent-service)'
+        required: true
+        default: 'all'
+      notify_email:
+        description: 'Email to notify (leave empty to use default)'
+        required: false
+        default: ''
+
+jobs:
+  deploy:
+    name: Deploy Services to Render
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up deployment matrix
+        id: matrix
+        run: |
+          SERVICES="${{ github.event.inputs.services }}"
+          
+          if [[ "$SERVICES" == "all" ]]; then
+            echo "services=[\"api-gateway\",\"auth-service\",\"checkin-service\",\"trekking-service\",\"agent-service\"]" >> $GITHUB_OUTPUT
+          else
+            # Convert comma-separated to JSON array
+            SERVICES_ARRAY=$(echo "$SERVICES" | jq -R 'split(",") | map(select(length > 0) | gsub("^\\s+|\\s+$";""))')
+            echo "services=$SERVICES_ARRAY" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Deploy to Render
+        id: deploy
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+        run: |
+          SERVICES='${{ steps.matrix.outputs.services }}'
+          DEPLOY_STATUS="✅ Deployment Started\n\n"
+          FAILED_SERVICES=""
+          
+          # Service IDs mapping (replace with your actual Render service IDs)
+          declare -A SERVICE_IDS=(
+            ["api-gateway"]="${{ secrets.RENDER_API_GATEWAY_ID }}"
+            ["auth-service"]="${{ secrets.RENDER_AUTH_SERVICE_ID }}"
+            ["checkin-service"]="${{ secrets.RENDER_CHECKIN_SERVICE_ID }}"
+            ["trekking-service"]="${{ secrets.RENDER_TREKKING_SERVICE_ID }}"
+            ["agent-service"]="${{ secrets.RENDER_AGENT_SERVICE_ID }}"
+          )
+          
+          echo "Starting deployment..."
+          echo "$SERVICES" | jq -r '.[]' | while read service; do
+            SERVICE_ID="${SERVICE_IDS[$service]}"
+            
+            if [[ -z "$SERVICE_ID" ]]; then
+              echo "⚠️  Service ID not found for $service"
+              FAILED_SERVICES="${FAILED_SERVICES}${service} (ID not configured)\n"
+              continue
+            fi
+            
+            echo "Deploying $service (ID: $SERVICE_ID)..."
+            
+            # Trigger Render deploy via API
+            RESPONSE=$(curl -X POST \
+              "https://api.render.com/v1/services/${SERVICE_ID}/deploys" \
+              -H "Authorization: Bearer ${RENDER_API_KEY}" \
+              -H "Content-Type: application/json" \
+              -d '{"clearCache": false}' \
+              -w "\n%{http_code}" \
+              -s)
+            
+            HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+            BODY=$(echo "$RESPONSE" | head -n-1)
+            
+            if [[ "$HTTP_CODE" == "201" ]]; then
+              DEPLOY_ID=$(echo "$BODY" | jq -r '.id // "unknown"')
+              echo "✅ $service: Deploy triggered (ID: $DEPLOY_ID)"
+              DEPLOY_STATUS="${DEPLOY_STATUS}✅ **${service}**: Deploy triggered\n"
+            else
+              echo "❌ $service: Deploy failed (HTTP $HTTP_CODE)"
+              echo "Response: $BODY"
+              FAILED_SERVICES="${FAILED_SERVICES}${service}\n"
+              DEPLOY_STATUS="${DEPLOY_STATUS}❌ **${service}**: Deploy failed\n"
+            fi
+            
+            sleep 2  # Rate limiting
+          done
+          
+          # Save status for email
+          echo "$DEPLOY_STATUS" > /tmp/deploy_status.txt
+          echo "$FAILED_SERVICES" > /tmp/failed_services.txt
+          
+          if [[ -n "$FAILED_SERVICES" ]]; then
+            echo "has_failures=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_failures=false" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Wait and check deployment status
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+        run: |
+          echo "Waiting 60 seconds for deployments to start..."
+          sleep 60
+          
+          SERVICES='${{ steps.matrix.outputs.services }}'
+          declare -A SERVICE_IDS=(
+            ["api-gateway"]="${{ secrets.RENDER_API_GATEWAY_ID }}"
+            ["auth-service"]="${{ secrets.RENDER_AUTH_SERVICE_ID }}"
+            ["checkin-service"]="${{ secrets.RENDER_CHECKIN_SERVICE_ID }}"
+            ["trekking-service"]="${{ secrets.RENDER_TREKKING_SERVICE_ID }}"
+            ["agent-service"]="${{ secrets.RENDER_AGENT_SERVICE_ID }}"
+          )
+          
+          echo "$SERVICES" | jq -r '.[]' | while read service; do
+            SERVICE_ID="${SERVICE_IDS[$service]}"
+            [[ -z "$SERVICE_ID" ]] && continue
+            
+            # Get latest deploy status
+            STATUS=$(curl -s \
+              "https://api.render.com/v1/services/${SERVICE_ID}/deploys?limit=1" \
+              -H "Authorization: Bearer ${RENDER_API_KEY}" \
+              | jq -r '.[] | select(.deployType == "manual") | .status' \
+              | head -1)
+            
+            echo "$service: $STATUS"
+          done
+          
+      - name: Send email notification
+        if: always()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "🚀 Render Deployment - ${{ github.event.inputs.services }}"
+          to: ${{ github.event.inputs.notify_email || secrets.NOTIFY_EMAIL }}
+          from: TrekVN CI/CD <${{ secrets.SMTP_USERNAME }}>
+          body: |
+            ## Render Deployment Report
+            
+            **Triggered by:** ${{ github.actor }}
+            **Branch:** ${{ github.ref_name }}
+            **Commit:** ${{ github.sha }}
+            **Services:** ${{ github.event.inputs.services }}
+            
+            ### Deployment Status
+            
+            $(cat /tmp/deploy_status.txt 2>/dev/null || echo "Status not available")
+            
+            ### Failed Services
+            
+            $(cat /tmp/failed_services.txt 2>/dev/null || echo "None")
+            
+            ---
+            
+            **View workflow:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            
+            **Monitor services:**
+            - API Gateway: https://api-gateway-trekvn.onrender.com/health
+            - Auth Service: https://backend-trekvn.onrender.com/health
+            - Checkin Service: https://checkin-service-trekvn.onrender.com/health
+            - Trekking Service: https://trekking-service-trekvn.onrender.com/health
+            - Agent Service: https://agent-service-trekvn.onrender.com/health
+            
+            **Grafana Dashboard:** https://your-grafana-instance.com (Coming soon)
+          html: |
+            <h2>🚀 Render Deployment Report</h2>
+            <p><strong>Triggered by:</strong> ${{ github.actor }}</p>
+            <p><strong>Branch:</strong> ${{ github.ref_name }}</p>
+            <p><strong>Commit:</strong> <code>${{ github.sha }}</code></p>
+            <p><strong>Services:</strong> ${{ github.event.inputs.services }}</p>
+            
+            <h3>📊 Deployment Status</h3>
+            <pre>$(cat /tmp/deploy_status.txt 2>/dev/null || echo "Status not available")</pre>
+            
+            <h3>❌ Failed Services</h3>
+            <pre>$(cat /tmp/failed_services.txt 2>/dev/null || echo "None ✅")</pre>
+            
+            <hr>
+            
+            <p><a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">View Workflow Run</a></p>
+            
+            <h3>🔍 Monitor Services</h3>
+            <ul>
+              <li><a href="https://api-gateway-trekvn.onrender.com/health">API Gateway</a></li>
+              <li><a href="https://backend-trekvn.onrender.com/health">Auth Service</a></li>
+              <li><a href="https://checkin-service-trekvn.onrender.com/health">Checkin Service</a></li>
+              <li><a href="https://trekking-service-trekvn.onrender.com/health">Trekking Service</a></li>
+              <li><a href="https://agent-service-trekvn.onrender.com/health">Agent Service</a></li>
+            </ul>
+            
+      - name: Deployment summary
+        if: always()
+        run: |
+          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Services:** ${{ github.event.inputs.services }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ steps.deploy.outputs.has_failures == 'true' && '⚠️ Some services failed' || '✅ All services triggered' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Deployment Details" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat /tmp/deploy_status.txt 2>/dev/null || echo "Status not available"
+          echo '```' >> $GITHUB_STEP_SUMMARY

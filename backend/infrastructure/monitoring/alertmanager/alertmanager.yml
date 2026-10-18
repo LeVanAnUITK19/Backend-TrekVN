@@ -1,0 +1,101 @@
+global:
+  resolve_timeout: 5m
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_from: 'your-email@gmail.com'
+  smtp_auth_username: 'your-email@gmail.com'
+  smtp_auth_password: 'your-app-password'  # Use App Password, not regular password
+  smtp_require_tls: true
+
+# Templates for notifications
+templates:
+  - '/etc/alertmanager/*.tmpl'
+
+# Route alerts to different receivers
+route:
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+  receiver: 'email-default'
+  
+  routes:
+    # Critical alerts - immediate email
+    - match:
+        severity: critical
+      receiver: 'email-critical'
+      group_wait: 0s
+      repeat_interval: 4h
+    
+    # Warning alerts - batched email
+    - match:
+        severity: warning
+      receiver: 'email-warnings'
+      group_wait: 30s
+      repeat_interval: 24h
+
+# Receivers - where to send alerts
+receivers:
+  - name: 'email-default'
+    email_configs:
+      - to: 'your-email@example.com'
+        send_resolved: true
+        headers:
+          Subject: '🔔 [{{ .Status | toUpper }}] TrekVN Alert: {{ .GroupLabels.alertname }}'
+        html: |
+          <!DOCTYPE html>
+          <html>
+          <body>
+            <h2 style="color: {{ if eq .Status "firing" }}red{{ else }}green{{ end }};">
+              {{ if eq .Status "firing" }}🔥 ALERT FIRING{{ else }}✅ ALERT RESOLVED{{ end }}
+            </h2>
+            
+            <h3>{{ .GroupLabels.alertname }}</h3>
+            
+            <table border="1" cellpadding="5" style="border-collapse: collapse;">
+              <tr><th>Metric</th><th>Value</th></tr>
+              {{ range .Alerts }}
+              <tr>
+                <td><strong>Service:</strong></td>
+                <td>{{ .Labels.service | default .Labels.job }}</td>
+              </tr>
+              <tr>
+                <td><strong>Summary:</strong></td>
+                <td>{{ .Annotations.summary }}</td>
+              </tr>
+              <tr>
+                <td><strong>Description:</strong></td>
+                <td>{{ .Annotations.description }}</td>
+              </tr>
+              <tr>
+                <td><strong>Started:</strong></td>
+                <td>{{ .StartsAt }}</td>
+              </tr>
+              {{ end }}
+            </table>
+            
+            <p><a href="http://localhost:3100">View Grafana Dashboard</a></p>
+          </body>
+          </html>
+
+  - name: 'email-critical'
+    email_configs:
+      - to: 'your-email@example.com'
+        send_resolved: true
+        headers:
+          Subject: '🚨 [CRITICAL] TrekVN: {{ .GroupLabels.alertname }}'
+          Priority: 'urgent'
+
+  - name: 'email-warnings'
+    email_configs:
+      - to: 'your-email@example.com'
+        send_resolved: true
+        headers:
+          Subject: '⚠️ [WARNING] TrekVN: {{ .GroupLabels.alertname }}'
+
+# Inhibition rules - suppress certain alerts if others are firing
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'cluster', 'service']

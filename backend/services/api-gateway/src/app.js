@@ -6,6 +6,7 @@ const corsMiddleware = require('./middlewares/cors');
 const { authMiddleware } = require('./middlewares/authMiddleware');
 const { authRouter, checkinRouter, trekkingRouter, agentRouter } = require('./routes/proxy');
 const { errorHandler } = require('./middlewares/errorHandler');
+const { prometheusMiddleware, metricsHandler } = require('./middlewares/prometheus');
 const env = require('./config/env');
 
 const app = express();
@@ -15,6 +16,11 @@ app.disable('x-powered-by');
 // CORS
 // ---------------------------------------------------------------------------
 app.use(corsMiddleware);
+
+// ---------------------------------------------------------------------------
+// Prometheus metrics middleware (before routes, but after CORS)
+// ---------------------------------------------------------------------------
+app.use(prometheusMiddleware);
 
 // ---------------------------------------------------------------------------
 // Rate limiting — configurable via env vars.
@@ -54,6 +60,11 @@ app.get('/health', (_req, res) => {
 app.get('/ready', (_req, res) => {
   res.json({ status: 'ready', service: 'api-gateway' });
 });
+
+// ---------------------------------------------------------------------------
+// Prometheus metrics endpoint
+// ---------------------------------------------------------------------------
+app.get('/metrics', metricsHandler);
 
 // ---------------------------------------------------------------------------
 // Auth middleware — verifies Bearer token on protected endpoints.
