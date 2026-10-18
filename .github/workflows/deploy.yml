@@ -1,0 +1,141 @@
+name: Deploy - Render (Demo) / AWS (Production)
+
+# Triggers after successful CI on main branch
+# Uses Render auto-deploy webhooks (Option A)
+on:
+  workflow_run:
+    workflows: ["TrekViet - CI"]
+    types:
+      - completed
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  check-ci:
+    name: Verify CI passed
+    runs-on: ubuntu-24.04
+    if: github.event.workflow_run.conclusion == 'success'
+    outputs:
+      deploy_env: ${{ steps.env.outputs.deploy_env }}
+    steps:
+      - name: CI verification
+        run: |
+          echo "✅ CI pipeline passed successfully"
+          echo "Commit: ${{ github.event.workflow_run.head_sha }}"
+          echo "Branch: ${{ github.event.workflow_run.head_branch }}"
+          
+      - name: Determine deployment environment
+        id: env
+        run: |
+          # Future: check branch or tag to determine environment
+          # For now: main branch → Render (demo)
+          if [[ "${{ github.event.workflow_run.head_branch }}" == "main" ]]; then
+            echo "deploy_env=render" >> $GITHUB_OUTPUT
+            echo "🎯 Target environment: Render (Demo)"
+          else
+            echo "deploy_env=none" >> $GITHUB_OUTPUT
+            echo "⏭️  No deployment configured for this branch"
+          fi
+
+  deploy-render:
+    name: Deploy to Render (Demo)
+    needs: check-ci
+    if: needs.check-ci.outputs.deploy_env == 'render'
+    runs-on: ubuntu-24.04
+    strategy:
+      max-parallel: 2  # Deploy 2 services at a time to avoid rate limits
+      matrix:
+        service:
+          - api-gateway
+          - auth-service
+          - checkin-service
+          - trekking-service
+          - agent-service
+    steps:
+      - name: Trigger Render auto-deploy webhook
+        env:
+          SERVICE: ${{ matrix.service }}
+        run: |
+          # Render auto-deploy webhooks are already configured in Render dashboard
+          # When you push to main branch, Render automatically deploys via GitHub integration
+          # This step is a placeholder for explicit webhook triggers if needed
+          
+          echo "🚀 Deploying $SERVICE to Render..."
+          echo "   Render auto-deploy is triggered by GitHub push to main"
+          echo "   No manual webhook call needed (Render GitHub integration active)"
+          echo ""
+          echo "📊 Monitor deployment at:"
+          echo "   https://dashboard.render.com"
+          
+          # Optional: If you want explicit webhook triggers, uncomment and configure:
+          # WEBHOOK_URL="${{ secrets.RENDER_DEPLOY_HOOK_<SERVICE_NAME> }}"
+          # if [[ -n "$WEBHOOK_URL" ]]; then
+          #   curl -X POST "$WEBHOOK_URL"
+          #   echo "✅ Webhook triggered for $SERVICE"
+          # fi
+          
+      - name: Deployment confirmation
+        run: |
+          echo "## 🚀 ${{ matrix.service }} Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** Triggered via Render auto-deploy" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.event.workflow_run.head_sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Monitor at: https://dashboard.render.com" >> $GITHUB_STEP_SUMMARY
+
+  deploy-aws:
+    name: Deploy to AWS (Production)
+    needs: check-ci
+    if: needs.check-ci.outputs.deploy_env == 'aws'  # Not triggered yet - placeholder
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Placeholder for AWS deployment
+        run: |
+          echo "🚧 AWS deployment pipeline - Coming Soon"
+          echo ""
+          echo "This workflow will handle:"
+          echo "  - Deploy to ECS/EKS"
+          echo "  - Update ALB target groups"
+          echo "  - Blue-green deployment"
+          echo "  - CloudWatch monitoring"
+          echo ""
+          echo "To enable: Update deploy_env logic in check-ci job"
+
+  notify:
+    name: Notify deployment status
+    needs: [check-ci, deploy-render]
+    if: always() && needs.check-ci.outputs.deploy_env == 'render'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Prepare notification
+        id: status
+        run: |
+          if [[ "${{ needs.deploy-render.result }}" == "success" ]]; then
+            echo "status=✅ Success" >> $GITHUB_OUTPUT
+            echo "color=28a745" >> $GITHUB_OUTPUT
+          else
+            echo "status=❌ Failed" >> $GITHUB_OUTPUT
+            echo "color=d73a4a" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Deployment summary
+        run: |
+          echo "## 🚀 Deployment to Render Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ steps.status.outputs.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.event.workflow_run.head_sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** ${{ github.event.workflow_run.head_commit.author.name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 Service Health Checks" >> $GITHUB_STEP_SUMMARY
+          echo "- [API Gateway](https://api-gateway-trekvn.onrender.com/health)" >> $GITHUB_STEP_SUMMARY
+          echo "- [Auth Service](https://backend-trekvn.onrender.com/health)" >> $GITHUB_STEP_SUMMARY
+          echo "- [Checkin Service](https://checkin-service-trekvn.onrender.com/health)" >> $GITHUB_STEP_SUMMARY
+          echo "- [Trekking Service](https://trekking-service-trekvn.onrender.com/health)" >> $GITHUB_STEP_SUMMARY
+          echo "- [Agent Service](https://agent-service-trekvn.onrender.com/health)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📈 Monitoring" >> $GITHUB_STEP_SUMMARY
+          echo "- Prometheus: Deploy to Render using instructions in repo" >> $GITHUB_STEP_SUMMARY
+          echo "- Grafana: Use Grafana Cloud (free tier)" >> $GITHUB_STEP_SUMMARY
