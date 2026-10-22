@@ -42,7 +42,11 @@ const getPlaces = async (query) => {
   const page = Math.max(1, parseInt(query.page) || 1);
   const limit = Math.min(parseInt(query.limit) || 20, 100);
 
+  // Lọc trực tiếp theo trường mien nếu có (mien-bac, mien-trung, mien-nam)
+  const mien = query.mien;
+
   // region filter: lấy provinceIds từ checkin-service nếu region được chỉ định
+  // Giữ lại để backward compatibility với API cũ
   let provinceId = query.provinceId;
   if (query.region && !provinceId) {
     const checkinProvider = require('../providers/checkin.provider');
@@ -59,6 +63,7 @@ const getPlaces = async (query) => {
   return placeRepo.findAll({
     q: query.q,
     provinceId,
+    mien, // Thêm filter theo miền
     difficulty: query.difficulty,
     tags: query.tags,
     status: 'ACTIVE',

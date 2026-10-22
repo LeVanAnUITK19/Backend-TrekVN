@@ -2,7 +2,7 @@
 
 const TrekkingPlace = require('../models/TrekkingPlace');
 
-const findAll = async ({ q, provinceId, difficulty, tags, status = 'ACTIVE', page = 1, limit = 20 } = {}) => {
+const findAll = async ({ q, provinceId, mien, difficulty, tags, status = 'ACTIVE', page = 1, limit = 20 } = {}) => {
   const filter = {};
   if (status) { filter.status = status; }
   if (provinceId) {
@@ -13,6 +13,8 @@ const findAll = async ({ q, provinceId, difficulty, tags, status = 'ACTIVE', pag
       filter.provinceId = provinceId;
     }
   }
+  // Lọc theo miền (mien-bac, mien-trung, mien-nam)
+  if (mien) { filter.mien = mien; }
   if (difficulty) { filter.difficulty = difficulty; }
   if (tags) {
     const tagList = Array.isArray(tags) ? tags : tags.split(',').map((t) => t.trim());

@@ -28,6 +28,7 @@ const offlineMap = Joi.object({
 const createPlace = Joi.object({
   name: Joi.string().trim().min(2).max(200).required(),
   provinceId: Joi.string().required(),
+  mien: Joi.string().valid('mien-bac', 'mien-trung', 'mien-nam').allow(null),
   address: Joi.string().max(500).allow('', null),
   location: geoPoint.required(),
   description: Joi.string().max(5000).allow('', null),
@@ -47,6 +48,7 @@ const createPlace = Joi.object({
 const updatePlace = Joi.object({
   name: Joi.string().trim().min(2).max(200),
   provinceId: Joi.string(),
+  mien: Joi.string().valid('mien-bac', 'mien-trung', 'mien-nam').allow(null),
   address: Joi.string().max(500).allow('', null),
   location: geoPoint,
   description: Joi.string().max(5000).allow('', null),

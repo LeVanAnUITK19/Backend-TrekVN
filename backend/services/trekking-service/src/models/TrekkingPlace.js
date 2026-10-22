@@ -7,6 +7,12 @@ const trekkingPlaceSchema = new mongoose.Schema(
     name: { type: String, required: true, trim: true },
     slug: { type: String, unique: true, sparse: true },
     provinceId: { type: String, required: true },
+    // Vùng miền: Miền Bắc, Miền Trung, Miền Nam
+    mien: {
+      type: String,
+      enum: ['mien-bac', 'mien-trung', 'mien-nam'],
+      index: true,
+    },
     address: { type: String, trim: true },
     location: {
       type: {
@@ -85,5 +91,7 @@ trekkingPlaceSchema.index({ provinceId: 1, status: 1 });
 trekkingPlaceSchema.index({ status: 1 });
 trekkingPlaceSchema.index({ tags: 1 });
 trekkingPlaceSchema.index({ dataOrigin: 1 });
+trekkingPlaceSchema.index({ mien: 1 });
+trekkingPlaceSchema.index({ mien: 1, status: 1 });
 
 module.exports = mongoose.model('TrekkingPlace', trekkingPlaceSchema);
