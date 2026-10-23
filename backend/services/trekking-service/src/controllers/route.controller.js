@@ -48,9 +48,18 @@ const adminGetRouteById = async (req, res, next) => {
 
 const adminCreateRoute = async (req, res, next) => {
   try {
+    console.log('[DEBUG] adminCreateRoute called');
+    console.log('[DEBUG] req.body:', JSON.stringify(req.body, null, 2));
+    console.log('[DEBUG] req.user:', req.user);
+    
     const route = await routeService.adminCreateRoute(req.body);
     res.status(201).json({ success: true, data: route });
-  } catch (err) { next(err); }
+  } catch (err) {
+    console.error('[ERROR] adminCreateRoute failed:', err.message);
+    console.error('[ERROR] Stack:', err.stack);
+    console.error('[ERROR] Full error:', JSON.stringify(err, Object.getOwnPropertyNames(err)));
+    next(err);
+  }
 };
 
 const adminUpdateRoute = async (req, res, next) => {

@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const jwt = require('jsonwebtoken');
 const request = require('supertest');
 const express = require('express');
 const db = require('../setup/db');
@@ -33,15 +32,16 @@ test('totals track database rows, including inactive definitions and planned jou
   expect((await getDashboard()).stats.totalPlaces).toBe(3);
 });
 
-test('internal dashboard requires authenticated ADMIN', async () => {
+test('internal dashboard requires service token', async () => {
   const app = express();
   app.use('/internal/v1', require('../../src/routes/internal.routes'));
   app.use((err, _req, res, _next) => res.status(err.statusCode || 500).json({ message: err.message }));
-  const userToken = jwt.sign({ id: 'user', role: 'USER' }, process.env.JWT_SECRET);
-  const adminToken = jwt.sign({ id: 'admin', role: 'ADMIN' }, process.env.JWT_SECRET);
+  
   expect((await request(app).get('/internal/v1/dashboard')).status).toBe(401);
-  expect((await request(app).get('/internal/v1/dashboard').set('Authorization', `Bearer ${userToken}`)).status).toBe(403);
-  const result = await request(app).get('/internal/v1/dashboard').set('Authorization', `Bearer ${adminToken}`);
+  
+  const result = await request(app)
+    .get('/internal/v1/dashboard')
+    .set('X-Service-Token', process.env.TREKVIET_INTERNAL_TOKEN || process.env.SERVICE_TOKEN || 'test-token');
   expect(result.status).toBe(200);
   expect(result.body.data.stats.totalPlaces).toBe(0);
 });

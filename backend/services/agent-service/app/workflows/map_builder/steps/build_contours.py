@@ -22,7 +22,7 @@ async def build_contours(state: MapBuilderState, settings: Settings) -> MapBuild
                           "-dsco", f"MINZOOM={state.min_zoom}",
                           "-dsco", f"MAXZOOM={min(state.max_zoom, settings.map_native_max_zoom)}",
                           "-dsco", "BOUNDS=" + ",".join(map(str, bounds_of(state))),
-                          cwd=state.work_dir, allowed_root=state.work_dir, settings=settings, timeout=300)
+                          cwd=state.work_dir, allowed_root=state.work_dir, settings=settings, timeout=600)
         info = restrict_generated_mbtiles(output, "vector", bounds_of(state), state.min_zoom,
                                           min(state.max_zoom, settings.map_native_max_zoom))
         if "contour" not in info["vector_layers"]:

@@ -163,7 +163,7 @@ const refreshToken = async (req, res, next) => {
 const getDashboard = async (req, res, next) => {
   try {
     const range = req.query.range || '7d'; // 7d, 30d, or 90d
-    const data = await adminService.getDashboard(range, req.headers.authorization);
+    const data = await adminService.getDashboard(range);
     res.json({ success: true, data });
   } catch (err) { next(err); }
 };

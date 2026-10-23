@@ -17,8 +17,13 @@ const { notFound } = require('./middlewares/notFound');
 
 const createApp = () => {
   const app = express();
-  if (process.env.TRUSTED_PROXIES) {
+  
+  // Trust proxy: trong development (localhost), trust tất cả; production dùng TRUSTED_PROXIES
+  if (process.env.NODE_ENV === 'production' && process.env.TRUSTED_PROXIES) {
     app.set('trust proxy', process.env.TRUSTED_PROXIES.split(',').map((ip) => ip.trim()).filter(Boolean));
+  } else if (process.env.NODE_ENV !== 'test') {
+    // Development: trust localhost/loopback
+    app.set('trust proxy', 'loopback');
   }
 
   // ─── Swagger ────────────────────────────────────────────────────────────────

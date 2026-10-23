@@ -27,9 +27,9 @@ router.get('/users/:userId/stats', authenticateService, async (req, res, next) =
   } catch (err) { next(err); }
 });
 
+// Internal dashboard endpoint — dùng cho service-to-service calls từ auth-service
 router.get('/dashboard',
-  require('../middlewares/auth').authenticate,
-  require('../middlewares/requireAdmin').requireAdmin,
+  authenticateService,
   async (req, res, next) => {
     try {
       res.json({ success: true, data: await require('../services/dashboard.service').getDashboard(req.query.range) });

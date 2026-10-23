@@ -20,6 +20,7 @@
     "prom-client": "^15.1.0"
   },
   "devDependencies": {
+    "@pact-foundation/pact": "^13.1.0",
     "eslint": "^8.57.1",
     "jest": "^30.5.2",
     "supertest": "^6.3.3"

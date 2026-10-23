@@ -50,10 +50,7 @@ const evaluateBadges = async (userId, stats, journeyId = null) => {
     // Check if user already has this badge
     const existing = await userBadgeRepo.findByUserAndBadge(userId, badge._id);
     if (existing) {
-      await outboxRepo.enqueue(EVENT_TYPES.TREKKING_BADGE_EARNED, {
-        userId, badgeId: String(badge._id), badgeCode: badge.code,
-        rarity: badge.rarity, journeyId: existing.journeyId || null,
-      }, 'badge:' + userId + ':' + badge._id);
+      // User already has this badge - skip to prevent duplicate XP awards
       continue;
     }
 

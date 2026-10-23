@@ -20,13 +20,14 @@ test('counts database checkins independently of gamification projections', async
     { journeyId: 'one', milestoneId: 'first', userId: 'user', createdAt: now },
     { journeyId: 'two', milestoneId: 'second', userId: 'user', createdAt: now },
   ]);
-  const result = await request(app).get('/internal/v1/dashboard').set('Authorization', `Bearer ${generateToken({ role: 'ADMIN' })}`);
+  const result = await request(app)
+    .get('/internal/v1/dashboard')
+    .set('X-Service-Token', process.env.TREKVIET_INTERNAL_TOKEN || process.env.SERVICE_TOKEN || 'test-token');
   expect(result.status).toBe(200);
   expect(result.body.data.stats.totalCheckins).toBe(2);
   expect(result.body.data.activityChart[0].checkins).toBe(2);
 });
 
-test('rejects unauthenticated and ordinary user requests', async () => {
+test('rejects unauthenticated requests', async () => {
   expect((await request(app).get('/internal/v1/dashboard')).status).toBe(401);
-  expect((await request(app).get('/internal/v1/dashboard').set('Authorization', `Bearer ${generateToken()}`)).status).toBe(403);
 });

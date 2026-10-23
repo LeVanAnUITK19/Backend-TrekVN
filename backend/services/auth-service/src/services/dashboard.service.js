@@ -6,9 +6,10 @@ const Profile = require('../models/UserRankProfile');
 const Rank = require('../models/RankDefinition');
 const logger = require('../config/logger');
 
-const fetchSummary = async (baseUrl, range, authorization) => {
+const fetchSummary = async (baseUrl, range) => {
+  const serviceToken = process.env.TREKVIET_INTERNAL_TOKEN || process.env.SERVICE_TOKEN || '';
   const response = await fetch(`${baseUrl.replace(/\/$/, '')}/internal/v1/dashboard?range=${encodeURIComponent(range)}`, {
-    headers: { Authorization: authorization || '' },
+    headers: { 'X-Service-Token': serviceToken },
     signal: AbortSignal.timeout(5000),
   });
   if (!response.ok) {throw new Error(`Dashboard service returned ${response.status}`);}
@@ -17,13 +18,13 @@ const fetchSummary = async (baseUrl, range, authorization) => {
   return body.data;
 };
 
-const getDashboard = async (range = '7d', authorization) => {
+const getDashboard = async (range = '7d') => {
   const days = { '7d': 7, '30d': 30, '90d': 90 }[range] || 7;
   const start = new Date(Date.now() - days * 86400000);
   const previousStart = new Date(start - days * 86400000);
   const remote = await Promise.allSettled([
-    fetchSummary(process.env.TREKKING_SERVICE_URL || 'http://localhost:3003', range, authorization),
-    fetchSummary(process.env.CHECKIN_SERVICE_URL || 'http://localhost:3002', range, authorization),
+    fetchSummary(process.env.TREKKING_SERVICE_URL || 'http://localhost:3003', range),
+    fetchSummary(process.env.CHECKIN_SERVICE_URL || 'http://localhost:3002', range),
   ]);
   const unavailableServices = ['community']; // No community service implementation yet.
   const summaries = remote.map((result, i) => {

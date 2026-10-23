@@ -18,6 +18,7 @@ Legacy paths (backward compat):
 
 from __future__ import annotations
 
+import logging
 import mimetypes
 from pathlib import Path
 from typing import Annotated, Any, Optional
@@ -28,6 +29,8 @@ from app.utils.serialize import _convert
 
 from app.config import Settings, get_settings
 from app.db.repositories.map_jobs import MapJobRepository
+
+logger = logging.getLogger(__name__)
 from app.db.repositories.workflow_events import WorkflowEventRepository
 from app.dependencies import (
     get_current_admin,
@@ -130,6 +133,8 @@ async def approve_job(
         note = body.note if body else None
         result = await svc.approve(job_id=job_id, admin_id=admin["userId"], note=note)
     except ValueError as exc:
+        import traceback
+        logger.error(f"Approve failed for job {job_id}: {exc}\n{traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={"code": "APPROVE_ERROR", "message": str(exc)},
