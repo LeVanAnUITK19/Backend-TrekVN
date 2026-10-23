@@ -21,7 +21,7 @@
   },
   "devDependencies": {
     "@pact-foundation/pact": "^13.1.0",
-    "eslint": "^8.57.1",
+    "eslint": "^10.13.0",
     "jest": "^30.5.2",
     "supertest": "^6.3.3"
   },
