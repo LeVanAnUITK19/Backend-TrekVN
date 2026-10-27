@@ -39,16 +39,24 @@ const buildPlaceMapManifest = (offlineMap) => {
 };
 
 const getPlaces = async (query) => {
+  if (query.summary === 'true') {
+    const params = require('../utils/catalogQuery').catalogQuery(query);
+    return require('./catalogCache').getCatalogCache().remember('places', params, async () => {
+      const result = await placeRepo.findAll({ ...params, summary: true, status: 'ACTIVE' });
+      return { ...result, items: result.items.map((p) => p.toJSON()),
+        hasMore: params.page * params.limit < result.total };
+    });
+  }
   const page = Math.max(1, parseInt(query.page) || 1);
   const limit = Math.min(parseInt(query.limit) || 20, 100);
 
   // Lọc trực tiếp theo trường mien nếu có (mien-bac, mien-trung, mien-nam)
-  const mien = query.mien;
+  const mien = query.mien || { NORTH: 'mien-bac', CENTRAL: 'mien-trung', SOUTH: 'mien-nam' }[query.region?.toUpperCase()];
 
   // region filter: lấy provinceIds từ checkin-service nếu region được chỉ định
   // Giữ lại để backward compatibility với API cũ
   let provinceId = query.provinceId;
-  if (query.region && !provinceId) {
+  if (query.region && !mien && !provinceId) {
     const checkinProvider = require('../providers/checkin.provider');
     const provinceIds = await checkinProvider.getProvinceIdsByRegion(query.region);
     // Nếu không tìm được province nào → không có kết quả
@@ -60,8 +68,9 @@ const getPlaces = async (query) => {
     provinceId = provinceIds;
   }
 
-  return placeRepo.findAll({
+  const result = await placeRepo.findAll({
     q: query.q,
+    sort: query.sort,
     provinceId,
     mien, // Thêm filter theo miền
     difficulty: query.difficulty,
@@ -70,6 +79,20 @@ const getPlaces = async (query) => {
     page,
     limit,
   });
+  // Explore needs routes for the current page, not one HTTP call per place.
+  if (query.includeRoutes === 'true' && result.items.length) {
+    const routes = await routeRepo.findByPlaces(result.items.map((p) => p._id));
+    const byPlace = new Map();
+    for (const route of routes) {
+      const id = String(route.trekkingPlaceId);
+      if (!byPlace.has(id)) { byPlace.set(id, []); }
+      byPlace.get(id).push(route);
+    }
+    result.items = result.items.map((p) => ({
+      ...p.toJSON(), routes: byPlace.get(String(p._id)) || [],
+    }));
+  }
+  return result;
 };
 
 const getPlaceById = async (placeId) => {

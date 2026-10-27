@@ -11,6 +11,7 @@ const trekkingConsumer = require('./events/consumers/trekking.consumer');
 const PORT = process.env.PORT || 3003;
 
 const startServer = async () => {
+  require('./services/catalogCache').getCatalogCache();
   await connectDB();
 
   const app = createApp();
@@ -35,6 +36,8 @@ const startServer = async () => {
     server.close(async () => {
       await trekkingConsumer.close();
       await publisher.close();
+      const cache = require('./services/catalogCache').getCatalogCache();
+      cache.client?.disconnect();
       logger.info('HTTP server closed');
       process.exit(0);
     });

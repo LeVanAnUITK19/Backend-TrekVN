@@ -32,7 +32,18 @@ const router = Router();
  *       - in: query
  *         name: region
  *         schema: { type: string, enum: [NORTH, CENTRAL, SOUTH, HIGHLAND, NORTHEAST, NORTHWEST] }
- *         description: Lọc theo vùng địa lý (gọi checkin-service lấy provinceIds)
+ *         description: NORTH/CENTRAL/SOUTH lọc trực tiếp theo mien của địa điểm
+ *       - in: query
+ *         name: mien
+ *         schema: { type: string, enum: [mien-bac, mien-trung, mien-nam] }
+ *       - in: query
+ *         name: sort
+ *         schema: { type: string, enum: [popular] }
+ *         description: Ưu tiên số lượt đánh giá, sau đó điểm đánh giá
+ *       - in: query
+ *         name: includeRoutes
+ *         schema: { type: boolean, default: false }
+ *         description: Kèm routes ACTIVE trong từng địa điểm, dùng cho Explore
  *       - in: query
  *         name: difficulty
  *         schema: { type: string, enum: [EASY, MODERATE, HARD, EXPERT] }

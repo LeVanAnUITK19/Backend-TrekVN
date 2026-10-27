@@ -76,12 +76,13 @@ const createApp = () => {
   }));
 
   // Rate limiting chỉ áp dụng ở production
-  if (process.env.NODE_ENV !== 'test') {
+  if (process.env.NODE_ENV !== 'test' && process.env.DISABLE_RATE_LIMIT !== 'true') {
     const limiter = rateLimit({
-      windowMs: 15 * 60 * 1000,
-      max: 100,
+      windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000,
+      max: parseInt(process.env.RATE_LIMIT_MAX, 10) || 600,
       standardHeaders: true,
       legacyHeaders: false,
+      skip: (req) => req.path === '/health' || req.path === '/ready',
     });
     app.use(limiter);
   }

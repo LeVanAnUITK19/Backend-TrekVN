@@ -2,7 +2,7 @@
 
 const TrekkingPlace = require('../models/TrekkingPlace');
 
-const findAll = async ({ q, provinceId, mien, difficulty, tags, status = 'ACTIVE', page = 1, limit = 20 } = {}) => {
+const findAll = async ({ q, provinceId, mien, sort, difficulty, tags, summary = false, status = 'ACTIVE', page = 1, limit = 20 } = {}) => {
   const filter = {};
   if (status) { filter.status = status; }
   if (provinceId) {
@@ -21,15 +21,24 @@ const findAll = async ({ q, provinceId, mien, difficulty, tags, status = 'ACTIVE
     filter.tags = { $in: tagList };
   }
   if (q) {
+    const search = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     filter.$or = [
-      { name: { $regex: q, $options: 'i' } },
-      { description: { $regex: q, $options: 'i' } },
+      { name: { $regex: search, $options: 'i' } },
+      { description: { $regex: search, $options: 'i' } },
     ];
   }
 
   const skip = (page - 1) * limit;
+  let listing = TrekkingPlace.find(filter);
+  if (summary) {
+    listing = listing.select({ name: 1, provinceId: 1, mien: 1, address: 1,
+      difficulty: 1, averageDurationMinutes: 1, elevationMeters: 1,
+      ratingAverage: 1, ratingCount: 1, images: { $slice: 1 }, createdAt: 1 });
+  }
   const [items, total] = await Promise.all([
-    TrekkingPlace.find(filter).sort({ ratingAverage: -1, createdAt: -1 }).skip(skip).limit(limit),
+    listing.sort(sort === 'popular'
+      ? { ratingCount: -1, ratingAverage: -1, _id: -1 }
+      : { ratingAverage: -1, createdAt: -1, _id: -1 }).skip(skip).limit(limit),
     TrekkingPlace.countDocuments(filter),
   ]);
   return { items, total, page, limit };

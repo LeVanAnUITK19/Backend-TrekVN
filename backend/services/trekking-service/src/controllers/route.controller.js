@@ -2,6 +2,15 @@
 
 const routeService = require('../services/route.service');
 
+const getRoutes = async (req, res, next) => {
+  try {
+    const params = require('../utils/catalogQuery').catalogQuery(req.query);
+    const data = await require('../services/catalogCache').getCatalogCache().remember(
+      'routes', params, () => require('../repositories/route.repository').findCatalogPage(params));
+    res.json({ success: true, data });
+  } catch (err) { next(err); }
+};
+
 const getRouteById = async (req, res, next) => {
   try {
     const route = await routeService.getRouteById(req.params.routeId);
@@ -172,6 +181,7 @@ const adminUploadRouteImage = async (req, res, next) => {
 };
 
 module.exports = {
+  getRoutes,
   getRouteById, getRouteMilestones, getOfflinePackage, checkOfflinePackage,
   adminGetRoutes, adminGetRouteById, adminCreateRoute, adminUpdateRoute,
   adminUpdateRouteStatus, adminDeleteRoute,

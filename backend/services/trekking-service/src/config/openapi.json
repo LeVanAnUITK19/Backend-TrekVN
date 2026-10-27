@@ -59,7 +59,39 @@
                 "NORTHWEST"
               ]
             },
-            "description": "Lọc theo vùng địa lý (gọi checkin-service lấy provinceIds)"
+            "description": "NORTH/CENTRAL/SOUTH lọc trực tiếp theo mien của địa điểm; các giá trị cũ khác dùng checkin-service"
+          },
+          {
+            "in": "query",
+            "name": "mien",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "mien-bac",
+                "mien-trung",
+                "mien-nam"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "popular"
+              ]
+            },
+            "description": "Ưu tiên số lượt đánh giá, sau đó điểm đánh giá"
+          },
+          {
+            "in": "query",
+            "name": "includeRoutes",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Kèm routes ACTIVE trong từng địa điểm"
           },
           {
             "in": "query",
@@ -96,6 +128,15 @@
               "type": "integer",
               "default": 20
             }
+          },
+          {
+            "in": "query",
+            "name": "summary",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Card projection, Redis cache 30s, limit capped at 50; incompatible heavy includeRoutes is ignored."
           }
         ],
         "responses": {
@@ -4812,6 +4853,72 @@
             }
           }
         ]
+      }
+    },
+    "/api/v1/routes": {
+      "get": {
+        "tags": [
+          "Routes"
+        ],
+        "summary": "Paginated route cards (ACTIVE routes and places)",
+        "description": "No path, offline package or milestones. Popular ordering uses parent place review count and rating.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          {
+            "in": "query",
+            "name": "region",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "NORTH",
+                "CENTRAL",
+                "SOUTH"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "default",
+                "popular"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "data: {items,total,page,limit,hasMore}"
+          }
+        }
       }
     }
   },

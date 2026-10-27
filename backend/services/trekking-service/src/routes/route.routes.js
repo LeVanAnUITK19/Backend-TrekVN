@@ -5,6 +5,9 @@ const routeCtrl = require('../controllers/route.controller');
 
 const router = Router();
 
+// Public, paginated route cards. No route geometry or milestones.
+router.get('/', routeCtrl.getRoutes);
+
 /**
  * @swagger
  * tags:

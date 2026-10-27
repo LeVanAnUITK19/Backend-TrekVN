@@ -94,4 +94,9 @@ trekkingPlaceSchema.index({ dataOrigin: 1 });
 trekkingPlaceSchema.index({ mien: 1 });
 trekkingPlaceSchema.index({ mien: 1, status: 1 });
 
+trekkingPlaceSchema.index({ status: 1, mien: 1, ratingCount: -1, ratingAverage: -1, _id: -1 });
+trekkingPlaceSchema.index({ status: 1, mien: 1, ratingAverage: -1, createdAt: -1, _id: -1 });
+trekkingPlaceSchema.index({ status: 1, ratingCount: -1, ratingAverage: -1, _id: -1 });
+trekkingPlaceSchema.index({ status: 1, ratingAverage: -1, createdAt: -1, _id: -1 });
+trekkingPlaceSchema.plugin(require('./plugins/catalogInvalidation'));
 module.exports = mongoose.model('TrekkingPlace', trekkingPlaceSchema);

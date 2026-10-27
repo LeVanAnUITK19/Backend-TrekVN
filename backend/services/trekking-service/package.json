@@ -5,6 +5,7 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
+    "check:redis": "node scripts/check-catalog-redis.js",
     "dev": "node --watch src/index.js",
     "test": "jest --runInBand --forceExit",
     "test:unit": "jest tests/unit --runInBand --forceExit",
@@ -24,6 +25,7 @@
     "express": "^4.18.2",
     "express-rate-limit": "^7.1.4",
     "helmet": "^7.0.0",
+    "ioredis": "^6.0.0",
     "joi": "^17.11.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^7.6.3",

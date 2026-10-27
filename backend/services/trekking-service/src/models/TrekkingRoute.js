@@ -84,4 +84,6 @@ const trekkingRouteSchema = new mongoose.Schema(
 trekkingRouteSchema.index({ trekkingPlaceId: 1 });
 trekkingRouteSchema.index({ status: 1 });
 
+trekkingRouteSchema.index({ status: 1, trekkingPlaceId: 1, createdAt: -1, _id: -1 });
+trekkingRouteSchema.plugin(require('./plugins/catalogInvalidation'));
 module.exports = mongoose.model('TrekkingRoute', trekkingRouteSchema);
