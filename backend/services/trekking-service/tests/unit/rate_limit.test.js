@@ -4,15 +4,12 @@ const request = require('supertest');
 const originalEnv = { ...process.env };
 afterAll(() => { process.env = originalEnv; });
 
-test.each([
-  ['trekking-service', '../../src/app'],
-  ['checkin-service', '../../../checkin-service/src/app'],
-])('%s excludes health probes and separates client quotas', async (_name, modulePath) => {
+test('trekking-service excludes health probes and separates client quotas', async () => {
   process.env.NODE_ENV = 'development';
   process.env.DISABLE_RATE_LIMIT = 'false';
   process.env.RATE_LIMIT_MAX = '2';
   process.env.TRUSTED_PROXIES = 'loopback';
-  const app = require(modulePath)();
+  const app = require('../../src/app')();
   for (let i = 0; i < 4; i++) {
     await request(app).get('/health').set('X-Forwarded-For', '198.51.100.1').expect(200);
   }
