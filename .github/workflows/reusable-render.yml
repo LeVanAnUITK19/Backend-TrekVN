@@ -6,14 +6,13 @@ on:
       service:
         required: true
         type: string
-      service-id:
-        required: true
-        type: string
       enabled:
         required: false
         type: boolean
         default: true
     secrets:
+      RENDER_SERVICE_ID:
+        required: true
       RENDER_API_KEY:
         required: true
       SMTP_USERNAME:
@@ -38,7 +37,7 @@ jobs:
         id: render-deploy
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-          RENDER_SERVICE_ID: ${{ inputs.service-id }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
           SERVICE_NAME: ${{ inputs.service }}
           COMMIT_SHA: ${{ github.sha }}
         shell: bash
@@ -208,6 +207,3 @@ jobs:
 
             Xem log chi tiet:
             ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-      
-        
-          
