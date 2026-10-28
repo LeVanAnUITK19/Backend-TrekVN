@@ -9,7 +9,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # npm ci đảm bảo cài đúng version theo package-lock.json
-RUN npm ci --omit=dev --ignore-scripts
+RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund
 
 # ════════════════════════════════════════════════════════
 #  Stage 2 — runner: image production cuối cùng
@@ -18,7 +18,9 @@ FROM node:22-alpine AS runner
 
 # Cài dumb-init để xử lý signal đúng (SIGTERM → graceful shutdown)
 # apk upgrade để patch các CVE trong OS packages (libssl, libcrypto, v.v.)
-RUN apk add --no-cache dumb-init && apk upgrade --no-cache
+RUN apk add --no-cache dumb-init && apk upgrade --no-cache \
+    && rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack /opt/yarn* \
+    && rm -f /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /usr/local/bin/yarn /usr/local/bin/yarnpkg
 
 WORKDIR /app
 
