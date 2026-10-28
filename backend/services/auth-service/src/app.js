@@ -1,4 +1,5 @@
 const express = require('express');
+const { createMetrics } = require('./middlewares/metrics');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
@@ -17,6 +18,10 @@ const { notFound } = require('./middlewares/notFound');
 
 const createApp = () => {
   const app = express();
+  const monitoring = createMetrics('auth-service');
+  app.use(monitoring.middleware);
+  // Register before API auth, rate limiting and body parsing.
+  app.get('/metrics', monitoring.handler);
   
   // Trust proxy: trong development (localhost), trust tất cả; production dùng TRUSTED_PROXIES
   if (process.env.NODE_ENV === 'production' && process.env.TRUSTED_PROXIES) {

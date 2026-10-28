@@ -1,0 +1,32 @@
+rule_files:
+  - alerts.yml
+evaluation_interval: 30s
+tests:
+  - name: Ten percent errors trigger a service-level alert
+    interval: 30s
+    input_series:
+      - series: 'trekvn_http_requests_total{service="auth-service",status_code="200",route="/login"}'
+        values: '0+90x30'
+      - series: 'trekvn_http_requests_total{service="auth-service",status_code="500",route="/login"}'
+        values: '0+10x30'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: HighErrorRate
+        exp_alerts:
+          - exp_labels:
+              service: auth-service
+              severity: warning
+            exp_annotations:
+              summary: HTTP 5xx rate above 5% on auth-service
+
+  - name: One percent errors do not trigger the five percent threshold
+    interval: 30s
+    input_series:
+      - series: 'trekvn_http_requests_total{service="auth-service",status_code="200",route="/login"}'
+        values: '0+99x30'
+      - series: 'trekvn_http_requests_total{service="auth-service",status_code="500",route="/login"}'
+        values: '0+1x30'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: HighErrorRate
+        exp_alerts: []

@@ -1,0 +1,55 @@
+// Generated physical MongoDB schema. _id is ObjectId; API aliases are not stored fields.
+// Nested fields retain their MongoDB dotted paths. See schemas.json for index options and subdocuments.
+
+Table posts {
+  "authorId" varchar [not null]
+  "content" varchar
+  "images" json
+  "type" varchar
+  "journeyId" varchar
+  "trekkingPlaceId" varchar
+  "reactionCount" double
+  "commentCount" double
+  "visibility" varchar
+  "deleted" boolean
+  "revision" double
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+
+Table comments {
+  "postId" varchar [not null]
+  "authorId" varchar [not null]
+  "parentCommentId" varchar
+  "rootCommentId" varchar
+  "content" varchar [not null]
+  "deleted" boolean
+  "likeCount" double
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+
+Table reactions {
+  "postId" varchar [not null]
+  "userId" varchar [not null]
+  "type" varchar
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+
+Table comment_reactions {
+  "commentId" varchar [not null]
+  "postId" varchar [not null]
+  "userId" varchar [not null]
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+

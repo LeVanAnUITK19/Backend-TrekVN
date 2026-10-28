@@ -7,13 +7,14 @@ const env = {
   AUTH_SERVICE_URL: process.env.AUTH_SERVICE_URL || 'http://localhost:3001',
   CHECKIN_SERVICE_URL: process.env.CHECKIN_SERVICE_URL || 'http://localhost:3002',
   TREKKING_SERVICE_URL: process.env.TREKKING_SERVICE_URL || 'http://localhost:3003',
+  COMMUNITY_SERVICE_URL: process.env.COMMUNITY_SERVICE_URL || 'http://localhost:3004',
   AGENT_SERVICE_URL: process.env.AGENT_SERVICE_URL || 'http://localhost:8000',
   ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean)
     : [],
   // Rate limit — configurable per SRS NFR-SYNC-01
   RATE_LIMIT_WINDOW_MS: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000,
-  RATE_LIMIT_MAX_REQUESTS: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10) || 200,
+  RATE_LIMIT_MAX_REQUESTS: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10) || 600,
 };
 
 module.exports = env;

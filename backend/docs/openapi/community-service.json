@@ -1,0 +1,1446 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Community Service",
+    "version": "1.0.0",
+    "description": "JWT-protected community REST API. Realtime invalidations: ws(s)://gateway/api/v1/community/ws; authenticate with first JSON frame {type: auth, token: accessToken}. See community-service-api.md."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3004"
+    }
+  ],
+  "paths": {
+    "/api/v1/posts": {
+      "get": {
+        "summary": "Newest public posts and caller-owned private posts",
+        "tags": [
+          "Posts"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000,
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "userId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "trekkingPlaceId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Post"
+                          }
+                        },
+                        "total": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "page": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "totalPages": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or expired access token"
+          },
+          "403": {
+            "description": "Only the author can edit; post authors can remove comments"
+          },
+          "404": {
+            "description": "Missing, deleted or inaccessible content"
+          },
+          "409": {
+            "description": "Linked resource was concurrently edited; reload and retry"
+          },
+          "429": {
+            "description": "Rate limit exceeded; respect Retry-After"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create post (text or up to five HTTPS images)",
+        "tags": [
+          "Posts"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "maxLength": 10000
+                  },
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri",
+                      "maxLength": 2048
+                    },
+                    "maxItems": 5
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "NORMAL",
+                      "JOURNEY_SHARE",
+                      "BADGE_SHARE"
+                    ]
+                  },
+                  "journeyId": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "trekkingPlaceId": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "visibility": {
+                    "type": "string",
+                    "enum": [
+                      "PUBLIC",
+                      "PRIVATE"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Post"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or expired access token"
+          },
+          "403": {
+            "description": "Only the author can edit; post authors can remove comments"
+          },
+          "404": {
+            "description": "Missing, deleted or inaccessible content"
+          },
+          "409": {
+            "description": "Linked resource was concurrently edited; reload and retry"
+          },
+          "429": {
+            "description": "Rate limit exceeded; respect Retry-After"
+          }
+        }
+      }
+    },
+    "/api/v1/posts/{postId}": {
+      "get": {
+        "summary": "Read accessible post",
+        "tags": [
+          "Posts"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "postId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Post"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or expired access token"
+          },
+          "403": {
+            "description": "Only the author can edit; post authors can remove comments"
+          },
+          "404": {
+            "description": "Missing, deleted or inaccessible content"
+          },
+          "409": {
+            "description": "Linked resource was concurrently edited; reload and retry"
+          },
+          "429": {
+            "description": "Rate limit exceeded; respect Retry-After"
+          }
+        }
+      },
+      "put": {
+        "summary": "Partially update own post",
+        "tags": [
+          "Posts"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "postId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "maxLength": 10000
+                  },
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri",
+                      "maxLength": 2048
+                    },
+                    "maxItems": 5
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "NORMAL",
+                      "JOURNEY_SHARE",
+                      "BADGE_SHARE"
+                    ]
+                  },
+                  "journeyId": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "trekkingPlaceId": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "visibility": {
+                    "type": "string",
+                    "enum": [
+                      "PUBLIC",
+                      "PRIVATE"
+                    ]
+                  }
+                },
+                "minimum": 1
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Post"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or expired access token"
+          },
+          "403": {
+            "description": "Only the author can edit; post authors can remove comments"
+          },
+          "404": {
+            "description": "Missing, deleted or inaccessible content"
+          },
+          "409": {
+            "description": "Linked resource was concurrently edited; reload and retry"
+          },
+          "429": {
+            "description": "Rate limit exceeded; respect Retry-After"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Partially update own post",
+        "tags": [
+          "Posts"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "postId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "maxLength": 10000
+                  },
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri",
+                      "maxLength": 2048
+                    },
+                    "maxItems": 5
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "NORMAL",
+                      "JOURNEY_SHARE",
+                      "BADGE_SHARE"
+                    ]
+                  },
+                  "journeyId": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "trekkingPlaceId": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "visibility": {
+                    "type": "string",
+                    "enum": [
+                      "PUBLIC",
+                      "PRIVATE"
+                    ]
+                  }
+                },
+                "minimum": 1
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Post"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or expired access token"
+          },
+          "403": {
+            "description": "Only the author can edit; post authors can remove comments"
+          },
+          "404": {
+            "description": "Missing, deleted or inaccessible content"
+          },
+          "409": {
+            "description": "Linked resource was concurrently edited; reload and retry"
+          },
+          "429": {
+            "description": "Rate limit exceeded; respect Retry-After"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Soft delete own post and redact descendants",
+        "tags": [
+          "Posts"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "postId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or expired access token"
+          },
+          "403": {
+            "description": "Only the author can edit; post authors can remove comments"
+          },
+          "404": {
+            "description": "Missing, deleted or inaccessible content"
+          },
+          "409": {
+            "description": "Linked resource was concurrently edited; reload and retry"
+          },
+          "429": {
+            "description": "Rate limit exceeded; respect Retry-After"
+          }
+        }
+      }
+    },
+    "/api/v1/posts/{postId}/like": {
+      "post": {
+        "summary": "Ensure post is liked (idempotent)",
+        "tags": [
+          "Posts"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "postId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "postId": {
+                          "type": "string"
+                        },
+                        "isLiked": {
+                          "type": "boolean"
+                        },
+                        "reactionCount": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or expired access token"
+          },
+          "403": {
+            "description": "Only the author can edit; post authors can remove comments"
+          },
+          "404": {
+            "description": "Missing, deleted or inaccessible content"
+          },
+          "409": {
+            "description": "Linked resource was concurrently edited; reload and retry"
+          },
+          "429": {
+            "description": "Rate limit exceeded; respect Retry-After"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Ensure post is not liked (idempotent)",
+        "tags": [
+          "Posts"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "postId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "postId": {
+                          "type": "string"
+                        },
+                        "isLiked": {
+                          "type": "boolean"
+                        },
+                        "reactionCount": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or expired access token"
+          },
+          "403": {
+            "description": "Only the author can edit; post authors can remove comments"
+          },
+          "404": {
+            "description": "Missing, deleted or inaccessible content"
+          },
+          "409": {
+            "description": "Linked resource was concurrently edited; reload and retry"
+          },
+          "429": {
+            "description": "Rate limit exceeded; respect Retry-After"
+          }
+        }
+      }
+    },
+    "/api/v1/posts/{postId}/comments": {
+      "get": {
+        "summary": "Comments in oldest-first order, including redacted tombstones",
+        "tags": [
+          "Comments"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "postId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000,
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Comment"
+                          }
+                        },
+                        "total": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "page": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "totalPages": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or expired access token"
+          },
+          "403": {
+            "description": "Only the author can edit; post authors can remove comments"
+          },
+          "404": {
+            "description": "Missing, deleted or inaccessible content"
+          },
+          "409": {
+            "description": "Linked resource was concurrently edited; reload and retry"
+          },
+          "429": {
+            "description": "Rate limit exceeded; respect Retry-After"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create comment or nested reply in the same post",
+        "tags": [
+          "Comments"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "postId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  },
+                  "parentCommentId": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "content"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Comment"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or expired access token"
+          },
+          "403": {
+            "description": "Only the author can edit; post authors can remove comments"
+          },
+          "404": {
+            "description": "Missing, deleted or inaccessible content"
+          },
+          "409": {
+            "description": "Linked resource was concurrently edited; reload and retry"
+          },
+          "429": {
+            "description": "Rate limit exceeded; respect Retry-After"
+          }
+        }
+      }
+    },
+    "/api/v1/comments/{commentId}": {
+      "put": {
+        "summary": "Edit own comment",
+        "tags": [
+          "Comments"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "commentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  }
+                },
+                "required": [
+                  "content"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Comment"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or expired access token"
+          },
+          "403": {
+            "description": "Only the author can edit; post authors can remove comments"
+          },
+          "404": {
+            "description": "Missing, deleted or inaccessible content"
+          },
+          "409": {
+            "description": "Linked resource was concurrently edited; reload and retry"
+          },
+          "429": {
+            "description": "Rate limit exceeded; respect Retry-After"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Edit own comment",
+        "tags": [
+          "Comments"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "commentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  }
+                },
+                "required": [
+                  "content"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Comment"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or expired access token"
+          },
+          "403": {
+            "description": "Only the author can edit; post authors can remove comments"
+          },
+          "404": {
+            "description": "Missing, deleted or inaccessible content"
+          },
+          "409": {
+            "description": "Linked resource was concurrently edited; reload and retry"
+          },
+          "429": {
+            "description": "Rate limit exceeded; respect Retry-After"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Redact own comment or moderate a comment on own post",
+        "tags": [
+          "Comments"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "commentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or expired access token"
+          },
+          "403": {
+            "description": "Only the author can edit; post authors can remove comments"
+          },
+          "404": {
+            "description": "Missing, deleted or inaccessible content"
+          },
+          "409": {
+            "description": "Linked resource was concurrently edited; reload and retry"
+          },
+          "429": {
+            "description": "Rate limit exceeded; respect Retry-After"
+          }
+        }
+      }
+    },
+    "/api/v1/comments/{commentId}/like": {
+      "post": {
+        "summary": "Ensure comment is liked (idempotent)",
+        "tags": [
+          "Comments"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "commentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "commentId": {
+                          "type": "string"
+                        },
+                        "isLiked": {
+                          "type": "boolean"
+                        },
+                        "likeCount": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or expired access token"
+          },
+          "403": {
+            "description": "Only the author can edit; post authors can remove comments"
+          },
+          "404": {
+            "description": "Missing, deleted or inaccessible content"
+          },
+          "409": {
+            "description": "Linked resource was concurrently edited; reload and retry"
+          },
+          "429": {
+            "description": "Rate limit exceeded; respect Retry-After"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Ensure comment is not liked (idempotent)",
+        "tags": [
+          "Comments"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "commentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "commentId": {
+                          "type": "string"
+                        },
+                        "isLiked": {
+                          "type": "boolean"
+                        },
+                        "likeCount": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or expired access token"
+          },
+          "403": {
+            "description": "Only the author can edit; post authors can remove comments"
+          },
+          "404": {
+            "description": "Missing, deleted or inaccessible content"
+          },
+          "409": {
+            "description": "Linked resource was concurrently edited; reload and retry"
+          },
+          "429": {
+            "description": "Rate limit exceeded; respect Retry-After"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Post": {
+        "type": "object",
+        "properties": {
+          "postId": {
+            "type": "string"
+          },
+          "authorId": {
+            "type": "string"
+          },
+          "authorName": {
+            "type": "string"
+          },
+          "authorAvatar": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "type": "string"
+          },
+          "images": {
+            "type": "array",
+            "maxItems": 5,
+            "items": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "NORMAL",
+              "JOURNEY_SHARE",
+              "BADGE_SHARE"
+            ]
+          },
+          "journeyId": {
+            "type": "string",
+            "nullable": true
+          },
+          "trekkingPlaceId": {
+            "type": "string",
+            "nullable": true
+          },
+          "reactionCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "commentCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "isLiked": {
+            "type": "boolean"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "PUBLIC",
+              "PRIVATE"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Comment": {
+        "type": "object",
+        "properties": {
+          "commentId": {
+            "type": "string"
+          },
+          "postId": {
+            "type": "string"
+          },
+          "authorId": {
+            "type": "string",
+            "nullable": true
+          },
+          "authorName": {
+            "type": "string"
+          },
+          "authorAvatar": {
+            "type": "string",
+            "nullable": true
+          },
+          "content": {
+            "type": "string"
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "parentCommentId": {
+            "type": "string",
+            "nullable": true
+          },
+          "rootCommentId": {
+            "type": "string",
+            "nullable": true
+          },
+          "likeCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "isLiked": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+}

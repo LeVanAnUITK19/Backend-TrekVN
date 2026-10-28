@@ -4020,5 +4020,364 @@
         }
       ]
     }
+  ],
+  "community-service": [
+    {
+      "model": "Post",
+      "collection": "posts",
+      "fields": [
+        {
+          "name": "authorId",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "content",
+          "type": "String",
+          "required": false,
+          "default": ""
+        },
+        {
+          "name": "images",
+          "type": "Array",
+          "required": false,
+          "default": []
+        },
+        {
+          "name": "type",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "NORMAL",
+            "JOURNEY_SHARE",
+            "BADGE_SHARE"
+          ],
+          "default": "NORMAL"
+        },
+        {
+          "name": "journeyId",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "trekkingPlaceId",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "reactionCount",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "commentCount",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "visibility",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "PUBLIC",
+            "PRIVATE"
+          ],
+          "default": "PUBLIC"
+        },
+        {
+          "name": "deleted",
+          "type": "Boolean",
+          "required": false,
+          "default": false
+        },
+        {
+          "name": "revision",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "deleted": 1,
+            "visibility": 1,
+            "createdAt": -1,
+            "_id": -1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "authorId": 1,
+            "deleted": 1,
+            "createdAt": -1,
+            "_id": -1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "journeyId": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "trekkingPlaceId": 1,
+            "createdAt": -1
+          },
+          "options": {
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "Comment",
+      "collection": "comments",
+      "fields": [
+        {
+          "name": "postId",
+          "type": "ObjectId",
+          "required": true,
+          "ref": "Post"
+        },
+        {
+          "name": "authorId",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "parentCommentId",
+          "type": "ObjectId",
+          "required": false,
+          "ref": "Comment",
+          "default": null
+        },
+        {
+          "name": "rootCommentId",
+          "type": "ObjectId",
+          "required": false,
+          "ref": "Comment",
+          "default": null
+        },
+        {
+          "name": "content",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "deleted",
+          "type": "Boolean",
+          "required": false,
+          "default": false
+        },
+        {
+          "name": "likeCount",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "postId": 1,
+            "createdAt": 1,
+            "_id": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "postId": 1,
+            "rootCommentId": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "authorId": 1
+          },
+          "options": {
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "Reaction",
+      "collection": "reactions",
+      "fields": [
+        {
+          "name": "postId",
+          "type": "ObjectId",
+          "required": true,
+          "ref": "Post"
+        },
+        {
+          "name": "userId",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "type",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "LIKE"
+          ],
+          "default": "LIKE"
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "postId": 1,
+            "userId": 1
+          },
+          "options": {
+            "unique": true,
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "CommentReaction",
+      "collection": "comment_reactions",
+      "fields": [
+        {
+          "name": "commentId",
+          "type": "ObjectId",
+          "required": true,
+          "ref": "Comment"
+        },
+        {
+          "name": "postId",
+          "type": "ObjectId",
+          "required": true,
+          "ref": "Post"
+        },
+        {
+          "name": "userId",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "commentId": 1,
+            "userId": 1
+          },
+          "options": {
+            "unique": true,
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "postId": 1
+          },
+          "options": {
+            "background": true
+          }
+        }
+      ]
+    }
   ]
 }

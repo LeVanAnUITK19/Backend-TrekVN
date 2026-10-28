@@ -4,13 +4,17 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const corsMiddleware = require('./middlewares/cors');
 const { authMiddleware } = require('./middlewares/authMiddleware');
-const { authRouter, checkinRouter, trekkingRouter, agentRouter } = require('./routes/proxy');
+const { authRouter, checkinRouter, trekkingRouter, agentRouter, communityRouter } = require('./routes/proxy');
 const { errorHandler } = require('./middlewares/errorHandler');
 const { prometheusMiddleware, metricsHandler } = require('./middlewares/prometheus');
 const env = require('./config/env');
 
 const app = express();
 app.disable('x-powered-by');
+// Only accept forwarded client addresses from explicitly trusted proxies.
+app.set('trust proxy', process.env.TRUSTED_PROXIES
+  ? process.env.TRUSTED_PROXIES.split(',').map((ip) => ip.trim()).filter(Boolean)
+  : false);
 
 // ---------------------------------------------------------------------------
 // CORS
@@ -21,6 +25,8 @@ app.use(corsMiddleware);
 // Prometheus metrics middleware (before routes, but after CORS)
 // ---------------------------------------------------------------------------
 app.use(prometheusMiddleware);
+// Scrapes use their own optional bearer token and bypass API quotas/JWT.
+app.get('/metrics', metricsHandler);
 
 // ---------------------------------------------------------------------------
 // Rate limiting — configurable via env vars.
@@ -36,7 +42,7 @@ if (process.env.NODE_ENV !== 'test' && process.env.DISABLE_RATE_LIMIT !== 'true'
     legacyHeaders: false,
     // Send Retry-After header so offline client can defer bulk sync (SRS FR-SYNC-09)
     message: (req, res) => {
-      const retryAfterSeconds = Math.ceil(env.RATE_LIMIT_WINDOW_MS / 1000);
+      const retryAfterSeconds = Math.max(1, Math.ceil((req.rateLimit.resetTime - Date.now()) / 1000));
       res.setHeader('Retry-After', retryAfterSeconds);
       return {
         success: false,
@@ -60,11 +66,6 @@ app.get('/health', (_req, res) => {
 app.get('/ready', (_req, res) => {
   res.json({ status: 'ready', service: 'api-gateway' });
 });
-
-// ---------------------------------------------------------------------------
-// Prometheus metrics endpoint
-// ---------------------------------------------------------------------------
-app.get('/metrics', metricsHandler);
 
 // ---------------------------------------------------------------------------
 // Auth middleware — verifies Bearer token on protected endpoints.
@@ -119,6 +120,10 @@ app.use('/api/v1/admin/audit-logs', authRouter);
 // CheckIn-service
 app.use('/api/v1/checkins', checkinRouter);
 app.use('/api/v1/visits', checkinRouter);
+
+// Community-service — first-frame WebSocket auth is handled on HTTP upgrade.
+app.use('/api/v1/posts', communityRouter);
+app.use('/api/v1/comments', communityRouter);
 
 // Trekking-service — public routes
 app.use('/api/v1/places', trekkingRouter);

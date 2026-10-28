@@ -1378,11 +1378,19 @@ PUT /api/v1/journeys/:journeyId/markers/:markerId
 
 ### GET /places?region=SOUTH
 
-New `region` query param calls checkin-service internal API (`/internal/v1/provinces?region=SOUTH`) to get province IDs, then filters places by `provinceId IN [...]`.
+`region=NORTH|CENTRAL|SOUTH` maps directly to the place's `mien=mien-bac|mien-trung|mien-nam`. It works together with `q` and `provinceId`, without a checkin-service call. The `mien` parameter takes precedence when explicitly provided. Places must have their `mien` field set for these filters.
 
-If checkin-service is unreachable, `region` filter returns empty results (fail-open).
+Other legacy region values still use the checkin-service province lookup. An unavailable lookup returns an empty result for those legacy values.
 
-**region values** depend on Province data seeded in checkin-service.
+`sort=popular` orders by `ratingCount DESC`, `ratingAverage DESC`, then `_id DESC`; unrated places remain visible. `includeRoutes=true` adds an array of ACTIVE routes to each place on the page, using one batch query instead of requiring one API call per place. Existing callers without this option keep the previous response shape.
+
+### Rate limits and deployment
+
+Gateway, trekking-service and checkin-service default to 600 requests per client IP per 15 minutes. Override via `RATE_LIMIT_MAX_REQUESTS` on gateway and `RATE_LIMIT_MAX` on the services; `RATE_LIMIT_WINDOW_MS` configures the window. Existing deployment environment overrides still take precedence. Health/ready probes do not consume quota.
+
+Set `TRUSTED_PROXIES` to the actual upstream proxy IPs/CIDRs for each hop: reverse proxy at gateway, gateway at downstream services. Gateway does not trust forwarded headers by default; downstream services default to loopback for local development. Without the correct deployment values, users behind the proxy may share a rate-limit bucket. Do not use a universal trust setting.
+
+Deploy backend changes before updating the app. New clients request bundled routes, but fall back to individual route calls against older backends. Profile rank/badge polling runs every minute while the app is active; activity-triggered refreshes remain enabled.
 
 ---
 

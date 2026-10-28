@@ -11,7 +11,7 @@ Current implementation review: **2026-10-12**. Start with [services.md](services
 | checkin-service | 3002 | [checkin-service-api.md](./checkin-service-api.md) | `http://localhost:3002/api-docs` |
 | trekking-service | 3003 | [trekking-service-api.md](./trekking-service-api.md) | `http://localhost:3003/api-docs` |
 | agent-service | 8000 | [agent/api.md](./agent/api.md) | `http://localhost:8000/docs` |
-| community-service | TBD | — | — |
+| community-service | 3004 | [community-service-api.md](./community-service-api.md) | `http://localhost:3004/api-docs` |
 
 ## 🌐 Web Admin API
 
@@ -32,6 +32,9 @@ Tất cả request từ client đều qua `http://localhost:3000`.
 | `/api/v1/admin/audit-logs` | **auth-service** | 🔒 ADMIN |
 | `/api/v1/checkins/*` | checkin-service | 🔒 All |
 | `/api/v1/visits/*` | checkin-service | 🔒 All |
+| `/api/v1/posts/*` | community-service | 🔒 All |
+| `/api/v1/comments/*` | community-service | 🔒 All |
+| `/api/v1/community/ws` | community-service (WebSocket upgrade) | 🔒 First-frame JWT |
 | `/api/v1/places/*` | trekking-service | Public read, 🔒 reviews |
 | `/api/v1/routes/*` | trekking-service | Public |
 | `/api/v1/journeys/*` | trekking-service | 🔒 All |

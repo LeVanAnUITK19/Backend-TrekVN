@@ -1689,6 +1689,7 @@
                   "purpose": {
                     "type": "string",
                     "enum": [
+                      "COMMUNITY_POST",
                       "JOURNEY_MARKER",
                       "PLACE_REVIEW",
                       "ROUTE_CONTRIBUTION",

@@ -5,14 +5,17 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
-const services = ['auth-service', 'checkin-service', 'trekking-service'];
+const allServices = ['auth-service', 'checkin-service', 'trekking-service', 'community-service'];
+const selectedService = process.argv[2];
+if (selectedService && !allServices.includes(selectedService)) throw new Error('Unknown service: ' + selectedService);
+const services = selectedService ? [selectedService] : allServices;
 const write = (name, contents) => {
   const file = path.join(root, name);
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, contents + '\n');
 };
 const json = (name, value) => write(name, JSON.stringify(value, null, 2));
-const schemas = {};
+const schemas = selectedService ? JSON.parse(fs.readFileSync(path.join(root, 'docs/database/runtime/schemas.json'), 'utf8')) : {};
 const routeRows = [];
 
 function collect(file, prefix, rows, seen = new Set()) {
@@ -81,9 +84,9 @@ for (const service of services) {
   const requireLocal = (name) => require(require.resolve(name, { paths: [base] }));
   const rows = [];
   collect(path.join(base, 'src/routes/index.js'), '/api/v1', rows);
-  collect(path.join(base, 'src/routes/internal.routes.js'), '/internal/v1', rows);
-  const jsdoc = requireLocal('swagger-jsdoc');
-  const spec = jsdoc({
+  const internalFile = path.join(base, 'src/routes/internal.routes.js');
+  if (fs.existsSync(internalFile)) collect(internalFile, '/internal/v1', rows);
+  const spec = service === 'community-service' ? require(path.join(base, 'src/config/openapi.definition')) : requireLocal('swagger-jsdoc')({
     failOnErrors: true,
     definition: {
       openapi: '3.0.0', info: { title: service, version: require(path.join(base, 'package.json')).version },
@@ -105,7 +108,7 @@ for (const service of services) {
     let security = [];
     if (internal) {
       security = row.path === '/internal/v1/dashboard' ? [{ bearerAuth: [] }] : [{ serviceToken: [] }];
-    } else if (service === 'checkin-service' || row.path.includes('/admin/') || row.path.includes('/users/') ||
+    } else if (['checkin-service', 'community-service'].includes(service) || row.path.includes('/admin/') || row.path.includes('/users/') ||
                /\/(journeys|contributions)\b/.test(row.path) || /\/badges\/(me|users)\b/.test(row.path) ||
                row.path.includes('/uploads/') || /\/reviews\/(me|eligibility)$/.test(row.path) ||
                (row.path.includes('/reviews') && row.method !== 'get') ||
@@ -143,7 +146,11 @@ for (const service of services) {
 
   const mongoose = requireLocal('mongoose');
   const modelsPath = path.join(base, 'src/models');
-  const models = fs.readdirSync(modelsPath).filter((file) => file.endsWith('.js')).map((file) => require(path.join(modelsPath, file)));
+  const models = fs.readdirSync(modelsPath).filter((file) => file.endsWith('.js'))
+    .flatMap((file) => {
+      const exported = require(path.join(modelsPath, file));
+      return exported.schema ? [exported] : Object.values(exported).filter((value) => value?.schema);
+    });
   schemas[service] = models.filter((model) => model.schema).map((model) => ({
     model: model.modelName, collection: model.collection.name,
     fields: Object.entries(model.schema.paths).map(([name, field]) => ({
@@ -169,5 +176,10 @@ for (const service of services) {
   void mongoose;
 }
 json('docs/database/runtime/schemas.json', schemas);
-write('docs/api-route-inventory.md', '# Implemented backend routes\n\nGenerated with `node scripts/export-contracts.js`. Route-only entries have no complete request/response specification yet. Internal endpoints are unavailable through the public Gateway.\n\n| Service | Method | Path | Auth | Contract detail |\n|---|---|---|---|---|\n' + routeRows.map((row) =>
+const inventoryHeader = '# Implemented backend routes\n\nGenerated with `node scripts/export-contracts.js`. Route-only entries have no complete request/response specification yet. Internal endpoints are unavailable through the public Gateway.\n\n| Service | Method | Path | Auth | Contract detail |\n|---|---|---|---|---|\n';
+const previousInventory = selectedService
+  ? fs.readFileSync(path.join(root, 'docs/api-route-inventory.md'), 'utf8').split('\n')
+    .filter((line) => !line.startsWith(`| ${selectedService} |`)).join('\n').trimEnd() + '\n'
+  : inventoryHeader;
+write('docs/api-route-inventory.md', previousInventory + routeRows.map((row) =>
   `| ${row.service} | ${row.method.toUpperCase()} | \`${row.path}\` | ${row.security.length ? row.security.map((s) => Object.keys(s).join('/')).join(' OR ') : 'Public'} | ${row.detail} |`).join('\n'));

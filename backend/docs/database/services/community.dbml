@@ -38,6 +38,10 @@ Table posts {
   // PUBLIC | PRIVATE
   visibility varchar [default: 'PUBLIC']
 
+  // Soft deletion and write fence for transactional child mutations.
+  deleted boolean [default: false]
+  revision int [default: 0]
+
   createdAt timestamp
   updatedAt timestamp
 
@@ -64,9 +68,13 @@ Table comments {
   // Có giá trị = reply comment.
   parentCommentId varchar
 
+  // Denormalized root for rendering replies at any depth.
+  rootCommentId varchar
+
   content text [not null]
 
   deleted boolean [default: false]
+  likeCount int [default: 0]
 
   createdAt timestamp
   updatedAt timestamp
@@ -110,6 +118,23 @@ Ref: comments.postId > posts.postId
 Ref: reactions.postId > posts.postId
 
 Ref: comments.parentCommentId > comments.commentId
+Ref: comments.rootCommentId > comments.commentId
+
+// Separate collection preserves the original post reaction contract.
+Table comment_reactions {
+  commentReactionId varchar [pk]
+  commentId varchar [not null]
+  postId varchar [not null]
+  userId varchar [not null]
+  createdAt timestamp
+  updatedAt timestamp
+  indexes {
+    (commentId, userId) [unique]
+    postId
+  }
+}
+Ref: comment_reactions.commentId > comments.commentId
+Ref: comment_reactions.postId > posts.postId
 
 
 // ======================================================
@@ -120,4 +145,5 @@ TableGroup community_service {
   posts
   comments
   reactions
+  comment_reactions
 }

@@ -75,6 +75,18 @@ jobs:
       service: trekking-service
     secrets: inherit
 
+  community:
+    name: Community service
+    permissions:
+      contents: read
+      packages: write
+    needs: changes
+    if: ${{ needs.changes.outputs.community == 'true' || github.event_name == 'workflow_dispatch' }}
+    uses: ./.github/workflows/reusable-node.yml
+    with:
+      service: community-service
+    secrets: inherit
+
   gateway:
     name: API gateway
     permissions:
@@ -102,7 +114,7 @@ jobs:
   ci-result:
     name: CI result (required check)
     if: ${{ always() }}
-    needs: [changes, auth, checkin, trekking, gateway, agent]
+    needs: [changes, auth, checkin, trekking, community, gateway, agent]
     runs-on: ubuntu-24.04
     steps:
       - name: Fail if any required job failed or was cancelled
@@ -111,3 +123,59 @@ jobs:
         run: |
           echo "$NEEDS_JSON" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
           echo "$NEEDS_JSON" | jq -e 'all(.[]; .result == "success" or .result == "skipped")' >/dev/null
+  
+  deploy-render:
+    name: Render - ${{ matrix.service }}
+    needs: [changes, ci-result]
+
+    if: >-
+      ${{
+        always() &&
+        needs.ci-result.result == 'success' &&
+        github.event_name == 'push' &&
+        github.ref == 'refs/heads/main'
+      }}
+
+    permissions:
+      contents: read
+
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - service: api-gateway
+            change: gateway
+            variable: RENDER_API_GATEWAY_ID
+            api-key-secret: RENDER_API_GATEWAY_KEY
+
+          - service: auth-service
+            change: auth
+            variable: RENDER_AUTH_SERVICE_ID
+            api-key-secret: RENDER_AUTH_SERVICE_KEY
+
+          - service: checkin-service
+            change: checkin
+            variable: RENDER_CHECKIN_SERVICE_ID
+            api-key-secret: RENDER_CHECKIN_SERVICE_KEY
+
+          - service: trekking-service
+            change: trekking
+            variable: RENDER_TREKKING_SERVICE_ID
+            api-key-secret: RENDER_TREKKING_SERVICE_KEY
+
+          - service: agent-service
+            change: agent
+            variable: RENDER_AGENT_SERVICE_ID
+            api-key-secret: RENDER_AGENT_SERVICE_KEY
+
+    uses: ./.github/workflows/reusable-render.yml
+    with:
+      service: ${{ matrix.service }}
+      service-id: ${{ vars[matrix.variable] }}
+      enabled: ${{ needs.changes.outputs[matrix.change] == 'true' }}
+    secrets:
+      RENDER_API_KEY: ${{ secrets[matrix.api-key-secret] }}
+      SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+      SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+      NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}

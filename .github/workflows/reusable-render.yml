@@ -1,0 +1,213 @@
+name: Reusable - Deploy Render
+
+on:
+  workflow_call:
+    inputs:
+      service:
+        required: true
+        type: string
+      service-id:
+        required: true
+        type: string
+      enabled:
+        required: false
+        type: boolean
+        default: true
+    secrets:
+      RENDER_API_KEY:
+        required: true
+      SMTP_USERNAME:
+        required: true
+      SMTP_PASSWORD:
+        required: true
+      NOTIFY_EMAIL:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy ${{ inputs.service }}
+    if: ${{ inputs.enabled }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Deploy checked commit and wait for Render
+        id: render-deploy
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ inputs.service-id }}
+          SERVICE_NAME: ${{ inputs.service }}
+          COMMIT_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          python3 -u - <<'PY'
+          import json
+          import os
+          import re
+          import sys
+          import time
+          import urllib.error
+          import urllib.request
+
+          service = os.environ["SERVICE_NAME"]
+          service_id = os.environ["RENDER_SERVICE_ID"].strip()
+          api_key = os.environ["RENDER_API_KEY"].strip()
+          commit = os.environ["COMMIT_SHA"]
+
+          def fail(message):
+              print(f"::error::{message}", flush=True)
+              sys.exit(1)
+
+          if not api_key:
+              fail("Missing GitHub secret RENDER_API_KEY.")
+
+          if not re.fullmatch(r"srv-[A-Za-z0-9]+", service_id):
+              fail(f"Missing or invalid Render service ID for {service}.")
+
+          base_url = (
+              f"https://api.render.com/v1/services/{service_id}/deploys"
+          )
+
+          def request(method, url, payload=None):
+              data = (
+                  json.dumps(payload).encode("utf-8")
+                  if payload is not None else None
+              )
+              req = urllib.request.Request(
+                  url,
+                  data=data,
+                  method=method,
+                  headers={
+                      "Authorization": f"Bearer {api_key}",
+                      "Content-Type": "application/json",
+                      "Accept": "application/json",
+                  },
+              )
+              with urllib.request.urlopen(req, timeout=30) as response:
+                  return json.load(response)
+
+          try:
+              deployment = request(
+                  "POST",
+                  base_url,
+                  {
+                      "commitId": commit,
+                      "clearCache": "do_not_clear",
+                  },
+              )
+          except urllib.error.HTTPError as exc:
+              fail(f"Render rejected deployment: HTTP {exc.code}.")
+          except (urllib.error.URLError, TimeoutError):
+              fail(
+                  "Could not confirm deployment creation. "
+                  "Check Render before retrying."
+              )
+
+          deploy_id = deployment.get("id")
+          if not isinstance(deploy_id, str) or not re.fullmatch(
+              r"dep-[A-Za-z0-9]+", deploy_id
+          ):
+              fail("Render response did not contain a valid deployment ID.")
+
+          print(f"Service: {service}")
+          print(f"Commit: {commit}")
+          print(f"Deployment: {deploy_id}")
+
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
+              summary.write(
+                  f"### Render: {service}\n\n"
+                  f"- Commit: `{commit}`\n"
+                  f"- Deployment: `{deploy_id}`\n"
+              )
+
+          deadline = time.monotonic() + 25 * 60
+          failures = 0
+
+          while time.monotonic() < deadline:
+              try:
+                  deployment = request(
+                      "GET", f"{base_url}/{deploy_id}"
+                  )
+                  failures = 0
+              except urllib.error.HTTPError as exc:
+                  if exc.code != 429 and exc.code < 500:
+                      fail(f"Cannot read deployment: HTTP {exc.code}.")
+                  failures += 1
+                  if failures >= 5:
+                      fail("Repeated Render API errors while checking deployment.")
+                  print(f"Temporary API error: HTTP {exc.code}; retrying.")
+                  time.sleep(20)
+                  continue
+              except (urllib.error.URLError, TimeoutError):
+                  failures += 1
+                  if failures >= 5:
+                      fail("Repeated network errors while checking deployment.")
+                  print("Temporary network error; retrying.")
+                  time.sleep(20)
+                  continue
+
+              status = deployment.get("status", "unknown")
+              print(f"{service}: {status}", flush=True)
+
+              if status == "live":
+                  with open(
+                      os.environ["GITHUB_STEP_SUMMARY"], "a"
+                  ) as summary:
+                      summary.write("- Result: **live**\n")
+                  print(f"Successfully deployed {service}.")
+                  sys.exit(0)
+
+              if status.endswith("_failed") or status in {
+                  "canceled", "cancelled", "deactivated"
+              }:
+                  fail(f"Deployment of {service} ended with status: {status}.")
+
+              time.sleep(20)
+
+          fail(
+              f"Timed out waiting for {service}. "
+              "Check Render; the deployment may still be running."
+          )
+          PY
+
+      - name: Email deployment result
+        if: ${{ always() && steps.render-deploy.outcome != 'skipped' }}
+        timeout-minutes: 2
+        uses: dawidd6/action-send-mail@v23
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          secure: false
+          require_tls: true
+
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+
+          from: TrekVN CI/CD <${{ secrets.SMTP_USERNAME }}>
+          to: ${{ secrets.NOTIFY_EMAIL }}
+
+          subject: >-
+            [TrekVN Render] ${{ inputs.service }} -
+            ${{ steps.render-deploy.outcome }}
+
+          body: |
+            Ket qua trien khai Render
+
+            Service: ${{ inputs.service }}
+            Ket qua buoc deploy: ${{ steps.render-deploy.outcome }}
+            Commit: ${{ github.sha }}
+            Branch: ${{ github.ref_name }}
+            Nguoi push: ${{ github.actor }}
+
+            success: Render da bao deployment live.
+            failure: Deploy loi hoac khong xac nhan duoc trong thoi gian cho.
+            cancelled: Buoc theo doi deploy bi huy; can kiem tra Render.
+
+            Xem log chi tiet:
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      
+        
+          

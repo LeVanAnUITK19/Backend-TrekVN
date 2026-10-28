@@ -118,4 +118,7 @@ agentRouter.use('/', createServiceProxy(env.AGENT_SERVICE_URL, 'agent-service', 
   timeout: 180_000,
 }));
 
-module.exports = { authRouter, checkinRouter, trekkingRouter, agentRouter };
+const communityRouter = Router();
+communityRouter.use('/', createServiceProxy(env.COMMUNITY_SERVICE_URL, 'community-service'));
+
+module.exports = { authRouter, checkinRouter, trekkingRouter, agentRouter, communityRouter };

@@ -1,100 +1,83 @@
 global:
-  scrape_interval: 15s
-  evaluation_interval: 15s
+  scrape_interval: 30s
+  evaluation_interval: 30s
   external_labels:
-    cluster: 'trekvn-demo'
-    environment: 'render'
+    cluster: trekvn
+    environment: render
 
-# Alertmanager configuration
-alerting:
-  alertmanagers:
-    - static_configs:
-        - targets:
-            - alertmanager:9093
-
-# Load rules once and periodically evaluate them
 rule_files:
-  - "alerts.yml"
+  - alerts.yml
 
-# Scrape configurations
+# These Render hostnames come from the original repo configuration.
+# Replace them with the actual hostnames from your Render dashboard (no https://).
+# The secret file contains ONLY the METRICS_TOKEN shared by these five services.
+# No environment-variable substitution is performed by Prometheus.
 scrape_configs:
-  # ─── Prometheus itself ────────────────────────────────────────────────────────
-  - job_name: 'prometheus'
+  - job_name: prometheus
     static_configs:
       - targets: ['localhost:9090']
 
-  # ─── TrekVN Services on Render ────────────────────────────────────────────────
-  
-  # API Gateway
-  - job_name: 'api-gateway'
-    metrics_path: '/metrics'
+  - job_name: api-gateway
+    honor_labels: true
+    metrics_path: /metrics
     scheme: https
-    static_configs:
-      - targets:
-          - 'api-gateway-trekvn.onrender.com'
-        labels:
-          service: 'api-gateway'
-          tier: 'gateway'
-    scrape_interval: 30s
     scrape_timeout: 10s
+    authorization:
+      type: Bearer
+      credentials_file: /etc/secrets/metrics_token
+    static_configs:
+      - targets: ['api-gateway-trekvn.onrender.com']
+        labels:
+          service: api-gateway
 
-  # Auth Service
-  - job_name: 'auth-service'
-    metrics_path: '/metrics'
+  - job_name: auth-service
+    honor_labels: true
+    metrics_path: /metrics
     scheme: https
-    static_configs:
-      - targets:
-          - 'backend-trekvn.onrender.com'
-        labels:
-          service: 'auth-service'
-          tier: 'backend'
-    scrape_interval: 30s
     scrape_timeout: 10s
+    authorization:
+      type: Bearer
+      credentials_file: /etc/secrets/metrics_token
+    static_configs:
+      - targets: ['backend-trekvn.onrender.com']
+        labels:
+          service: auth-service
 
-  # Checkin Service
-  - job_name: 'checkin-service'
-    metrics_path: '/metrics'
+  - job_name: checkin-service
+    honor_labels: true
+    metrics_path: /metrics
     scheme: https
-    static_configs:
-      - targets:
-          - 'checkin-service-trekvn.onrender.com'
-        labels:
-          service: 'checkin-service'
-          tier: 'backend'
-    scrape_interval: 30s
     scrape_timeout: 10s
+    authorization:
+      type: Bearer
+      credentials_file: /etc/secrets/metrics_token
+    static_configs:
+      - targets: ['checkin-service-trekvn.onrender.com']
+        labels:
+          service: checkin-service
 
-  # Trekking Service
-  - job_name: 'trekking-service'
-    metrics_path: '/metrics'
+  - job_name: trekking-service
+    honor_labels: true
+    metrics_path: /metrics
     scheme: https
-    static_configs:
-      - targets:
-          - 'trekking-service-trekvn.onrender.com'
-        labels:
-          service: 'trekking-service'
-          tier: 'backend'
-    scrape_interval: 30s
     scrape_timeout: 10s
+    authorization:
+      type: Bearer
+      credentials_file: /etc/secrets/metrics_token
+    static_configs:
+      - targets: ['trekking-service-trekvn.onrender.com']
+        labels:
+          service: trekking-service
 
-  # Agent Service (Python FastAPI)
-  - job_name: 'agent-service'
-    metrics_path: '/metrics'
+  - job_name: agent-service
+    honor_labels: true
+    metrics_path: /metrics
     scheme: https
-    static_configs:
-      - targets:
-          - 'agent-service-trekvn.onrender.com'
-        labels:
-          service: 'agent-service'
-          tier: 'backend'
-          language: 'python'
-    scrape_interval: 30s
     scrape_timeout: 10s
-
-  # ─── Node Exporter (if running) ───────────────────────────────────────────────
-  - job_name: 'node-exporter'
+    authorization:
+      type: Bearer
+      credentials_file: /etc/secrets/metrics_token
     static_configs:
-      - targets:
-          - 'node-exporter:9100'
+      - targets: ['agent-service-trekvn.onrender.com']
         labels:
-          instance: 'monitoring-host'
+          service: agent-service

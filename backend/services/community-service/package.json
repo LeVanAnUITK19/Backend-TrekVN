@@ -1,0 +1,44 @@
+{
+  "name": "community-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TrekVN community posts, threaded comments, reactions and realtime updates",
+  "main": "src/index.js",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "lint": "eslint src tests",
+    "test": "jest --runInBand",
+    "test:e2e": "node --test scripts/community-gateway.e2e.js",
+    "test:ci": "jest --runInBand --coverage"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.1.4",
+    "helmet": "^7.0.0",
+    "ioredis": "^5.8.2",
+    "joi": "^17.11.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^7.6.3",
+    "prom-client": "^15.1.3",
+    "swagger-ui-express": "^5.0.1",
+    "winston": "^3.11.0",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.1",
+    "jest": "^30.2.0",
+    "mongodb-memory-server": "^10.2.0",
+    "supertest": "^7.1.4"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "setupFiles": ["./tests/env.js"],
+    "testTimeout": 90000,
+    "collectCoverageFrom": ["src/**/*.js", "!src/index.js", "!src/server.js"],
+    "coverageReporters": ["text", "lcov"]
+  }
+}

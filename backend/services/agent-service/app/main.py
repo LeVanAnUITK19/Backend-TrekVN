@@ -29,6 +29,7 @@ from app.config import get_settings
 from app.db.indexes import create_indexes
 from app.db.mongo import close_db, connect_db, get_db
 from app.llm.manager import init_llm_manager
+from app.metrics import install_metrics
 from app.utils.serialize import _convert
 
 # ── Logging setup ─────────────────────────────────────────────────────────────
@@ -162,6 +163,7 @@ def create_app() -> FastAPI:
             },
         )
 
+    install_metrics(app, settings.metrics_token)
     return app
 
 

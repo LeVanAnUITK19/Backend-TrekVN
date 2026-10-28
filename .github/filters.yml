@@ -17,6 +17,13 @@ trekking:
   - '.github/filters.yml'
   - 'backend/ci/**'
   - 'backend/shared/**'
+community:
+  - 'backend/services/community-service/**'
+  - '.github/workflows/**'
+  - '.github/filters.yml'
+  - 'backend/ci/**'
+  - 'backend/shared/**'
+
 gateway:
   - 'backend/services/api-gateway/**'
   - '.github/workflows/**'

@@ -37,6 +37,7 @@ const GPX_MIME_TYPES = new Set([
 ]);
 
 const MAX_FILE_SIZE_BYTES = {
+  COMMUNITY_POST: 10 * 1024 * 1024,
   JOURNEY_MARKER: 10 * 1024 * 1024,     // 10 MB
   PLACE_REVIEW: 10 * 1024 * 1024,
   ROUTE_CONTRIBUTION: 20 * 1024 * 1024,
@@ -45,6 +46,7 @@ const MAX_FILE_SIZE_BYTES = {
 };
 
 const FOLDER_MAP = {
+  COMMUNITY_POST: 'trekvn/community',
   JOURNEY_MARKER: 'trekvn/markers',
   PLACE_REVIEW: 'trekvn/reviews',
   ROUTE_CONTRIBUTION: 'trekvn/contributions',

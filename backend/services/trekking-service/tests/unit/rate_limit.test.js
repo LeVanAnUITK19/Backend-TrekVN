@@ -6,6 +6,7 @@ afterAll(() => { process.env = originalEnv; });
 
 test.each([
   ['trekking-service', '../../src/app'],
+  ['checkin-service', '../../../checkin-service/src/app'],
 ])('%s excludes health probes and separates client quotas', async (_name, modulePath) => {
   process.env.NODE_ENV = 'development';
   process.env.DISABLE_RATE_LIMIT = 'false';

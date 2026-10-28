@@ -88,7 +88,7 @@ Flutter App
 ```
 Backend-TrekVN/
 ├── backend/
-│   ├── services/             # Auth, checkin, trekking, gateway, agent; community placeholder
+│   ├── services/             # Auth, checkin, trekking, community, gateway, agent
 │   ├── docs/                 # API, Swagger and database documentation
 │   ├── scripts/              # Contract export and secret scanning
 │   ├── deployment/           # Deployment placeholder
@@ -252,7 +252,7 @@ npm run lint
 
 ## 🔄 CI/CD Pipeline
 
-Workflow `ci.yml` phát hiện thay đổi và gọi reusable Node/Python jobs cho auth, checkin, trekking, gateway và agent. Community chưa được triển khai nên không chạy CI. Sonar Quality Gate yêu cầu cấu hình repository secrets và project tương ứng.
+Workflow `ci.yml` phát hiện thay đổi và gọi reusable Node/Python jobs cho auth, checkin, trekking, community, gateway và agent. Sonar Quality Gate yêu cầu cấu hình repository secrets và project tương ứng.
 
 ```
 Push / Pull Request
@@ -314,7 +314,7 @@ Push / Pull Request
 - [x] Auth Service — Đăng ký, đăng nhập, JWT, OTP, quản lý người dùng
 - [x] CheckIn Service — GPS check-in, offline sync, province/place visit tracking
 - [x] Trekking Service — Địa điểm, cung đường, hành trình, marker, đóng góp, huy hiệu, bản đồ offline
-- [ ] Community Service — Bài viết, bình luận, chia sẻ thành tích
+- [x] Community Service — Bài viết, bình luận, reactions, WebSocket; [hướng dẫn cấu hình](backend/services/community-service/README.md)
 - [x] API Gateway — Routing, authentication, rate limiting
 - [x] Agent Service — Assistant, phê duyệt badge, Map Builder, task history (Place Builder HTTP tạm tắt)
 - [ ] Monitoring — Prometheus + Grafana dashboard

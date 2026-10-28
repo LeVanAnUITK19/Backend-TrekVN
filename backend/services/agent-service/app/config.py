@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     app_env: Literal["development", "production", "test"] = "development"
     port: int = 8000
     log_level: str = "INFO"
+    metrics_token: str = Field(default="", repr=False)
     # Comma-separated origins, e.g. "http://localhost:5173,http://localhost:3000"
     cors_allowed_origins: str = "http://localhost:5173,http://localhost:3000,http://localhost:8080"
 

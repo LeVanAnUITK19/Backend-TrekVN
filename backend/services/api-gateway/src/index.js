@@ -17,8 +17,11 @@ const server = app.listen(PORT, () => {
   );
 });
 
+const closeCommunityUpgrade = require('./routes/communityUpgrade').attachCommunityUpgrade(server);
+
 // Graceful shutdown
 process.on('SIGTERM', () => {
+  closeCommunityUpgrade();
   console.log('[api-gateway] SIGTERM received, shutting down gracefully');
   server.close(() => {
     console.log('[api-gateway] server closed');
@@ -27,6 +30,7 @@ process.on('SIGTERM', () => {
 });
 
 process.on('SIGINT', () => {
+  closeCommunityUpgrade();
   console.log('[api-gateway] SIGINT received, shutting down gracefully');
   server.close(() => {
     console.log('[api-gateway] server closed');

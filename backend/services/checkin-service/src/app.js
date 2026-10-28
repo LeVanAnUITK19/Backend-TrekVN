@@ -1,4 +1,5 @@
 const express = require('express');
+const { createMetrics } = require('./middlewares/metrics');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
@@ -14,8 +15,14 @@ const { notFound } = require('./middlewares/notFound');
 // ─── Factory function — trả về Express app đã được cấu hình ──────────────────
 const createApp = () => {
   const app = express();
+  const monitoring = createMetrics('checkin-service');
+  app.use(monitoring.middleware);
+  // Register before API auth, rate limiting and body parsing.
+  app.get('/metrics', monitoring.handler);
   if (process.env.TRUSTED_PROXIES) {
     app.set('trust proxy', process.env.TRUSTED_PROXIES.split(',').map((ip) => ip.trim()).filter(Boolean));
+  } else if (process.env.NODE_ENV !== 'test') {
+    app.set('trust proxy', 'loopback');
   }
 
   // ─── Swagger ────────────────────────────────────────────────────────────────
@@ -59,12 +66,13 @@ const createApp = () => {
   }));
 
   // Rate limiting chỉ áp dụng ở production để test không bị chặn
-  if (process.env.NODE_ENV !== 'test') {
+  if (process.env.NODE_ENV !== 'test' && process.env.DISABLE_RATE_LIMIT !== 'true') {
     const limiter = rateLimit({
-      windowMs: 15 * 60 * 1000,
-      max: 100,
+      windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000,
+      max: parseInt(process.env.RATE_LIMIT_MAX, 10) || 600,
       standardHeaders: true,
       legacyHeaders: false,
+      skip: (req) => req.path === '/health' || req.path === '/ready',
     });
     app.use(limiter);
   }

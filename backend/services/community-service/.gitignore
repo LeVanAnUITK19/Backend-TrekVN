@@ -33,4 +33,6 @@ Thumbs.db
 *.swo
 
 # ─── Docker ──────────────────────────────────────────────────────────────────
-.dockerignore
+# Local npm download cache
+.npm-cache/
+.cache/

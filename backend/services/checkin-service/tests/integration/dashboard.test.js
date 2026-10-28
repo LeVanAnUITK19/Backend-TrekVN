@@ -1,7 +1,6 @@
 const express = require('express');
 const request = require('supertest');
 const db = require('../setup/db');
-const { generateToken } = require('../helpers/factory');
 const Checkin = require('../../src/models/MilestoneCheckin');
 
 let app;

@@ -10,7 +10,7 @@ const router = Router();
 
 const presignSchema = Joi.object({
   purpose: Joi.string()
-    .valid('JOURNEY_MARKER', 'PLACE_REVIEW', 'ROUTE_CONTRIBUTION', 'PLACE_SUGGESTION', 'GPX')
+    .valid('COMMUNITY_POST', 'JOURNEY_MARKER', 'PLACE_REVIEW', 'ROUTE_CONTRIBUTION', 'PLACE_SUGGESTION', 'GPX')
     .required(),
   fileName: Joi.string().max(255).required(),
   contentType: Joi.string().max(100).required(),
@@ -30,6 +30,7 @@ const presignSchema = Joi.object({
  *       **Purpose** quyết định folder và giới hạn file:
  *       - `JOURNEY_MARKER` — ảnh marker, tối đa 10MB
  *       - `PLACE_REVIEW`   — ảnh đánh giá, tối đa 10MB
+ *       - `COMMUNITY_POST` — ảnh bài viết cộng đồng, tối đa 10MB
  *       - `ROUTE_CONTRIBUTION` — ảnh cung đường, tối đa 20MB
  *       - `PLACE_SUGGESTION`   — ảnh đề xuất địa điểm, tối đa 20MB
  *       - `GPX`            — file GPX/XML, tối đa 50MB
@@ -49,7 +50,7 @@ const presignSchema = Joi.object({
  *             properties:
  *               purpose:
  *                 type: string
- *                 enum: [JOURNEY_MARKER, PLACE_REVIEW, ROUTE_CONTRIBUTION, PLACE_SUGGESTION, GPX]
+ *                 enum: [COMMUNITY_POST, JOURNEY_MARKER, PLACE_REVIEW, ROUTE_CONTRIBUTION, PLACE_SUGGESTION, GPX]
  *                 example: JOURNEY_MARKER
  *               fileName:
  *                 type: string
