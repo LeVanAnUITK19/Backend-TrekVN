@@ -33,15 +33,25 @@ test('totals track database rows, including inactive definitions and planned jou
 });
 
 test('internal dashboard requires service token', async () => {
+  const originalServiceToken = process.env.TREKVIET_INTERNAL_TOKEN;
+  process.env.TREKVIET_INTERNAL_TOKEN = 'dashboard-test-token';
   const app = express();
   app.use('/internal/v1', require('../../src/routes/internal.routes'));
   app.use((err, _req, res, _next) => res.status(err.statusCode || 500).json({ message: err.message }));
   
-  expect((await request(app).get('/internal/v1/dashboard')).status).toBe(401);
-  
-  const result = await request(app)
-    .get('/internal/v1/dashboard')
-    .set('X-Service-Token', process.env.TREKVIET_INTERNAL_TOKEN || process.env.SERVICE_TOKEN || 'test-token');
-  expect(result.status).toBe(200);
-  expect(result.body.data.stats.totalPlaces).toBe(0);
+  try {
+    expect((await request(app).get('/internal/v1/dashboard')).status).toBe(403);
+
+    const result = await request(app)
+      .get('/internal/v1/dashboard')
+      .set('X-Service-Token', 'dashboard-test-token');
+    expect(result.status).toBe(200);
+    expect(result.body.data.stats.totalPlaces).toBe(0);
+  } finally {
+    if (originalServiceToken === undefined) {
+      delete process.env.TREKVIET_INTERNAL_TOKEN;
+    } else {
+      process.env.TREKVIET_INTERNAL_TOKEN = originalServiceToken;
+    }
+  }
 });

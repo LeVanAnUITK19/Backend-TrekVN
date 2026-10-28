@@ -33,6 +33,9 @@ jobs:
           cache: npm
           cache-dependency-path: backend/services/${{ inputs.service }}/package-lock.json
 
+      - name: Use the npm version used to validate lockfiles
+        run: npm install --global npm@10.9.4
+
       - name: Install reproducible dependencies
         run: npm ci
 
@@ -44,7 +47,7 @@ jobs:
 
       - name: Save coverage report
         if: ${{ always() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: coverage-${{ inputs.service }}
           path: backend/services/${{ inputs.service }}/coverage/

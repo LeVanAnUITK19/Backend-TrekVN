@@ -137,6 +137,8 @@ test('inactive intermediate rank does not hide the next active target', async ()
 });
 
 test('dashboard uses remote totals, enriches names and preserves unavailable data as null', async () => {
+  const originalServiceToken = process.env.TREKVIET_INTERNAL_TOKEN;
+  process.env.TREKVIET_INTERNAL_TOKEN = 'dashboard-test-token';
   await User.create({ _id: userId, email: 'dashboard@test.invalid', displayName: 'Trekker', status: 'ACTIVE', lastLoginAt: new Date() });
   const fakeFetch = jest.spyOn(global, 'fetch').mockImplementation(async (url) => ({
     ok: true,
@@ -147,17 +149,24 @@ test('dashboard uses remote totals, enriches names and preserves unavailable dat
     } : { stats: { totalCheckins: 5 } } }),
   }));
   try {
-    const data = await getDashboard('7d', 'Bearer fixture');
+    const data = await getDashboard('7d');
     expect(data.stats).toMatchObject({ totalUsers: 1, totalRanks: 1, totalJourneys: 9, totalPlaces: 8, totalBadgeTypes: 7, pendingContributions: 6, totalCheckins: 5, totalPosts: null });
     expect(data.recentBadges[0].userName).toBe('Trekker');
     expect(data.recentContributions[0].contributor).toBe('Trekker');
     expect(data.activeUsers).toHaveLength(1);
-    expect(fakeFetch.mock.calls[0][1].headers.Authorization).toBe('Bearer fixture');
+    expect(fakeFetch.mock.calls[0][1].headers['X-Service-Token']).toBe('dashboard-test-token');
     fakeFetch.mockRejectedValue(new Error('offline'));
-    const offline = await getDashboard('7d', 'Bearer fixture');
+    const offline = await getDashboard('7d');
     expect(offline.stats.totalPlaces).toBeNull();
     expect(offline.stats.totalBadgeTypes).toBeNull();
     expect(offline.contributionRatio).toBeNull();
     expect(offline.unavailableServices).toEqual(expect.arrayContaining(['trekking', 'checkin']));
-  } finally { fakeFetch.mockRestore(); }
+  } finally {
+    fakeFetch.mockRestore();
+    if (originalServiceToken === undefined) {
+      delete process.env.TREKVIET_INTERNAL_TOKEN;
+    } else {
+      process.env.TREKVIET_INTERNAL_TOKEN = originalServiceToken;
+    }
+  }
 });

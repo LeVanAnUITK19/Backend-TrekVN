@@ -38,6 +38,9 @@ __pycache__/
 .map-builder-qa*/
 pytest-cache-files-*/
 .audit/
+.npm-cache/
+.cache/
+*.backup
 audit-*.json
 *.mbtiles
 *.osm.pbf
