@@ -6,6 +6,7 @@ import pytest
 from fastapi import FastAPI
 
 from app.api.map_builder import router, legacy_router, _get_service
+from app.config import get_settings
 from app.dependencies import get_current_admin
 from app.workflows.map_builder.service import MapBuilderService
 
@@ -51,9 +52,10 @@ async def test_preview_and_download_stream_same_zip_with_owner_guard(test_settin
 
 
 @pytest.mark.asyncio
-async def test_artifact_file_requires_authentication():
+async def test_artifact_file_requires_authentication(test_settings):
     app = FastAPI()
     app.include_router(router, prefix="/api/v1")
+    app.dependency_overrides[get_settings] = lambda: test_settings
     app.dependency_overrides[_get_service] = lambda: AsyncMock()
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
         response = await client.get("/api/v1/agent/map-artifacts/MAP-test/file")

@@ -123,7 +123,7 @@ jobs:
         run: |
           echo "$NEEDS_JSON" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
           echo "$NEEDS_JSON" | jq -e 'all(.[]; .result == "success" or .result == "skipped")' >/dev/null
-  
+
   deploy-render:
     name: Render - ${{ matrix.service }}
     needs: [changes, ci-result]
