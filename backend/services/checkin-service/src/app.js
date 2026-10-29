@@ -4,6 +4,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
+const { identifyQuotaUser, quotaKey } = require('./middlewares/requestQuota');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 
@@ -67,9 +68,11 @@ const createApp = () => {
 
   // Rate limiting chỉ áp dụng ở production để test không bị chặn
   if (process.env.NODE_ENV !== 'test' && process.env.DISABLE_RATE_LIMIT !== 'true') {
+    app.use(identifyQuotaUser);
     const limiter = rateLimit({
       windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000,
       max: parseInt(process.env.RATE_LIMIT_MAX, 10) || 600,
+      keyGenerator: quotaKey,
       standardHeaders: true,
       legacyHeaders: false,
       skip: (req) => req.path === '/health' || req.path === '/ready',

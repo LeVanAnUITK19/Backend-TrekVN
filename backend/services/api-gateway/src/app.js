@@ -3,7 +3,8 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const corsMiddleware = require('./middlewares/cors');
-const { authMiddleware } = require('./middlewares/authMiddleware');
+const { authMiddleware, resolveRateLimitIdentity } = require('./middlewares/authMiddleware');
+const { quotaKey } = require('./middlewares/requestQuota');
 const { authRouter, checkinRouter, trekkingRouter, agentRouter, communityRouter } = require('./routes/proxy');
 const { errorHandler } = require('./middlewares/errorHandler');
 const { prometheusMiddleware, metricsHandler } = require('./middlewares/prometheus');
@@ -28,6 +29,10 @@ app.use(prometheusMiddleware);
 // Scrapes use their own optional bearer token and bypass API quotas/JWT.
 app.get('/metrics', metricsHandler);
 
+// Resolve a verified account before choosing a quota bucket. Authorization
+// below reuses the same verification, including current role/session checks.
+app.use(resolveRateLimitIdentity);
+
 // ---------------------------------------------------------------------------
 // Rate limiting — configurable via env vars.
 // Returns HTTP 429 + Retry-After header for client sync policy (NFR-SYNC-01, BR-22).
@@ -38,6 +43,7 @@ if (process.env.NODE_ENV !== 'test' && process.env.DISABLE_RATE_LIMIT !== 'true'
   const limiter = rateLimit({
     windowMs: env.RATE_LIMIT_WINDOW_MS,
     max: env.RATE_LIMIT_MAX_REQUESTS,
+    keyGenerator: quotaKey,
     standardHeaders: true,    // RateLimit-* headers
     legacyHeaders: false,
     // Send Retry-After header so offline client can defer bulk sync (SRS FR-SYNC-09)

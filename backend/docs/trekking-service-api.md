@@ -1386,7 +1386,7 @@ Other legacy region values still use the checkin-service province lookup. An una
 
 ### Rate limits and deployment
 
-Gateway, trekking-service and checkin-service default to 600 requests per client IP per 15 minutes. Override via `RATE_LIMIT_MAX_REQUESTS` on gateway and `RATE_LIMIT_MAX` on the services; `RATE_LIMIT_WINDOW_MS` configures the window. Existing deployment environment overrides still take precedence. Health/ready probes do not consume quota.
+Gateway, trekking-service and checkin-service default to 600 requests per verified user per 15 minutes. Anonymous requests remain IP-limited; credential operations have separate IP buckets per operation. Auth defaults to 300 per bucket. Override via `RATE_LIMIT_MAX_REQUESTS` on gateway and `RATE_LIMIT_MAX` on the services; `RATE_LIMIT_WINDOW_MS` configures the window. Existing deployment environment overrides still take precedence. Health/ready probes do not consume quota. See [rate limiting and deployment](rate-limiting.md).
 
 Set `TRUSTED_PROXIES` to the actual upstream proxy IPs/CIDRs for each hop: reverse proxy at gateway, gateway at downstream services. Gateway does not trust forwarded headers by default; downstream services default to loopback for local development. Without the correct deployment values, users behind the proxy may share a rate-limit bucket. Do not use a universal trust setting.
 
