@@ -4027,6 +4027,30 @@
       "collection": "posts",
       "fields": [
         {
+          "name": "hidden",
+          "type": "Boolean",
+          "required": false,
+          "default": false
+        },
+        {
+          "name": "moderationReason",
+          "type": "String",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "moderatedBy",
+          "type": "String",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "moderatedAt",
+          "type": "Date",
+          "required": false,
+          "default": null
+        },
+        {
           "name": "authorId",
           "type": "String",
           "required": true
@@ -4158,6 +4182,17 @@
           "options": {
             "background": true
           }
+        },
+        {
+          "keys": {
+            "deleted": 1,
+            "hidden": 1,
+            "createdAt": -1,
+            "_id": -1
+          },
+          "options": {
+            "background": true
+          }
         }
       ]
     },
@@ -4165,6 +4200,30 @@
       "model": "Comment",
       "collection": "comments",
       "fields": [
+        {
+          "name": "hidden",
+          "type": "Boolean",
+          "required": false,
+          "default": false
+        },
+        {
+          "name": "moderationReason",
+          "type": "String",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "moderatedBy",
+          "type": "String",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "moderatedAt",
+          "type": "Date",
+          "required": false,
+          "default": null
+        },
         {
           "name": "postId",
           "type": "ObjectId",
@@ -4251,6 +4310,17 @@
         {
           "keys": {
             "authorId": 1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "deleted": 1,
+            "hidden": 1,
+            "createdAt": -1,
+            "_id": -1
           },
           "options": {
             "background": true
@@ -4372,6 +4442,107 @@
         {
           "keys": {
             "postId": 1
+          },
+          "options": {
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "ModerationLog",
+      "collection": "moderation_logs",
+      "fields": [
+        {
+          "name": "adminId",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "entityType",
+          "type": "String",
+          "required": true,
+          "enum": [
+            "POST",
+            "COMMENT"
+          ]
+        },
+        {
+          "name": "entityId",
+          "type": "ObjectId",
+          "required": true
+        },
+        {
+          "name": "postId",
+          "type": "ObjectId",
+          "required": true
+        },
+        {
+          "name": "action",
+          "type": "String",
+          "required": true,
+          "enum": [
+            "HIDE",
+            "PUBLISH",
+            "DELETE"
+          ]
+        },
+        {
+          "name": "reason",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "beforeStatus",
+          "type": "String",
+          "required": true,
+          "enum": [
+            "ACTIVE",
+            "HIDDEN",
+            "DELETED"
+          ]
+        },
+        {
+          "name": "afterStatus",
+          "type": "String",
+          "required": true,
+          "enum": [
+            "ACTIVE",
+            "HIDDEN",
+            "DELETED"
+          ]
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "postId": 1,
+            "createdAt": -1
+          },
+          "options": {
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "entityType": 1,
+            "entityId": 1,
+            "createdAt": -1
           },
           "options": {
             "background": true

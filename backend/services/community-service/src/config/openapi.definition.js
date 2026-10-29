@@ -14,7 +14,7 @@ const post = { type: 'object', properties: {
 } };
 const comment = { type: 'object', properties: {
   commentId: string, postId: string, authorId: nullableId, authorName: string,
-  authorAvatar: nullableId, content: string, deleted: { type: 'boolean' },
+  authorAvatar: nullableId, content: string, deleted: { type: 'boolean' }, hidden: { type: 'boolean' },
   parentCommentId: nullableId, rootCommentId: nullableId,
   likeCount: count, isLiked: { type: 'boolean' }, createdAt: date, updatedAt: date,
 } };
@@ -68,9 +68,42 @@ operation('/api/v1/comments/{commentId}', 'delete', 'Redact own comment or moder
 for (const method of ['post', 'delete']) operation('/api/v1/comments/{commentId}/like', method,
   method === 'post' ? 'Ensure comment is liked (idempotent)' : 'Ensure comment is not liked (idempotent)',
   { type: 'object', properties: { commentId: string, isLiked: { type: 'boolean' }, likeCount: count } });
+const status = { type: 'string', enum: ['ACTIVE', 'HIDDEN', 'DELETED'] };
+const moderation = { status, moderationReason: nullableId, moderatedBy: nullableId, moderatedAt: { ...date, nullable: true } };
+const adminPost = { type: 'object', properties: { ...post.properties, ...moderation } };
+const adminComment = { type: 'object', properties: { ...comment.properties, ...moderation, postContent: string, postStatus: status } };
+const log = { type: 'object', properties: {
+  logId: string, adminId: string, entityType: { type: 'string', enum: ['POST', 'COMMENT'] }, entityId: string,
+  action: { type: 'string', enum: ['HIDE', 'PUBLISH', 'DELETE'] }, reason: string,
+  beforeStatus: status, afterStatus: status, createdAt: date,
+} };
+const reason = { type: 'object', additionalProperties: false, required: ['reason'], properties: { reason: { type: 'string', minLength: 3, maxLength: 1000 } } };
+const adminBase = '/api/v1/admin/community';
+for (const entity of ['posts', 'comments']) {
+  const name = entity === 'posts' ? 'AdminPost' : 'AdminComment';
+  operation(`${adminBase}/${entity}`, 'get', `ADMIN: paginated ${entity}, including private, hidden and deleted records`, page(name));
+  paths[`${adminBase}/${entity}`].get.parameters.push(...pagination,
+    ...['search', 'authorId', ...(entity === 'posts' ? ['type', 'visibility'] : ['postId'])].map(name => ({ name, in: 'query', schema: string })),
+    { name: 'status', in: 'query', schema: status });
+  const itemPath = `${adminBase}/${entity}/{${entity === 'posts' ? 'postId' : 'commentId'}}`;
+  for (const action of ['hide', 'publish']) operation(`${itemPath}/${action}`, 'patch',
+    `ADMIN: ${action === 'hide' ? 'hide content' : 'restore hidden content with original privacy'}; requires a reason`, ref(name), reason);
+  operation(itemPath, 'delete', 'ADMIN: redact content permanently, preserving tombstone; requires a reason', ref(name), reason);
+}
+operation(`${adminBase}/posts/{postId}`, 'get', 'ADMIN: full post and last 20 moderation actions for this post and its comments',
+  { type: 'object', properties: { post: ref('AdminPost'), recentActions: { type: 'array', items: ref('ModerationLog') } } });
+for (const [url, methods] of Object.entries(paths)) {
+  if (!url.startsWith(adminBase)) continue;
+  for (const op of Object.values(methods)) {
+    op.tags = ['Community administration'];
+    op.description = 'Requires a current ADMIN session verified with auth-service, including direct service calls. Every state transition and its local moderation log commit atomically. Hidden content cannot be accessed via app APIs. DELETE cannot be restored. Repeated same-state actions are idempotent.';
+    op.responses['403'] = { description: 'Current account does not have ADMIN role' };
+    op.responses['503'] = { description: 'Auth service unavailable; access fails closed' };
+  }
+}
 module.exports = {
   openapi: '3.0.0', info: { title: 'Community Service', version: '1.0.0',
     description: 'JWT-protected community REST API. Realtime invalidations: ws(s)://gateway/api/v1/community/ws; authenticate with first JSON frame {type: auth, token: accessToken}. See community-service-api.md.' },
   servers: [{ url: 'http://localhost:3004' }], paths,
-  components: { securitySchemes: { bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' } }, schemas: { Post: post, Comment: comment } },
+  components: { securitySchemes: { bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' } }, schemas: { Post: post, Comment: comment, AdminPost: adminPost, AdminComment: adminComment, ModerationLog: log } },
 };

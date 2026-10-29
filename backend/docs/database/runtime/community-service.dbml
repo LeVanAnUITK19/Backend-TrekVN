@@ -2,6 +2,10 @@
 // Nested fields retain their MongoDB dotted paths. See schemas.json for index options and subdocuments.
 
 Table posts {
+  "hidden" boolean
+  "moderationReason" varchar
+  "moderatedBy" varchar
+  "moderatedAt" timestamp
   "authorId" varchar [not null]
   "content" varchar
   "images" json
@@ -20,6 +24,10 @@ Table posts {
 }
 
 Table comments {
+  "hidden" boolean
+  "moderationReason" varchar
+  "moderatedBy" varchar
+  "moderatedAt" timestamp
   "postId" varchar [not null]
   "authorId" varchar [not null]
   "parentCommentId" varchar
@@ -50,6 +58,20 @@ Table comment_reactions {
   "_id" varchar [pk]
   "createdAt" timestamp
   "updatedAt" timestamp
+  "__v" double
+}
+
+Table moderation_logs {
+  "adminId" varchar [not null]
+  "entityType" varchar [not null]
+  "entityId" varchar [not null]
+  "postId" varchar [not null]
+  "action" varchar [not null]
+  "reason" varchar [not null]
+  "beforeStatus" varchar [not null]
+  "afterStatus" varchar [not null]
+  "_id" varchar [pk]
+  "createdAt" timestamp
   "__v" double
 }
 

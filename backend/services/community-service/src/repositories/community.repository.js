@@ -3,7 +3,7 @@ const { Post } = require('../models');
 const { notFound } = require('../utils/errors');
 
 function visibleTo(userId) {
-  return { deleted: false, $or: [{ visibility: 'PUBLIC' }, { authorId: userId }] };
+  return { deleted: false, hidden: { $ne: true }, $or: [{ visibility: 'PUBLIC' }, { authorId: userId }] };
 }
 async function readablePost(postId, userId, session) {
   const post = await Post.findOne({ _id: postId, ...visibleTo(userId) }).session(session || null);

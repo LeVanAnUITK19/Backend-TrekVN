@@ -1,6 +1,7 @@
 # Community service — TrekVN
 
 Node 22, Express, Mongoose; port **3004**, database riêng **community_db**.
+Deploy Render và đối chiếu API Flutter: [community-render-deployment.md](../../docs/community-render-deployment.md).
 Code tổ chức theo `routes → validators/controller → service → repository/models`;
 `providers/` gọi auth/trekking, `realtime/` quản lý WebSocket và Redis fan-out.
 
@@ -55,6 +56,8 @@ DB vật lý được xuất ở [community-service.dbml](../../docs/database/ru
 
 ## Giới hạn phạm vi
 
-`BADGE_SHARE` là loại nội dung như DBML ban đầu, chưa có badge attachment hay quy trình xác thực huy hiệu. Nhóm/chat, report và admin moderation dashboard chưa có trong thiết kế DB này. Nút báo cáo hiện thông báo rõ chưa khả dụng; không hiển thị báo cáo thành công giả.
+Web Admin đã nối API `/api/v1/admin/community` qua Gateway: danh sách/lọc bài viết và bình luận, xem chi tiết, ẩn/hiển thị lại và xóa với lý do bắt buộc. Service kiểm tra phiên ADMIN hiện tại qua auth-service kể cả khi gọi trực tiếp. Lịch sử kiểm duyệt lưu ở `moderation_logs` cùng transaction; không nằm trong audit logs của auth-service. Nội dung ẩn không đọc được qua app, bình luận ẩn thành tombstone để giữ luồng reply; hiển thị lại giữ quyền riêng tư ban đầu. Xóa redact nội dung và không khôi phục được.
+
+`BADGE_SHARE` là loại nội dung như DBML ban đầu, chưa có badge attachment hay quy trình xác thực huy hiệu. Nhóm/chat và report chưa có trong thiết kế DB này. Nút báo cáo hiện thông báo rõ chưa khả dụng; không hiển thị báo cáo thành công giả.
 
 Realtime là thông báo best effort, không lưu hàng đợi replay. Sau reconnect, app đọc lại REST để lấy trạng thái hiện tại; Redis gián đoạn vẫn cho phép ghi DB và broadcast trong instance hiện tại. Cần refresh hoặc reconnect để bù thông báo bỏ lỡ giữa các instance.

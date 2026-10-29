@@ -9,7 +9,9 @@ const originalEnv = { ...process.env };
 beforeAll(async () => {
   upstream = http.createServer((req, res) => {
     res.setHeader('Content-Type', 'application/json');
-    if (req.url === '/api/v1/auth/verify') { res.end(JSON.stringify({ success: true, data: { id: 'user', role: 'USER' } })); return; }
+    if (req.url === '/api/v1/auth/verify') {
+      res.end(JSON.stringify({ success: true, data: { id: 'user', role: req.headers.authorization === 'Bearer admin' ? 'ADMIN' : 'USER' } })); return;
+    }
     res.end(JSON.stringify({ url: req.url, serviceToken: req.headers['x-service-token'], userId: req.headers['x-user-id'] }));
   });
   upstream.on('upgrade', (req, socket) => {
@@ -52,6 +54,17 @@ test('community REST routes enforce authentication, preserve path and strip forg
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ url: path + '?page=2' });
   }
+});
+
+test('community admin routes require current ADMIN role and preserve upstream path and body', async () => {
+  const path = '/api/v1/admin/community/posts/507f1f77bcf86cd799439011/hide';
+  expect((await request(app).patch(path).send({ reason: 'Review content' })).status).toBe(401);
+  expect((await request(app).patch(path).set('Authorization', 'Bearer valid').send({ reason: 'Review content' })).status).toBe(403);
+  const result = await request(app).patch(path).set('Authorization', 'Bearer admin').send({ reason: 'Review content' });
+  expect(result.status).toBe(200);
+  expect(result.body.url).toBe(path);
+  expect((await request(app).get('/api/v1/admin/community/comments?page=2').set('Authorization', 'Bearer admin')).body.url)
+    .toBe('/api/v1/admin/community/comments?page=2');
 });
 
 function upgrade(path, origin = 'http://localhost:5173') {

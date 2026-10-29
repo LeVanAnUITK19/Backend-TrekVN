@@ -1624,6 +1624,7 @@ Lấy URL tải file (signed URL ngắn hạn hoặc stream endpoint).
 | `GET/POST/PUT/PATCH/DELETE /admin/badges/**` | trekking-service | 3003 |
 | `GET/POST/PUT/DELETE /admin/trekking/offline-maps/**` | trekking-service | 3003 |
 | `GET /admin/trekking/journeys/**` | trekking-service | 3003 |
+| `GET/PATCH/DELETE /admin/community/**` | community-service | 3004 |
 | `GET /llm/providers` | agent-service | 8000 |
 | `ALL /agent/**` | agent-service | 8000 |
 
@@ -1682,4 +1683,4 @@ curl -X POST http://localhost:3000/api/v1/auth/login \
    - Flat: `GET /admin/trekking/milestones?routeId=xxx`
    - Nested: `GET /admin/trekking/routes/:routeId/milestones`
 
-7. **Community service:** Chưa triển khai — các endpoint Posts, Comments, Reviews chưa available.
+7. **Community service:** Đã triển khai `/admin/community/posts`, `/admin/community/comments`, chi tiết bài, ẩn/hiển thị lại/xóa với lý do. Xem [contract Community](community-service-api.md#quản-trị-community-web-admin). Riêng danh sách Community dùng `data.items`, không dùng `data.data`. Không dùng các đường cũ `/admin/posts`, `/admin/comments`, `/admin/reviews`; đánh giá địa điểm thuộc trekking-service.

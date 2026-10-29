@@ -43,16 +43,17 @@ async function hydrateComments(comments, userId) {
   const liked = new Set(reactions.map((r) => String(r.commentId)));
   return comments.map((doc) => {
     const c = plain(doc);
+    const redacted = c.deleted || c.hidden;
     const author = authors.get(c.authorId);
     return {
       commentId: String(c._id), postId: String(c.postId),
-      authorId: c.deleted ? null : c.authorId,
-      authorName: c.deleted ? 'Trekker' : (author?.name || 'Trekker'),
-      authorAvatar: c.deleted ? null : (author?.avatarUrl || null),
-      content: c.deleted ? '' : c.content, deleted: c.deleted,
+      authorId: redacted ? null : c.authorId,
+      authorName: redacted ? 'Trekker' : (author?.name || 'Trekker'),
+      authorAvatar: redacted ? null : (author?.avatarUrl || null),
+      content: redacted ? '' : c.content, deleted: c.deleted, hidden: c.hidden === true,
       parentCommentId: c.parentCommentId ? String(c.parentCommentId) : null,
       rootCommentId: c.rootCommentId ? String(c.rootCommentId) : null,
-      likeCount: c.deleted ? 0 : c.likeCount, isLiked: !c.deleted && liked.has(String(c._id)),
+      likeCount: redacted ? 0 : c.likeCount, isLiked: !redacted && liked.has(String(c._id)),
       createdAt: c.createdAt, updatedAt: c.updatedAt,
     };
   });
@@ -171,7 +172,7 @@ function createCommunityService(events) {
         const current = await repo.lockPost(postId, userId, session);
         let rootCommentId = null;
         if (body.parentCommentId) {
-          const parent = await Comment.findOne({ _id: body.parentCommentId, postId, deleted: false }).session(session);
+          const parent = await Comment.findOne({ _id: body.parentCommentId, postId, deleted: false, hidden: { $ne: true } }).session(session);
           if (!parent) throw notFound();
           rootCommentId = parent.rootCommentId || parent._id;
         }
@@ -189,7 +190,7 @@ function createCommunityService(events) {
       let updated;
       const post = await inTransaction(async (session) => {
         const current = await repo.lockPost(existing.postId, userId, session);
-        const comment = await Comment.findOne({ _id: commentId, deleted: false }).session(session);
+        const comment = await Comment.findOne({ _id: commentId, deleted: false, hidden: { $ne: true } }).session(session);
         if (!comment) throw notFound();
         owner(comment, userId);
         comment.content = body.content;
@@ -212,7 +213,7 @@ function createCommunityService(events) {
           comment.likeCount = 0;
           await comment.save({ session });
           await CommentReaction.deleteMany({ commentId }, { session });
-          current.commentCount = Math.max(0, current.commentCount - 1);
+          if (!comment.hidden) current.commentCount = Math.max(0, current.commentCount - 1);
           await current.save({ session });
         }
         return current;
@@ -225,7 +226,7 @@ function createCommunityService(events) {
       let count;
       const post = await inTransaction(async (session) => {
         const current = await repo.lockPost(existing.postId, userId, session);
-        const comment = await Comment.findOne({ _id: commentId, deleted: false }).session(session);
+        const comment = await Comment.findOne({ _id: commentId, deleted: false, hidden: { $ne: true } }).session(session);
         if (!comment) throw notFound();
         const reaction = await CommentReaction.findOne({ commentId, userId }).session(session);
         if (active && !reaction) {
@@ -244,4 +245,4 @@ function createCommunityService(events) {
     },
   };
 }
-module.exports = { createCommunityService };
+module.exports = { createCommunityService, hydratePosts };
