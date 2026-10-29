@@ -1608,6 +1608,8 @@ Lấy URL tải file (signed URL ngắn hạn hoặc stream endpoint).
 
 ## API Gateway — Route Mapping (Web Admin)
 
+Nhóm và báo cáo tin nhắn Community: xem [API nhắn tin và quản trị](community-social-api.md#api-web-admin). Trang `/community` có nút **Nhóm & báo cáo tin nhắn**, không cung cấp xem toàn bộ DM.
+
 | Prefix gửi từ Web Admin | → Service | Port |
 |-------------------------|-----------|------|
 | `POST /auth/login` | auth-service | 3001 |

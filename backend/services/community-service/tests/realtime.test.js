@@ -54,6 +54,19 @@ test('public invalidations reach both clients; private events only reach the aut
   expect(receivedB.map((e) => e.postId)).toEqual(['marker']);
 });
 
+test('chat invalidations only reach listed members and never include content or recipient IDs', async () => {
+  const alice = await connect('alice');
+  const bob = await connect('bob');
+  const receivedB = []; bob.on('message', raw => receivedB.push(JSON.parse(raw)));
+  const chatA = once(alice, 'message');
+  events.publish({ type: 'message.created', conversationId: 'dm', messageId: 'm', recipientIds: ['alice'], content: 'private' });
+  const event = JSON.parse((await chatA)[0]);
+  expect(event.conversationId).toBe('dm'); expect(event.messageId).toBe('m');
+  expect(event.content).toBeUndefined(); expect(event.recipientIds).toBeUndefined();
+  const marker = once(bob, 'message'); events.publish({ type: 'post.created', postId: 'marker', public: true });
+  await marker; expect(receivedB.map(e => e.type)).toEqual(['post.created']);
+});
+
 test('rejects bad credentials, client writes, query tokens and untrusted origins', async () => {
   const socket = new WebSocket(url);
   sockets.push(socket);

@@ -122,6 +122,6 @@ VITE_API_VERSION=v1
 
 Đăng nhập bằng tài khoản ADMIN thật → `/community`: xem bài/bình luận, tìm kiếm/lọc, mở chi tiết và thao tác ẩn/hiện lại trên nội dung thử nghiệm có thể khôi phục. Mọi thao tác yêu cầu lý do, hiển thị lỗi nếu API từ chối. Xác nhận USER bị 403, thiếu token bị 401; app nhận invalidation sau thao tác. Xóa là redact không khôi phục, chỉ kiểm thử trên dữ liệu dành riêng cho test. Lịch sử nằm trong chi tiết bài, không nằm trong trang audit logs chung.
 
-Nhóm/chat/report và badge attachment có xác minh chưa thuộc phạm vi triển khai. Realtime là invalidation best effort; sau reconnect FE đọc lại REST để bù event bị lỡ. Các test local chưa thay thế việc kiểm tra tải thực tế trên gói Render đã chọn.
+Hồ sơ/QR, chat cá nhân/nhóm, báo cáo tin nhắn và Web Admin tương ứng được bổ sung trong [Community social API](community-social-api.md), cần deploy cả Auth mới và full rebuild app có plugin camera. Báo cáo bài viết và badge attachment có xác minh chưa triển khai. Realtime là invalidation best effort; sau reconnect FE đọc lại REST để bù event bị lỡ. Các test local chưa thay thế việc kiểm tra tải thực tế trên gói Render đã chọn.
 
 Tham khảo chính thức Render: [Node/Express](https://render.com/docs/deploy-node-express-app), [Node version](https://render.com/docs/node-version), [WebSocket](https://render.com/docs/websocket), [private network](https://render.com/docs/private-network), [health checks](https://render.com/docs/health-checks).

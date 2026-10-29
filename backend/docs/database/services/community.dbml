@@ -173,4 +173,86 @@ TableGroup community_service {
   reactions
   comment_reactions
   moderation_logs
+  community_profiles
+  conversations
+  conversation_members
+  messages
+  message_reports
+  social_moderation_logs
 }
+
+Table community_profiles {
+  profileId varchar [pk]
+  userId varchar [not null, unique]
+  bio text [note: 'Giới thiệu Community; tên/avatar thuộc auth-service']
+  qrToken varchar [not null, unique, note: '48 hex ngẫu nhiên; có thể cấp lại; không phải access token']
+  createdAt timestamp
+  updatedAt timestamp
+}
+Table conversations {
+  conversationId varchar [pk]
+  kind varchar [not null, note: 'DIRECT | GROUP']
+  directKey varchar [note: 'Cặp userId đã sort; partial unique index chỉ với DIRECT']
+  name varchar
+  ownerId varchar [not null]
+  memberIds json [not null, note: 'Tối đa 50; nguồn kiểm tra quyền hiện tại']
+  sequence int [default: 0, note: 'Counter và write fence transaction']
+  lastMessageAt timestamp
+  disabled boolean [default: false]
+  moderationReason text
+  createdAt timestamp
+  updatedAt timestamp
+}
+Table conversation_members {
+  membershipId varchar [pk]
+  conversationId varchar [not null]
+  userId varchar [not null]
+  joinedSequence int [not null, note: 'Không được đọc tin trước lần tham gia hiện tại']
+  readSequence int [default: 0]
+  createdAt timestamp
+  updatedAt timestamp
+  indexes { (conversationId, userId) [unique] }
+}
+Table messages {
+  messageId varchar [pk]
+  conversationId varchar [not null]
+  senderId varchar [not null]
+  clientMessageId varchar [not null, note: 'Mã retry do client tạo']
+  sequence int [not null]
+  content text
+  deleted boolean [default: false]
+  createdAt timestamp
+  updatedAt timestamp
+  indexes {
+    (conversationId, sequence) [unique]
+    (conversationId, senderId, clientMessageId) [unique]
+  }
+}
+Table message_reports {
+  reportId varchar [pk]
+  reporterId varchar [not null]
+  messageId varchar [not null]
+  conversationId varchar [not null]
+  senderId varchar [not null]
+  contentSnapshot text [not null, note: 'Chỉ tin được báo cáo, không lưu ngữ cảnh chat khác']
+  reason text [not null]
+  status varchar [default: 'OPEN', note: 'OPEN | RESOLVED | DISMISSED']
+  resolution text
+  resolvedBy varchar
+  resolvedAt timestamp
+  createdAt timestamp
+  updatedAt timestamp
+  indexes { (reporterId, messageId) [unique] }
+}
+Table social_moderation_logs {
+  logId varchar [pk]
+  adminId varchar [not null]
+  entityId varchar [not null]
+  action varchar [not null]
+  reason text [not null]
+  createdAt timestamp
+}
+Ref: conversation_members.conversationId > conversations.conversationId
+Ref: messages.conversationId > conversations.conversationId
+Ref: message_reports.conversationId > conversations.conversationId
+Ref: message_reports.messageId > messages.messageId

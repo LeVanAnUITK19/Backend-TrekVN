@@ -129,6 +129,7 @@ app.use('/api/v1/visits', checkinRouter);
 
 // Community-service — first-frame WebSocket auth is handled on HTTP upgrade.
 app.use('/api/v1/posts', communityRouter);
+app.use('/api/v1/community', communityRouter);
 app.use('/api/v1/comments', communityRouter);
 app.use('/api/v1/admin/community', communityRouter);
 

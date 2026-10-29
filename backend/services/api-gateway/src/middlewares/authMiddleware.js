@@ -68,6 +68,7 @@ const PROTECTED_PATHS = [
 // Protected path PREFIXES — any request starting with these requires Bearer token.
 const PROTECTED_PREFIXES = [
   '/api/v1/posts',
+  '/api/v1/community',
   '/api/v1/comments',
   '/api/v1/journeys',
   '/api/v1/contributions',

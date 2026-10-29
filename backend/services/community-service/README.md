@@ -58,6 +58,8 @@ DB vật lý được xuất ở [community-service.dbml](../../docs/database/ru
 
 Web Admin đã nối API `/api/v1/admin/community` qua Gateway: danh sách/lọc bài viết và bình luận, xem chi tiết, ẩn/hiển thị lại và xóa với lý do bắt buộc. Service kiểm tra phiên ADMIN hiện tại qua auth-service kể cả khi gọi trực tiếp. Lịch sử kiểm duyệt lưu ở `moderation_logs` cùng transaction; không nằm trong audit logs của auth-service. Nội dung ẩn không đọc được qua app, bình luận ẩn thành tombstone để giữ luồng reply; hiển thị lại giữ quyền riêng tư ban đầu. Xóa redact nội dung và không khôi phục được.
 
-`BADGE_SHARE` là loại nội dung như DBML ban đầu, chưa có badge attachment hay quy trình xác thực huy hiệu. Nhóm/chat và report chưa có trong thiết kế DB này. Nút báo cáo hiện thông báo rõ chưa khả dụng; không hiển thị báo cáo thành công giả.
+Community đã có hồ sơ công khai, tìm người bằng email/QR cá nhân, chat riêng và nhóm, quản lý thành viên, thu hồi/báo cáo tin nhắn và API Web Admin quản lý nhóm/báo cáo. Contract, DB, quyền và triển khai: [community-social-api.md](../../docs/community-social-api.md). `AUTH_SERVICE_URL` và internal token bắt buộc cho discovery/chat; deploy Auth có route internal mới trước.
+
+`BADGE_SHARE` là loại nội dung như DBML ban đầu, chưa có badge attachment hay quy trình xác thực huy hiệu. Báo cáo **bài viết** chưa có; báo cáo **tin nhắn** đã được triển khai và có queue quản trị. Không có cuộc gọi, media chat hay push khi app tắt.
 
 Realtime là thông báo best effort, không lưu hàng đợi replay. Sau reconnect, app đọc lại REST để lấy trạng thái hiện tại; Redis gián đoạn vẫn cho phép ghi DB và broadcast trong instance hiện tại. Cần refresh hoặc reconnect để bù thông báo bỏ lỡ giữa các instance.

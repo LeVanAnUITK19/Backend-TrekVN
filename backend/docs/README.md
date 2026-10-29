@@ -4,6 +4,8 @@ Current implementation review: **2026-10-12**. Start with [services.md](services
 
 ## Services
 
+Community mở rộng 29/10/2026: [Hồ sơ/QR, chat riêng/nhóm và quản trị tin nhắn](community-social-api.md), [API bài viết/bình luận](community-service-api.md).
+
 | Service | Port | API Docs | Swagger |
 |---------|------|----------|---------|
 | api-gateway | 3000 | — | — |

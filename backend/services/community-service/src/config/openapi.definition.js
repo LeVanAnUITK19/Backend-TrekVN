@@ -101,9 +101,10 @@ for (const [url, methods] of Object.entries(paths)) {
     op.responses['503'] = { description: 'Auth service unavailable; access fails closed' };
   }
 }
+const social = require('./social.openapi');
 module.exports = {
   openapi: '3.0.0', info: { title: 'Community Service', version: '1.0.0',
     description: 'JWT-protected community REST API. Realtime invalidations: ws(s)://gateway/api/v1/community/ws; authenticate with first JSON frame {type: auth, token: accessToken}. See community-service-api.md.' },
-  servers: [{ url: 'http://localhost:3004' }], paths,
-  components: { securitySchemes: { bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' } }, schemas: { Post: post, Comment: comment, AdminPost: adminPost, AdminComment: adminComment, ModerationLog: log } },
+  servers: [{ url: 'http://localhost:3004' }], paths: { ...paths, ...social.paths },
+  components: { securitySchemes: { bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' } }, schemas: { Post: post, Comment: comment, AdminPost: adminPost, AdminComment: adminComment, ModerationLog: log, ...social.schemas } },
 };

@@ -47,4 +47,11 @@ async function validateLinks(body, authorization) {
     await request(base, `/api/v1/places/${body.trekkingPlaceId}`);
   }
 }
-module.exports = { lookupUsers, validateLinks };
+async function communityUsers(input) {
+  const token = process.env.TREKVIET_INTERNAL_TOKEN || process.env.SERVICE_TOKEN;
+  if (!token) throw new AppError(503, 'DISCOVERY_UNAVAILABLE', 'Chưa cấu hình kết nối Auth');
+  return request(process.env.AUTH_SERVICE_URL || 'http://localhost:3001', '/internal/v1/users/community-lookup', {
+    method: 'POST', headers: { 'content-type': 'application/json', 'x-service-token': token }, body: JSON.stringify(input),
+  });
+}
+module.exports = { lookupUsers, validateLinks, communityUsers };

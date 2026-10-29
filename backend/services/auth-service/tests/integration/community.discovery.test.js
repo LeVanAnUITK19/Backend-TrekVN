@@ -1,0 +1,26 @@
+'use strict';
+process.env.TREKVIET_INTERNAL_TOKEN = 'discovery-internal-test';
+const request = require('supertest');
+const db = require('../setup/db');
+const User = require('../../src/models/User');
+const createApp = require('../../src/app');
+let app;
+beforeAll(async () => { await db.connect(); app = createApp(); });
+afterEach(() => db.clearCollections());
+afterAll(() => db.disconnect());
+const lookup = body => request(app).post('/internal/v1/users/community-lookup').set('x-service-token', 'discovery-internal-test').send(body);
+test('service-only exact normalized email discovery excludes blocked/pending accounts and private fields', async () => {
+  const a = await User.create({ displayName: 'Lan', email: 'lan@example.com', status: 'ACTIVE', passwordHash: 'private', bio: 'Private account data' });
+  const b = await User.create({ displayName: 'Blocked', email: 'blocked@example.com', status: 'BLOCKED' });
+  await User.create({ displayName: 'Pending', email: 'pending@example.com' });
+  expect((await request(app).post('/internal/v1/users/community-lookup').send({ email: 'lan@example.com' })).status).toBe(401);
+  const found = await lookup({ email: '  LAN@EXAMPLE.COM  ' });
+  expect(found.status).toBe(200);
+  expect(found.body.data).toEqual([{ id: String(a._id), name: 'Lan', avatarUrl: null }]);
+  expect((await lookup({ userIds: [String(a._id), String(b._id)] })).body.data).toHaveLength(1);
+  expect((await lookup({ email: 'pending@example.com' })).body.data).toEqual([]);
+  expect((await lookup({ email: 'blocked@example.com' })).body.data).toEqual([]);
+  expect((await lookup({ email: 'lan' })).status).toBe(400);
+  expect((await lookup({ email: 'lan@example.com', userIds: [String(a._id)] })).status).toBe(400);
+  expect((await lookup({ userIds: ['bad-id'] })).status).toBe(400);
+});

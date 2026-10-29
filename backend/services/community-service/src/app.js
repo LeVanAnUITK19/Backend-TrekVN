@@ -43,6 +43,11 @@ function createApp({ events = createEventBus() } = {}) {
   // Feed and viewer-specific reactions can contain private account data.
   app.use('/api/v1', (_req, res, next) => { res.set('Cache-Control', 'private, no-store'); next(); });
   app.use('/api/v1/admin/community', createAdminRoutes(createAdminService(events)));
+  const social = require('./services/social.service').createSocialService(events);
+  const { createSocialRoutes } = require('./routes/social.routes');
+  const { createSocialAdminRoutes } = require('./routes/social.admin.routes');
+  app.use('/api/v1/admin/community', createSocialAdminRoutes(social));
+  app.use('/api/v1/community', createSocialRoutes(social));
   app.use('/api/v1', createRoutes(createCommunityService(events)));
   app.use((_req, res) => res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Endpoint not found' } }));
   app.use(errorHandler);

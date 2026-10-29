@@ -1,6 +1,83 @@
 // Generated physical MongoDB schema. _id is ObjectId; API aliases are not stored fields.
 // Nested fields retain their MongoDB dotted paths. See schemas.json for index options and subdocuments.
 
+Table community_profiles {
+  "userId" varchar [not null]
+  "bio" varchar
+  "qrToken" varchar [not null]
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+
+Table conversations {
+  "kind" varchar [not null]
+  "directKey" varchar
+  "name" varchar
+  "ownerId" varchar [not null]
+  "memberIds" json [not null]
+  "sequence" double
+  "lastMessageAt" timestamp
+  "disabled" boolean
+  "moderationReason" varchar
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+
+Table conversation_members {
+  "conversationId" varchar [not null]
+  "userId" varchar [not null]
+  "joinedSequence" double
+  "readSequence" double
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+
+Table messages {
+  "conversationId" varchar [not null]
+  "senderId" varchar [not null]
+  "clientMessageId" varchar [not null]
+  "sequence" double [not null]
+  "content" varchar
+  "deleted" boolean
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+
+Table message_reports {
+  "reporterId" varchar [not null]
+  "messageId" varchar [not null]
+  "conversationId" varchar [not null]
+  "senderId" varchar [not null]
+  "contentSnapshot" varchar [not null]
+  "reason" varchar [not null]
+  "status" varchar
+  "resolution" varchar
+  "resolvedBy" varchar
+  "resolvedAt" timestamp
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "updatedAt" timestamp
+  "__v" double
+}
+
+Table social_moderation_logs {
+  "adminId" varchar [not null]
+  "entityId" varchar [not null]
+  "action" varchar [not null]
+  "reason" varchar [not null]
+  "_id" varchar [pk]
+  "createdAt" timestamp
+  "__v" double
+}
+
 Table posts {
   "hidden" boolean
   "moderationReason" varchar

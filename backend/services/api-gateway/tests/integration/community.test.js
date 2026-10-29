@@ -47,7 +47,7 @@ afterAll(async () => {
 });
 
 test('community REST routes enforce authentication, preserve path and strip forged credentials', async () => {
-  for (const path of ['/api/v1/posts', '/api/v1/comments/id/like']) {
+  for (const path of ['/api/v1/posts', '/api/v1/comments/id/like', '/api/v1/community/people/me', '/api/v1/community/conversations']) {
     expect((await request(app).get(path)).status).toBe(401);
     const response = await request(app).get(path + '?page=2').set('Authorization', 'Bearer valid')
       .set('X-Service-Token', 'forged').set('X-User-Id', 'forged');
