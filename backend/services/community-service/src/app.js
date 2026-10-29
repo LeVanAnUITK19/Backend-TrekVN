@@ -5,6 +5,8 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const mongoose = require('mongoose');
 const { createRoutes } = require('./routes');
+const { createAdminRoutes } = require('./routes/admin.routes');
+const { createAdminService } = require('./services/admin.service');
 const { createCommunityService } = require('./services/community.service');
 const { createEventBus } = require('./realtime/eventBus');
 const { createMetrics } = require('./middlewares/metrics');
@@ -37,6 +39,7 @@ function createApp({ events = createEventBus() } = {}) {
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(spec));
   // Feed and viewer-specific reactions can contain private account data.
   app.use('/api/v1', (_req, res, next) => { res.set('Cache-Control', 'private, no-store'); next(); });
+  app.use('/api/v1/admin/community', createAdminRoutes(createAdminService(events)));
   app.use('/api/v1', createRoutes(createCommunityService(events)));
   app.use((_req, res) => res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Endpoint not found' } }));
   app.use(errorHandler);

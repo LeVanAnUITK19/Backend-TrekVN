@@ -174,3 +174,12 @@ Generated with `node scripts/export-contracts.js`. Route-only entries have no co
 | community-service | DELETE | `/api/v1/comments/{commentId}` | bearerAuth | JSDoc |
 | community-service | POST | `/api/v1/comments/{commentId}/like` | bearerAuth | JSDoc |
 | community-service | DELETE | `/api/v1/comments/{commentId}/like` | bearerAuth | JSDoc |
+| community-service | GET | `/api/v1/admin/community/posts` | bearerAuth | JSDoc |
+| community-service | GET | `/api/v1/admin/community/posts/{postId}` | bearerAuth | JSDoc |
+| community-service | GET | `/api/v1/admin/community/comments` | bearerAuth | JSDoc |
+| community-service | PATCH | `/api/v1/admin/community/posts/{postId}/hide` | bearerAuth | JSDoc |
+| community-service | PATCH | `/api/v1/admin/community/posts/{postId}/publish` | bearerAuth | JSDoc |
+| community-service | DELETE | `/api/v1/admin/community/posts/{postId}` | bearerAuth | JSDoc |
+| community-service | PATCH | `/api/v1/admin/community/comments/{commentId}/hide` | bearerAuth | JSDoc |
+| community-service | PATCH | `/api/v1/admin/community/comments/{commentId}/publish` | bearerAuth | JSDoc |
+| community-service | DELETE | `/api/v1/admin/community/comments/{commentId}` | bearerAuth | JSDoc |

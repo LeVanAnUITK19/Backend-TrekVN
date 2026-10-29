@@ -164,6 +164,11 @@ jobs:
             service-id-secret: RENDER_TREKKING_SERVICE_ID
             api-key-secret: RENDER_TREKKING_SERVICE_KEY
 
+          - service: community-service
+            change: community
+            service-id-secret: RENDER_COMMUNITY_SERVICE_ID
+            api-key-secret: RENDER_COMMUNITY_SERVICE_KEY
+
           - service: agent-service
             change: agent
             service-id-secret: RENDER_AGENT_SERVICE_ID

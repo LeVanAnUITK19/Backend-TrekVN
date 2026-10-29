@@ -40,6 +40,10 @@ Table posts {
 
   // Soft deletion and write fence for transactional child mutations.
   deleted boolean [default: false]
+  hidden boolean [default: false]
+  moderationReason text
+  moderatedBy varchar
+  moderatedAt timestamp
   revision int [default: 0]
 
   createdAt timestamp
@@ -74,6 +78,10 @@ Table comments {
   content text [not null]
 
   deleted boolean [default: false]
+  hidden boolean [default: false]
+  moderationReason text
+  moderatedBy varchar
+  moderatedAt timestamp
   likeCount int [default: 0]
 
   createdAt timestamp
@@ -141,9 +149,28 @@ Ref: comment_reactions.postId > posts.postId
 // VISUAL GROUP
 // ======================================================
 
+Table moderation_logs {
+  logId varchar [pk]
+  adminId varchar [not null]
+  entityType varchar [not null, note: 'POST | COMMENT']
+  entityId varchar [not null]
+  postId varchar [not null]
+  action varchar [not null, note: 'HIDE | PUBLISH | DELETE']
+  reason text [not null]
+  beforeStatus varchar [not null]
+  afterStatus varchar [not null]
+  createdAt timestamp
+  indexes {
+    (postId, createdAt)
+    (entityType, entityId, createdAt)
+  }
+}
+Ref: moderation_logs.postId > posts.postId
+
 TableGroup community_service {
   posts
   comments
   reactions
   comment_reactions
+  moderation_logs
 }

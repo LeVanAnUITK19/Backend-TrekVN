@@ -46,6 +46,27 @@ Ghi bình luận, reaction và counter nằm trong cùng transaction; write fenc
 
 Response `/api/v1/*` có `Cache-Control: private, no-store` để không cache dữ liệu riêng tư hoặc `isLiked` giữa các tài khoản. Gỡ liên kết bằng `journeyId: null`, `trekkingPlaceId: null`; nếu bài là `JOURNEY_SHARE` cần đổi `type: NORMAL` cùng request. Nếu liên kết bị sửa đồng thời trong thời gian xác minh qua trekking-service, trả `409 POST_CHANGED`; tải lại trước khi sửa tiếp.
 
+## Quản trị Community (Web Admin)
+
+Prefix qua Gateway và trực tiếp service: **`/api/v1/admin/community`**. Tất cả yêu cầu Bearer token và phiên có role **ADMIN hiện tại**, được xác minh với auth-service; JWT ghi ADMIN cũ không đủ nếu tài khoản đã bị hạ quyền. Auth gián đoạn trả 503 và từ chối truy cập.
+
+| Method | Path sau prefix | Hành vi |
+|---|---|---|
+| GET | `/posts` | Bài viết mới nhất trước, gồm private/ẩn/đã xóa |
+| GET | `/posts/:postId` | `{post, recentActions}`; 20 thao tác gần nhất trên bài và bình luận |
+| GET | `/comments` | Bình luận mới nhất trước, gồm ẩn/đã xóa và ngữ cảnh bài |
+| PATCH | `/posts/:postId/hide`, `/comments/:commentId/hide` | Ẩn nội dung |
+| PATCH | `/posts/:postId/publish`, `/comments/:commentId/publish` | Hiển thị lại nội dung ẩn với privacy ban đầu |
+| DELETE | `/posts/:postId`, `/comments/:commentId` | Redact nội dung, không khôi phục được |
+
+Danh sách trả `{success:true,data:{items,total,page,limit,totalPages}}`. Query chung: `page` (1–10000), `limit` (1–100), `search` (nội dung hoặc ID chính xác, tối đa 200 ký tự, không chạy regex đầu vào), `authorId`, `status=ACTIVE|HIDDEN|DELETED`. Bài viết thêm `visibility=PUBLIC|PRIVATE`, `type=NORMAL|JOURNEY_SHARE|BADGE_SHARE`; bình luận thêm `postId`.
+
+DTO bài viết giống public Post, thêm `status`, `moderationReason`, `moderatedBy`, `moderatedAt`; bình luận quản trị có nội dung còn lưu, tác giả, `parentCommentId`, `rootCommentId`, `postContent` (150 ký tự), `postStatus` và các field kiểm duyệt. ID dùng `postId`/`commentId`, counter dùng `reactionCount`/`commentCount`/`likeCount`.
+
+Mọi mutation, kể cả DELETE, nhận JSON **`{"reason":"Lý do kiểm duyệt"}`** (trim, 3–1000 ký tự); không nhận field khác. Lý do và trạng thái trước/sau lưu vào `moderation_logs` cùng transaction; lỗi ghi lịch sử rollback toàn bộ. Gọi lại cùng trạng thái không tạo thêm lịch sử. Đây là lịch sử riêng Community, xem tại chi tiết bài viết trong Web Admin.
+
+Ẩn bài chặn public API cho mọi người, bao gồm tác giả; hiển thị lại không thay PUBLIC/PRIVATE. Bình luận ẩn trả tombstone `hidden:true`, `content:""`, `authorId:null`, giữ parent/root; không được like/sửa/reply trực tiếp vào tombstone. Reply khác vẫn còn. `commentCount` chỉ đếm bình luận đang hiển thị; ẩn/khôi phục/xóa cập nhật counter chính xác. Nội dung DELETED không được hiển thị lại (409). Xóa bài redact mọi bình luận và dọn reaction. Sau commit phát invalidation qua WebSocket để app đọc lại.
+
 ## WebSocket
 
 Kết nối **`ws(s)://gateway/api/v1/community/ws`**, URL chính xác, không query token.

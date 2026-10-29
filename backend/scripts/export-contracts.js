@@ -84,6 +84,7 @@ for (const service of services) {
   const requireLocal = (name) => require(require.resolve(name, { paths: [base] }));
   const rows = [];
   collect(path.join(base, 'src/routes/index.js'), '/api/v1', rows);
+  if (service === 'community-service') collect(path.join(base, 'src/routes/admin.routes.js'), '/api/v1/admin/community', rows);
   const internalFile = path.join(base, 'src/routes/internal.routes.js');
   if (fs.existsSync(internalFile)) collect(internalFile, '/internal/v1', rows);
   const spec = service === 'community-service' ? require(path.join(base, 'src/config/openapi.definition')) : requireLocal('swagger-jsdoc')({
