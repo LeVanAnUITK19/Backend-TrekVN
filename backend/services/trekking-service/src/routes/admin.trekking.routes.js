@@ -9,7 +9,7 @@ const offlineMapCtrl = require('../controllers/offlineMap.controller');
 const { authenticate } = require('../middlewares/auth');
 const { requireAdmin } = require('../middlewares/requireAdmin');
 const { authenticateOrService } = require('../middlewares/authenticateOrService');
-const { validate } = require('../middlewares/validate');
+const { validate, validateQuery } = require('../middlewares/validate');
 const { upload } = require('../middlewares/upload');
 const placeValidator = require('../validators/place.validator');
 const routeValidator = require('../validators/route.validator');
@@ -90,6 +90,26 @@ router.put(
 // ─── Standard admin routes (Admin Web — Bearer JWT + ADMIN role) ───────────────
 // Tất cả routes bên dưới đây chỉ dành cho Admin Web (không cần service token).
 router.use(authenticate, requireAdmin);
+/**
+ * @swagger
+ * /api/v1/admin/trekking/reviews:
+ *   get:
+ *     tags: [Admin Trekking]
+ *     summary: Danh sách đánh giá địa điểm cho quản trị viên
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - { in: query, name: page, schema: { type: integer, minimum: 1 } }
+ *       - { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 100 } }
+ *       - { in: query, name: placeId, schema: { type: string } }
+ *       - { in: query, name: point, schema: { type: integer, minimum: 1, maximum: 5 } }
+ *       - { in: query, name: status, schema: { type: string, enum: [ACTIVE, DELETED, ALL] } }
+ *       - { in: query, name: search, schema: { type: string, maxLength: 200 } }
+ *     responses:
+ *       200: { description: Danh sách items cùng total, page, limit, totalPages }
+ *       400: { description: Bộ lọc không hợp lệ }
+ *       403: { description: Không có quyền quản trị }
+ */
+router.get('/reviews', validateQuery(require('../validators/adminCatalog.validator').reviews), reviewCtrl.adminListReviews);
 router.get('/places/:id/reviews', reviewCtrl.adminGetReviews);
 router.delete('/places/:id/reviews/:reviewId', reviewCtrl.adminDeleteReview);
 
@@ -109,7 +129,7 @@ router.get('/places/:id', placeCtrl.adminGetPlaceById);
  * GET /places-offline-maps — danh sách places có offlineMap.available = true
  * Dùng cho tab "Bản đồ địa điểm" trong Admin, phân biệt với OfflineMapPackage.
  */
-router.get('/places-offline-maps', placeCtrl.adminListPlacesWithOfflineMap);
+router.get('/places-offline-maps', validateQuery(require('../validators/adminCatalog.validator').maps), placeCtrl.adminListPlacesWithOfflineMap);
 router.patch('/places/:id/status', validate(placeValidator.updateStatus), auditPlaceStatusUpdate, placeCtrl.adminUpdatePlaceStatus);
 router.delete('/places/:id', auditPlaceDelete, placeCtrl.adminDeletePlace);
 router.get('/places/:id/offline-map', placeCtrl.adminGetPlaceOfflineMap);

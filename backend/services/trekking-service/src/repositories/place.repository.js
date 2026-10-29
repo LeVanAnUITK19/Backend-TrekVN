@@ -64,7 +64,7 @@ const updateStatus = (id, status) =>
 const updateOfflineMap = (id, offlineMapData) =>
   TrekkingPlace.findByIdAndUpdate(
     id,
-    { $set: { offlineMap: offlineMapData } },
+    { $set: Object.fromEntries(Object.entries(offlineMapData).map(([key, value]) => [`offlineMap.${key}`, value])) },
     { new: true, runValidators: true }
   );
 
@@ -124,16 +124,18 @@ const adminFindAll = async ({ search, province, difficulty, status, page = 1, li
  * Danh sách places có offlineMap.available = true.
  * Dùng cho tab "Bản đồ địa điểm" trong Admin.
  */
-const findPlacesWithOfflineMap = async ({ search, page = 1, limit = 20 } = {}) => {
-  const filter = { 'offlineMap.available': true };
+const findPlacesWithOfflineMap = async ({ search, available = 'true', page = 1, limit = 20 } = {}) => {
+  const filter = {};
+  if (available === 'true') {filter['offlineMap.available'] = true;}
+  if (available === 'false') {filter['offlineMap.available'] = { $ne: true };}
   if (search) {
-    filter.$or = [{ name: { $regex: search, $options: 'i' } }];
+    filter.name = { $regex: search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' };
   }
   const skip = (page - 1) * limit;
   const [items, total] = await Promise.all([
     TrekkingPlace.find(filter)
       .select('name slug provinceId address difficulty elevationMeters status offlineMap updatedAt createdAt')
-      .sort({ updatedAt: -1 })
+      .sort({ updatedAt: -1, _id: -1 })
       .skip(skip)
       .limit(limit),
     TrekkingPlace.countDocuments(filter),

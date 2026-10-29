@@ -2,7 +2,7 @@
 
 const reviewRepo = require('../repositories/review.repository');
 const placeRepo = require('../repositories/place.repository');
-const { Errors, ForbiddenError, ConflictError } = require('../utils/errors');
+const { Errors, ForbiddenError, ConflictError, AppError } = require('../utils/errors');
 const Journey = require('../models/Journey');
 const DetailEvaluate = require('../models/DetailEvaluate');
 
@@ -116,6 +116,43 @@ const adminGetReviews = async (placeId, query) => {
   });
 };
 
+const adminListReviews = async (query) => {
+  const mongoose = require('mongoose');
+  const TrekkingPlace = require('../models/TrekkingPlace');
+  const page = Math.max(1, parseInt(query.page) || 1);
+  const limit = Math.max(1, Math.min(parseInt(query.limit) || 20, 100));
+  const filter = {};
+  if (query.status && !['ACTIVE', 'DELETED', 'ALL'].includes(query.status)) {
+    throw new AppError('Trạng thái đánh giá không hợp lệ', 400, 'VALIDATION_ERROR');
+  }
+  if (query.status !== 'ALL') {filter.deleted = query.status === 'DELETED';}
+  if (query.placeId) {
+    if (!mongoose.isValidObjectId(query.placeId)) {throw new AppError('Địa điểm không hợp lệ', 400, 'VALIDATION_ERROR');}
+    filter.trekkingPlaceId = query.placeId;
+  }
+  if (query.point) {
+    const point = Number(query.point);
+    if (!Number.isInteger(point) || point < 1 || point > 5) {throw new AppError('Số sao không hợp lệ', 400, 'VALIDATION_ERROR');}
+    filter.point = point;
+  }
+  if (query.search?.trim()) {
+    const escaped = query.search.trim().slice(0, 200).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const places = await TrekkingPlace.find({ name: { $regex: escaped, $options: 'i' } }).select('_id').lean();
+    filter.$or = [{ content: { $regex: escaped, $options: 'i' } }, { userId: { $regex: escaped, $options: 'i' } },
+      { trekkingPlaceId: { $in: places.map((p) => p._id) } }];
+  }
+  const [items, total] = await Promise.all([
+    DetailEvaluate.find(filter).populate('trekkingPlaceId', 'name provinceId')
+      .sort({ createdAt: -1, _id: -1 }).skip((page - 1) * limit).limit(limit),
+    DetailEvaluate.countDocuments(filter),
+  ]);
+  return { items: items.map((doc) => {
+    const item = doc.toJSON();
+    const place = doc.trekkingPlaceId;
+    return { ...item, trekkingPlaceId: String(place?._id || doc.populated('trekkingPlaceId')), placeName: place?.name || 'Địa điểm đã xóa' };
+  }), total, page, limit, totalPages: Math.ceil(total / limit) };
+};
+
 const adminDeleteReview = async (adminId, placeId, reviewId) => {
   const review = await DetailEvaluate.findOneAndUpdate(
     { _id: reviewId, trekkingPlaceId: placeId, deleted: false },
@@ -125,4 +162,4 @@ const adminDeleteReview = async (adminId, placeId, reviewId) => {
   await placeRepo.recalculateRating(placeId);
 };
 
-module.exports = { getReviews, getMyReview, createReview, updateReview, deleteReview, getReviewEligibility, adminGetReviews, adminDeleteReview };
+module.exports = { getReviews, getMyReview, createReview, updateReview, deleteReview, getReviewEligibility, adminGetReviews, adminListReviews, adminDeleteReview };
