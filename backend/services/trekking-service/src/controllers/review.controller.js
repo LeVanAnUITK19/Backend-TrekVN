@@ -62,4 +62,7 @@ const adminDeleteReview = async (req, res, next) => {
     res.status(204).end();
   } catch (err) { next(err); }
 };
-module.exports = { getReviews, getMyReview, createReview, updateReview, deleteReview, getReviewEligibility, adminGetReviews, adminDeleteReview };
+const adminListReviews = async (req, res, next) => {
+  try { res.json({ success: true, data: await reviewService.adminListReviews(req.query) }); } catch (err) { next(err); }
+};
+module.exports = { adminListReviews, getReviews, getMyReview, createReview, updateReview, deleteReview, getReviewEligibility, adminGetReviews, adminDeleteReview };

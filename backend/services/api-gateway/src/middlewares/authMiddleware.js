@@ -1,6 +1,48 @@
 'use strict';
 
 const env = require('../config/env');
+const { isCredentialRequest } = require('./requestQuota');
+
+// Cache verification only for this request; quota resolution and authorization
+// must use the same current account without making two Auth Service calls.
+const verifications = new WeakMap();
+function verifyIdentity(req) {
+  if (!verifications.has(req)) {
+    verifications.set(req, (async () => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 5000);
+      try {
+        const response = await fetch(`${env.AUTH_SERVICE_URL}/api/v1/auth/verify`, {
+          method: 'GET',
+          headers: { authorization: req.headers.authorization },
+          signal: controller.signal,
+        });
+        if (!response.ok) { return { status: response.status }; }
+        const body = await response.json();
+        if (body.success !== true || typeof body.data?.id !== 'string' || !body.data.id) {
+          return { status: 503 };
+        }
+        return { status: 200, user: body.data };
+      } catch (error) {
+        return { error };
+      } finally {
+        clearTimeout(timer);
+      }
+    })());
+  }
+  return verifications.get(req);
+}
+
+async function resolveRateLimitIdentity(req, _res, next) {
+  // Optional authentication on public API reads also separates signed-in users
+  // behind the same Wi-Fi/proxy. Credential endpoints always retain IP quotas.
+  if (req.path.startsWith('/api/v1/') && !isCredentialRequest(req) &&
+      req.headers.authorization?.startsWith('Bearer ')) {
+    const verified = await verifyIdentity(req);
+    if (verified.user) { req.rateLimitUserId = verified.user.id; }
+  }
+  next();
+}
 
 // ---------------------------------------------------------------------------
 // Protected endpoints — require a valid Bearer token.
@@ -26,6 +68,7 @@ const PROTECTED_PATHS = [
 // Protected path PREFIXES — any request starting with these requires Bearer token.
 const PROTECTED_PREFIXES = [
   '/api/v1/posts',
+  '/api/v1/community',
   '/api/v1/comments',
   '/api/v1/journeys',
   '/api/v1/contributions',
@@ -111,26 +154,16 @@ async function authMiddleware(req, res, next) {
   }
 
   // Step 3: verify the token with the Auth Service (5 s timeout)
-  const verifyUrl = `${env.AUTH_SERVICE_URL}/api/v1/auth/verify`;
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 5000);
-
   try {
-    const verifyRes = await fetch(verifyUrl, {
-      method: 'GET',
-      headers: {
-        authorization: authHeader,
-      },
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
+    const verified = await verifyIdentity(req);
+    if (verified.error) { throw verified.error; }
 
     // 2xx → token is valid, proceed to proxy
-    if (verifyRes.ok) {
+    if (verified.user) {
+      req.user = verified.user;
+      req.rateLimitUserId = verified.user.id;
       if (/^\/api\/v1\/(admin|agent|llm)(\/|$)/.test(req.path)) {
-        const verified = await verifyRes.json();
-        if (verified.data?.role !== 'ADMIN') {
+        if (verified.user.role !== 'ADMIN') {
           return res.status(403).json({ success: false, message: 'Chỉ Admin mới có quyền truy cập' });
         }
       }
@@ -138,7 +171,7 @@ async function authMiddleware(req, res, next) {
     }
 
     // 4xx → token invalid or expired (Req 1.6)
-    if (verifyRes.status >= 400 && verifyRes.status < 500) {
+    if (verified.status >= 400 && verified.status < 500) {
       return res.status(401).json({
         success: false,
         message: 'Token không hợp lệ hoặc đã hết hạn',
@@ -152,8 +185,6 @@ async function authMiddleware(req, res, next) {
       message: 'Dịch vụ tạm thời không khả dụng',
     });
   } catch (err) {
-    clearTimeout(timeoutId);
-
     // AbortError means the 5-second verify timeout fired
     if (err.name === 'AbortError') {
       return res.status(503).json({
@@ -167,4 +198,4 @@ async function authMiddleware(req, res, next) {
   }
 }
 
-module.exports = { authMiddleware, isProtectedPath, PROTECTED_PATHS };
+module.exports = { authMiddleware, resolveRateLimitIdentity, isProtectedPath, PROTECTED_PATHS };

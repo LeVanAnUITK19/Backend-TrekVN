@@ -794,7 +794,7 @@
                     "maxLength": 500
                   }
                 },
-                "minimum": 1
+                "minProperties": 1
               }
             }
           }
@@ -995,7 +995,7 @@
                     "type": "boolean"
                   }
                 },
-                "minimum": 1
+                "minProperties": 1
               }
             }
           }
@@ -2170,6 +2170,98 @@
             "bearerAuth": []
           }
         ]
+      }
+    },
+    "/internal/v1/users/community-lookup": {
+      "post": {
+        "summary": "Community-only active user discovery (exact email or IDs)",
+        "security": [
+          {
+            "serviceToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "maxLength": 254
+                  },
+                  "userIds": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 50,
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "oneOf": [
+                  {
+                    "required": [
+                      "email"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "userIds"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Only ACTIVE users; no email or sensitive account fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "avatarUrl": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Exactly one valid email or ID list required"
+          },
+          "401": {
+            "description": "Service token required"
+          },
+          "403": {
+            "description": "Invalid service token"
+          }
+        }
       }
     },
     "/internal/v1/users/lookup": {

@@ -89,7 +89,11 @@ const updateOfflineMap = Joi.object({
     minLon: Joi.number().min(-180).max(180),
     maxLat: Joi.number().min(-90).max(90),
     maxLon: Joi.number().min(-180).max(180),
-  }).allow(null),
+  }).and('minLat', 'minLon', 'maxLat', 'maxLon').allow(null),
+}).custom((value, helpers) => {
+  if (typeof value.minZoom === 'number' && typeof value.maxZoom === 'number' && value.minZoom > value.maxZoom) {return helpers.message('Min zoom phải nhỏ hơn hoặc bằng max zoom');}
+  if (value.bounds && (value.bounds.minLat >= value.bounds.maxLat || value.bounds.minLon >= value.bounds.maxLon)) {return helpers.message('Giới hạn vùng bản đồ không hợp lệ');}
+  return value;
 });
 
 module.exports = { createPlace, updatePlace, updateStatus, updateOfflineMap };

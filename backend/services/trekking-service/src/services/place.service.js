@@ -2,7 +2,7 @@
 
 const placeRepo = require('../repositories/place.repository');
 const routeRepo = require('../repositories/route.repository');
-const { Errors } = require('../utils/errors');
+const { Errors, AppError } = require('../utils/errors');
 const { slugify } = require('../utils/slugify');
 const { validateGeoPoint } = require('../utils/geoUtils');
 const { buildMapR2Url } = require('../config/r2');
@@ -172,8 +172,11 @@ const checkPlaceOfflinePackage = async (placeId, clientVersion) => {
  */
 const adminListPlacesWithOfflineMap = async (query) => {
   const page = Math.max(1, parseInt(query.page) || 1);
-  const limit = Math.min(parseInt(query.limit) || 20, 100);
-  return placeRepo.findPlacesWithOfflineMap({ search: query.search, page, limit });
+  const limit = Math.max(1, Math.min(parseInt(query.limit) || 20, 100));
+  if (query.available && !['all', 'true', 'false'].includes(query.available)) {
+    throw new AppError('Bộ lọc bản đồ không hợp lệ', 400, 'VALIDATION_ERROR');
+  }
+  return placeRepo.findPlacesWithOfflineMap({ search: query.search, available: query.available, page, limit });
 };
 
 const adminGetPlaces = (query) => {
@@ -258,6 +261,9 @@ const adminGetPlaceOfflineMap = async (placeId) => {
 const adminUpdatePlaceOfflineMap = async (placeId, mapData) => {
   const place = await placeRepo.findById(placeId);
   if (!place) { throw Errors.placeNotFound(placeId); }
+  if (mapData.available && !(mapData.objectKey ?? place.offlineMap?.objectKey)?.trim()) {
+    throw new AppError('Cần có file bản đồ trước khi bật tải xuống', 400, 'OFFLINE_MAP_FILE_REQUIRED');
+  }
   return placeRepo.updateOfflineMap(placeId, mapData);
 };
 

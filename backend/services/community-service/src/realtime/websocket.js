@@ -79,8 +79,8 @@ function attachRealtime(server, events, options = {}) {
   const unsubscribe = events.on((event) => {
     for (const ws of wss.clients) {
       if (!ws.user || ws.user.exp * 1000 <= Date.now()) continue;
-      if (event.public || ws.user.userId === event.authorId) {
-        send(ws, { type: event.type, postId: event.postId, eventId: event.eventId, occurredAt: event.occurredAt });
+      if (event.recipientIds ? event.recipientIds.includes(ws.user.userId) : (event.public || ws.user.userId === event.authorId)) {
+        send(ws, { type: event.type, postId: event.postId, conversationId: event.conversationId, messageId: event.messageId, eventId: event.eventId, occurredAt: event.occurredAt });
       }
     }
   });

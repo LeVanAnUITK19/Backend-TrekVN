@@ -71,7 +71,7 @@ function joiSchema(description) {
     if (rule.name === 'uri') { schema.format = 'uri'; }
     if (rule.name === 'integer') { schema.type = 'integer'; }
     if (['min', 'max'].includes(rule.name) && typeof rule.args?.limit === 'number') {
-      const prop = schema.type === 'string' ? `${rule.name}Length` : schema.type === 'array' ? `${rule.name}Items` : rule.name === 'min' ? 'minimum' : 'maximum';
+      const prop = schema.type === 'string' ? `${rule.name}Length` : schema.type === 'array' ? `${rule.name}Items` : schema.type === 'object' ? `${rule.name}Properties` : rule.name === 'min' ? 'minimum' : 'maximum';
       schema[prop] = rule.args.limit;
     }
     if (rule.name === 'length' && typeof rule.args?.limit === 'number' && schema.type === 'array') { schema.minItems = schema.maxItems = rule.args.limit; }
@@ -85,6 +85,10 @@ for (const service of services) {
   const rows = [];
   collect(path.join(base, 'src/routes/index.js'), '/api/v1', rows);
   if (service === 'community-service') collect(path.join(base, 'src/routes/admin.routes.js'), '/api/v1/admin/community', rows);
+  if (service === 'community-service') {
+    collect(path.join(base, 'src/routes/social.routes.js'), '/api/v1/community', rows);
+    collect(path.join(base, 'src/routes/social.admin.routes.js'), '/api/v1/admin/community', rows);
+  }
   const internalFile = path.join(base, 'src/routes/internal.routes.js');
   if (fs.existsSync(internalFile)) collect(internalFile, '/internal/v1', rows);
   const spec = service === 'community-service' ? require(path.join(base, 'src/config/openapi.definition')) : requireLocal('swagger-jsdoc')({

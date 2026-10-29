@@ -6,6 +6,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
+const { identifyQuotaUser, quotaKey } = require('./middlewares/requestQuota');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 
@@ -21,8 +22,8 @@ const createApp = () => {
   // Register before API auth, rate limiting and body parsing.
   app.get('/metrics', monitoring.handler);
   
-  // Trust proxy: trong development (localhost), trust tất cả; production dùng TRUSTED_PROXIES
-  if (process.env.NODE_ENV === 'production' && process.env.TRUSTED_PROXIES) {
+  // Accept forwarded IPs only from configured proxies, or local loopback.
+  if (process.env.TRUSTED_PROXIES) {
     app.set('trust proxy', process.env.TRUSTED_PROXIES.split(',').map((ip) => ip.trim()).filter(Boolean));
   } else if (process.env.NODE_ENV !== 'test') {
     // Development: trust localhost/loopback
@@ -82,9 +83,11 @@ const createApp = () => {
 
   // Rate limiting chỉ áp dụng ở production
   if (process.env.NODE_ENV !== 'test' && process.env.DISABLE_RATE_LIMIT !== 'true') {
+    app.use(identifyQuotaUser);
     const limiter = rateLimit({
       windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000,
       max: parseInt(process.env.RATE_LIMIT_MAX, 10) || 600,
+      keyGenerator: quotaKey,
       standardHeaders: true,
       legacyHeaders: false,
       skip: (req) => req.path === '/health' || req.path === '/ready',

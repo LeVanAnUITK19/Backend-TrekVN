@@ -362,7 +362,7 @@
                     ]
                   }
                 },
-                "minimum": 1
+                "minProperties": 1
               }
             }
           }
@@ -474,7 +474,7 @@
                     ]
                   }
                 },
-                "minimum": 1
+                "minProperties": 1
               }
             }
           }
@@ -2203,6 +2203,1893 @@
         },
         "description": "Requires a current ADMIN session verified with auth-service, including direct service calls. Every state transition and its local moderation log commit atomically. Hidden content cannot be accessed via app APIs. DELETE cannot be restored. Repeated same-state actions are idempotent."
       }
+    },
+    "/api/v1/community/people/me": {
+      "get": {
+        "summary": "Own community profile and personal QR",
+        "description": "",
+        "tags": [
+          "Community profiles and messaging"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/CommunityProfile"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/query/ID or unavailable target account"
+          },
+          "401": {
+            "description": "Missing or revoked current session"
+          },
+          "403": {
+            "description": "Group owner / message author / current ADMIN role required"
+          },
+          "404": {
+            "description": "Not found or not a current member; existence is not disclosed"
+          },
+          "409": {
+            "description": "Group disabled/full, owner transfer required, reused send key or report already closed"
+          },
+          "429": {
+            "description": "User request quota exceeded"
+          },
+          "503": {
+            "description": "Auth or identity lookup unavailable"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Edit own community introduction",
+        "description": "Name/avatar are owned by auth-service; edit through existing account profile APIs. Bio length 0–500.",
+        "tags": [
+          "Community profiles and messaging"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/CommunityProfile"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/query/ID or unavailable target account"
+          },
+          "401": {
+            "description": "Missing or revoked current session"
+          },
+          "403": {
+            "description": "Group owner / message author / current ADMIN role required"
+          },
+          "404": {
+            "description": "Not found or not a current member; existence is not disclosed"
+          },
+          "409": {
+            "description": "Group disabled/full, owner transfer required, reused send key or report already closed"
+          },
+          "429": {
+            "description": "User request quota exceeded"
+          },
+          "503": {
+            "description": "Auth or identity lookup unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "bio": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "bio"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/community/people/me/qr": {
+      "post": {
+        "summary": "Rotate personal QR and invalidate the old one",
+        "description": "",
+        "tags": [
+          "Community profiles and messaging"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "qr": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/query/ID or unavailable target account"
+          },
+          "401": {
+            "description": "Missing or revoked current session"
+          },
+          "403": {
+            "description": "Group owner / message author / current ADMIN role required"
+          },
+          "404": {
+            "description": "Not found or not a current member; existence is not disclosed"
+          },
+          "409": {
+            "description": "Group disabled/full, owner transfer required, reused send key or report already closed"
+          },
+          "429": {
+            "description": "User request quota exceeded"
+          },
+          "503": {
+            "description": "Auth or identity lookup unavailable"
+          }
+        }
+      }
+    },
+    "/api/v1/community/people/discover": {
+      "get": {
+        "summary": "Find active user by exact email OR personal QR",
+        "description": "Exactly one query is required. Does not return email. All users may find and message each other without friendship.",
+        "tags": [
+          "Community profiles and messaging"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "email",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "email",
+              "maxLength": 254
+            }
+          },
+          {
+            "name": "qr",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^trekviet://community/user/[a-f0-9]{48}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/CommunityProfile"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/query/ID or unavailable target account"
+          },
+          "401": {
+            "description": "Missing or revoked current session"
+          },
+          "403": {
+            "description": "Group owner / message author / current ADMIN role required"
+          },
+          "404": {
+            "description": "Not found or not a current member; existence is not disclosed"
+          },
+          "409": {
+            "description": "Group disabled/full, owner transfer required, reused send key or report already closed"
+          },
+          "429": {
+            "description": "User request quota exceeded"
+          },
+          "503": {
+            "description": "Auth or identity lookup unavailable"
+          }
+        }
+      }
+    },
+    "/api/v1/community/people/{userId}": {
+      "get": {
+        "summary": "Public community profile",
+        "description": "Authenticated viewers see name, avatar, bio, accessible post count. Never exposes QR or email. Posts use GET /api/v1/posts?userId=... with existing privacy checks.",
+        "tags": [
+          "Community profiles and messaging"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/CommunityProfile"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/query/ID or unavailable target account"
+          },
+          "401": {
+            "description": "Missing or revoked current session"
+          },
+          "403": {
+            "description": "Group owner / message author / current ADMIN role required"
+          },
+          "404": {
+            "description": "Not found or not a current member; existence is not disclosed"
+          },
+          "409": {
+            "description": "Group disabled/full, owner transfer required, reused send key or report already closed"
+          },
+          "429": {
+            "description": "User request quota exceeded"
+          },
+          "503": {
+            "description": "Auth or identity lookup unavailable"
+          }
+        }
+      }
+    },
+    "/api/v1/community/conversations": {
+      "get": {
+        "summary": "List own conversations and unread counts",
+        "description": "",
+        "tags": [
+          "Community profiles and messaging"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000,
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Conversation"
+                          }
+                        },
+                        "page": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "total": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "totalPages": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/query/ID or unavailable target account"
+          },
+          "401": {
+            "description": "Missing or revoked current session"
+          },
+          "403": {
+            "description": "Group owner / message author / current ADMIN role required"
+          },
+          "404": {
+            "description": "Not found or not a current member; existence is not disclosed"
+          },
+          "409": {
+            "description": "Group disabled/full, owner transfer required, reused send key or report already closed"
+          },
+          "429": {
+            "description": "User request quota exceeded"
+          },
+          "503": {
+            "description": "Auth or identity lookup unavailable"
+          }
+        }
+      }
+    },
+    "/api/v1/community/conversations/direct": {
+      "post": {
+        "summary": "Get or create unique direct conversation",
+        "description": "userId required. Concurrent calls for the same unordered pair return the same conversation. Self chat is rejected.",
+        "tags": [
+          "Community profiles and messaging"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Conversation"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/query/ID or unavailable target account"
+          },
+          "401": {
+            "description": "Missing or revoked current session"
+          },
+          "403": {
+            "description": "Group owner / message author / current ADMIN role required"
+          },
+          "404": {
+            "description": "Not found or not a current member; existence is not disclosed"
+          },
+          "409": {
+            "description": "Group disabled/full, owner transfer required, reused send key or report already closed"
+          },
+          "429": {
+            "description": "User request quota exceeded"
+          },
+          "503": {
+            "description": "Auth or identity lookup unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userId": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "userId"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/community/conversations/groups": {
+      "post": {
+        "summary": "Create group with name and selected users",
+        "description": "name 1–100, memberIds unique list of 1–49 IDs. Creator automatically joins and becomes owner; maximum total 50.",
+        "tags": [
+          "Community profiles and messaging"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Conversation"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/query/ID or unavailable target account"
+          },
+          "401": {
+            "description": "Missing or revoked current session"
+          },
+          "403": {
+            "description": "Group owner / message author / current ADMIN role required"
+          },
+          "404": {
+            "description": "Not found or not a current member; existence is not disclosed"
+          },
+          "409": {
+            "description": "Group disabled/full, owner transfer required, reused send key or report already closed"
+          },
+          "429": {
+            "description": "User request quota exceeded"
+          },
+          "503": {
+            "description": "Auth or identity lookup unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "memberIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "minItems": 1,
+                    "maxItems": 49
+                  }
+                },
+                "required": [
+                  "name",
+                  "memberIds"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/community/conversations/{conversationId}": {
+      "get": {
+        "summary": "Conversation visible only to current members",
+        "description": "",
+        "tags": [
+          "Community profiles and messaging"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Conversation"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/query/ID or unavailable target account"
+          },
+          "401": {
+            "description": "Missing or revoked current session"
+          },
+          "403": {
+            "description": "Group owner / message author / current ADMIN role required"
+          },
+          "404": {
+            "description": "Not found or not a current member; existence is not disclosed"
+          },
+          "409": {
+            "description": "Group disabled/full, owner transfer required, reused send key or report already closed"
+          },
+          "429": {
+            "description": "User request quota exceeded"
+          },
+          "503": {
+            "description": "Auth or identity lookup unavailable"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Owner: rename group or transfer ownership",
+        "description": "name and/or ownerId. New owner must already be a member. Cannot change a direct conversation.",
+        "tags": [
+          "Community profiles and messaging"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Conversation"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/query/ID or unavailable target account"
+          },
+          "401": {
+            "description": "Missing or revoked current session"
+          },
+          "403": {
+            "description": "Group owner / message author / current ADMIN role required"
+          },
+          "404": {
+            "description": "Not found or not a current member; existence is not disclosed"
+          },
+          "409": {
+            "description": "Group disabled/full, owner transfer required, reused send key or report already closed"
+          },
+          "429": {
+            "description": "User request quota exceeded"
+          },
+          "503": {
+            "description": "Auth or identity lookup unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "ownerId": {
+                    "type": "string"
+                  }
+                },
+                "minProperties": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/community/conversations/{conversationId}/members": {
+      "post": {
+        "summary": "Owner: add an active user to group",
+        "description": "userId required. Added/re-added users see only messages after their current join sequence.",
+        "tags": [
+          "Community profiles and messaging"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "conversationId": {
+                          "type": "string",
+                          "pattern": "^[a-fA-F0-9]{24}$"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/query/ID or unavailable target account"
+          },
+          "401": {
+            "description": "Missing or revoked current session"
+          },
+          "403": {
+            "description": "Group owner / message author / current ADMIN role required"
+          },
+          "404": {
+            "description": "Not found or not a current member; existence is not disclosed"
+          },
+          "409": {
+            "description": "Group disabled/full, owner transfer required, reused send key or report already closed"
+          },
+          "429": {
+            "description": "User request quota exceeded"
+          },
+          "503": {
+            "description": "Auth or identity lookup unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userId": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "userId"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/community/conversations/{conversationId}/members/{userId}": {
+      "delete": {
+        "summary": "Owner removes member, or member leaves group",
+        "description": "Owner must transfer ownership before leaving. Removed users lose read/send/list access.",
+        "tags": [
+          "Community profiles and messaging"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "conversationId": {
+                          "type": "string",
+                          "pattern": "^[a-fA-F0-9]{24}$"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/query/ID or unavailable target account"
+          },
+          "401": {
+            "description": "Missing or revoked current session"
+          },
+          "403": {
+            "description": "Group owner / message author / current ADMIN role required"
+          },
+          "404": {
+            "description": "Not found or not a current member; existence is not disclosed"
+          },
+          "409": {
+            "description": "Group disabled/full, owner transfer required, reused send key or report already closed"
+          },
+          "429": {
+            "description": "User request quota exceeded"
+          },
+          "503": {
+            "description": "Auth or identity lookup unavailable"
+          }
+        }
+      }
+    },
+    "/api/v1/community/conversations/{conversationId}/messages": {
+      "get": {
+        "summary": "Newest-first cursor pagination of chat messages",
+        "description": "Stable descending sequence. nextBefore is the exclusive cursor for older messages, null at the end. Tombstones retain sequence; history starts at current membership join sequence.",
+        "tags": [
+          "Community profiles and messaging"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Message"
+                          }
+                        },
+                        "nextBefore": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/query/ID or unavailable target account"
+          },
+          "401": {
+            "description": "Missing or revoked current session"
+          },
+          "403": {
+            "description": "Group owner / message author / current ADMIN role required"
+          },
+          "404": {
+            "description": "Not found or not a current member; existence is not disclosed"
+          },
+          "409": {
+            "description": "Group disabled/full, owner transfer required, reused send key or report already closed"
+          },
+          "429": {
+            "description": "User request quota exceeded"
+          },
+          "503": {
+            "description": "Auth or identity lookup unavailable"
+          }
+        }
+      },
+      "post": {
+        "summary": "Send plain text message with retry key",
+        "description": "content 1–4000 after trim. clientMessageId 8–80 alphanumeric, underscore or hyphen. Unique per conversation/sender: retry identical key/content returns original; changing content with same key returns 409. Transactional sequence + membership fence.",
+        "tags": [
+          "Community profiles and messaging"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Message"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/query/ID or unavailable target account"
+          },
+          "401": {
+            "description": "Missing or revoked current session"
+          },
+          "403": {
+            "description": "Group owner / message author / current ADMIN role required"
+          },
+          "404": {
+            "description": "Not found or not a current member; existence is not disclosed"
+          },
+          "409": {
+            "description": "Group disabled/full, owner transfer required, reused send key or report already closed"
+          },
+          "429": {
+            "description": "User request quota exceeded"
+          },
+          "503": {
+            "description": "Auth or identity lookup unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4000
+                  },
+                  "clientMessageId": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "content",
+                  "clientMessageId"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/community/conversations/{conversationId}/read": {
+      "post": {
+        "summary": "Advance own read cursor monotonically",
+        "description": "sequence >=0 is clamped to the latest committed sequence; cannot move backwards. Unread excludes own/recalled messages.",
+        "tags": [
+          "Community profiles and messaging"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "conversationId": {
+                          "type": "string",
+                          "pattern": "^[a-fA-F0-9]{24}$"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/query/ID or unavailable target account"
+          },
+          "401": {
+            "description": "Missing or revoked current session"
+          },
+          "403": {
+            "description": "Group owner / message author / current ADMIN role required"
+          },
+          "404": {
+            "description": "Not found or not a current member; existence is not disclosed"
+          },
+          "409": {
+            "description": "Group disabled/full, owner transfer required, reused send key or report already closed"
+          },
+          "429": {
+            "description": "User request quota exceeded"
+          },
+          "503": {
+            "description": "Auth or identity lookup unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sequence": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "sequence"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/community/conversations/{conversationId}/messages/{messageId}": {
+      "delete": {
+        "summary": "Author recalls own message for all members",
+        "description": "Redacts content permanently, preserving sequence and tombstone.",
+        "tags": [
+          "Community profiles and messaging"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$"
+            }
+          },
+          {
+            "name": "messageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "messageId": {
+                          "type": "string",
+                          "pattern": "^[a-fA-F0-9]{24}$"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/query/ID or unavailable target account"
+          },
+          "401": {
+            "description": "Missing or revoked current session"
+          },
+          "403": {
+            "description": "Group owner / message author / current ADMIN role required"
+          },
+          "404": {
+            "description": "Not found or not a current member; existence is not disclosed"
+          },
+          "409": {
+            "description": "Group disabled/full, owner transfer required, reused send key or report already closed"
+          },
+          "429": {
+            "description": "User request quota exceeded"
+          },
+          "503": {
+            "description": "Auth or identity lookup unavailable"
+          }
+        }
+      }
+    },
+    "/api/v1/community/conversations/{conversationId}/messages/{messageId}/report": {
+      "post": {
+        "summary": "Member reports one accessible message to administrators",
+        "description": "reason 3–1000 required. Stores reported content snapshot, not surrounding chat. One report per reporter/message.",
+        "tags": [
+          "Community profiles and messaging"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$"
+            }
+          },
+          {
+            "name": "messageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "reportId": {
+                          "type": "string",
+                          "pattern": "^[a-fA-F0-9]{24}$"
+                        },
+                        "status": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/query/ID or unavailable target account"
+          },
+          "401": {
+            "description": "Missing or revoked current session"
+          },
+          "403": {
+            "description": "Group owner / message author / current ADMIN role required"
+          },
+          "404": {
+            "description": "Not found or not a current member; existence is not disclosed"
+          },
+          "409": {
+            "description": "Group disabled/full, owner transfer required, reused send key or report already closed"
+          },
+          "429": {
+            "description": "User request quota exceeded"
+          },
+          "503": {
+            "description": "Auth or identity lookup unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 1000
+                  }
+                },
+                "required": [
+                  "reason"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/community/groups": {
+      "get": {
+        "summary": "ADMIN: groups metadata only",
+        "description": "No direct conversations or messages. Optional disabled=true|false.",
+        "tags": [
+          "Messaging administration"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000,
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "disabled",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CommunityGroup"
+                          }
+                        },
+                        "page": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "total": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "totalPages": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/query/ID or unavailable target account"
+          },
+          "401": {
+            "description": "Missing or revoked current session"
+          },
+          "403": {
+            "description": "Group owner / message author / current ADMIN role required"
+          },
+          "404": {
+            "description": "Not found or not a current member; existence is not disclosed"
+          },
+          "409": {
+            "description": "Group disabled/full, owner transfer required, reused send key or report already closed"
+          },
+          "429": {
+            "description": "User request quota exceeded"
+          },
+          "503": {
+            "description": "Auth or identity lookup unavailable"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/community/groups/{conversationId}/disable": {
+      "patch": {
+        "summary": "ADMIN: disable group",
+        "description": "reason 3–1000 required; state + social moderation log commit atomically. Disabled group remains readable but cannot send/add/edit.",
+        "tags": [
+          "Messaging administration"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "conversationId": {
+                          "type": "string",
+                          "pattern": "^[a-fA-F0-9]{24}$"
+                        },
+                        "disabled": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/query/ID or unavailable target account"
+          },
+          "401": {
+            "description": "Missing or revoked current session"
+          },
+          "403": {
+            "description": "Group owner / message author / current ADMIN role required"
+          },
+          "404": {
+            "description": "Not found or not a current member; existence is not disclosed"
+          },
+          "409": {
+            "description": "Group disabled/full, owner transfer required, reused send key or report already closed"
+          },
+          "429": {
+            "description": "User request quota exceeded"
+          },
+          "503": {
+            "description": "Auth or identity lookup unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 1000
+                  }
+                },
+                "required": [
+                  "reason"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/community/groups/{conversationId}/enable": {
+      "patch": {
+        "summary": "ADMIN: enable group",
+        "description": "reason 3–1000 required; state + social moderation log commit atomically. Disabled group remains readable but cannot send/add/edit.",
+        "tags": [
+          "Messaging administration"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "conversationId": {
+                          "type": "string",
+                          "pattern": "^[a-fA-F0-9]{24}$"
+                        },
+                        "disabled": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/query/ID or unavailable target account"
+          },
+          "401": {
+            "description": "Missing or revoked current session"
+          },
+          "403": {
+            "description": "Group owner / message author / current ADMIN role required"
+          },
+          "404": {
+            "description": "Not found or not a current member; existence is not disclosed"
+          },
+          "409": {
+            "description": "Group disabled/full, owner transfer required, reused send key or report already closed"
+          },
+          "429": {
+            "description": "User request quota exceeded"
+          },
+          "503": {
+            "description": "Auth or identity lookup unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 1000
+                  }
+                },
+                "required": [
+                  "reason"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/community/message-reports": {
+      "get": {
+        "summary": "ADMIN: reported message snapshots only",
+        "description": "",
+        "tags": [
+          "Messaging administration"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000,
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "OPEN",
+                "RESOLVED",
+                "DISMISSED"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/MessageReport"
+                          }
+                        },
+                        "page": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "total": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "totalPages": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/query/ID or unavailable target account"
+          },
+          "401": {
+            "description": "Missing or revoked current session"
+          },
+          "403": {
+            "description": "Group owner / message author / current ADMIN role required"
+          },
+          "404": {
+            "description": "Not found or not a current member; existence is not disclosed"
+          },
+          "409": {
+            "description": "Group disabled/full, owner transfer required, reused send key or report already closed"
+          },
+          "429": {
+            "description": "User request quota exceeded"
+          },
+          "503": {
+            "description": "Auth or identity lookup unavailable"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/community/message-reports/{reportId}": {
+      "patch": {
+        "summary": "ADMIN: remove reported message or dismiss report",
+        "description": "action REMOVE|DISMISS and reason 3–1000. REMOVE redacts message; reports preserve submitted evidence. Resolution + audit are atomic.",
+        "tags": [
+          "Messaging administration"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "reportId": {
+                          "type": "string",
+                          "pattern": "^[a-fA-F0-9]{24}$"
+                        },
+                        "status": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/query/ID or unavailable target account"
+          },
+          "401": {
+            "description": "Missing or revoked current session"
+          },
+          "403": {
+            "description": "Group owner / message author / current ADMIN role required"
+          },
+          "404": {
+            "description": "Not found or not a current member; existence is not disclosed"
+          },
+          "409": {
+            "description": "Group disabled/full, owner transfer required, reused send key or report already closed"
+          },
+          "429": {
+            "description": "User request quota exceeded"
+          },
+          "503": {
+            "description": "Auth or identity lookup unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "REMOVE",
+                      "DISMISS"
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 1000
+                  }
+                },
+                "required": [
+                  "action",
+                  "reason"
+                ]
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2564,6 +4451,228 @@
             ]
           },
           "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CommunityProfile": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "avatarUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "bio": {
+            "type": "string"
+          },
+          "postCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "isMe": {
+            "type": "boolean"
+          },
+          "qr": {
+            "type": "string",
+            "description": "Only included for the owner. Opaque, rotatable QR, never an access token or email."
+          }
+        }
+      },
+      "Conversation": {
+        "type": "object",
+        "properties": {
+          "conversationId": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "DIRECT",
+              "GROUP"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "ownerId": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$"
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "type": "string",
+                  "pattern": "^[a-fA-F0-9]{24}$"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "avatarUrl": {
+                  "type": "string",
+                  "nullable": true
+                }
+              }
+            }
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "readSequence": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "unreadCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "disabled": {
+            "type": "boolean"
+          },
+          "moderationReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastMessageAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Message": {
+        "type": "object",
+        "properties": {
+          "messageId": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$"
+          },
+          "conversationId": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$"
+          },
+          "senderId": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "clientMessageId": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CommunityGroup": {
+        "type": "object",
+        "properties": {
+          "conversationId": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "ownerId": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$"
+          },
+          "memberCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "disabled": {
+            "type": "boolean"
+          },
+          "moderationReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "MessageReport": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$"
+          },
+          "reporterId": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$"
+          },
+          "messageId": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$"
+          },
+          "conversationId": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$"
+          },
+          "senderId": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$"
+          },
+          "contentSnapshot": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "RESOLVED",
+              "DISMISSED"
+            ]
+          },
+          "resolution": {
+            "type": "string"
+          },
+          "resolvedBy": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$"
+          },
+          "resolvedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
             "type": "string",
             "format": "date-time"
           }

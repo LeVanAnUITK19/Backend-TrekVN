@@ -73,6 +73,7 @@ moderationLogSchema.index({ postId: 1, createdAt: -1 });
 moderationLogSchema.index({ entityType: 1, entityId: 1, createdAt: -1 });
 
 module.exports = {
+  ...require('./social'),
   Post: mongoose.model('Post', postSchema),
   Comment: mongoose.model('Comment', commentSchema),
   Reaction: mongoose.model('Reaction', reactionSchema),

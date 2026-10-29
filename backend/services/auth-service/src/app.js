@@ -4,6 +4,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
+const { identifyQuotaUser, quotaKey } = require('./middlewares/requestQuota');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 
@@ -23,8 +24,8 @@ const createApp = () => {
   // Register before API auth, rate limiting and body parsing.
   app.get('/metrics', monitoring.handler);
   
-  // Trust proxy: trong development (localhost), trust tất cả; production dùng TRUSTED_PROXIES
-  if (process.env.NODE_ENV === 'production' && process.env.TRUSTED_PROXIES) {
+  // Accept forwarded IPs only from configured proxies, or local loopback.
+  if (process.env.TRUSTED_PROXIES) {
     app.set('trust proxy', process.env.TRUSTED_PROXIES.split(',').map((ip) => ip.trim()).filter(Boolean));
   } else if (process.env.NODE_ENV !== 'test') {
     // Development: trust localhost/loopback
@@ -75,18 +76,17 @@ const createApp = () => {
     credentials: true,
   }));
 
-  // Rate limiting chỉ áp dụng ở production/development để test không bị chặn.
-  // QUAN TRỌNG: auth-service nhận request qua api-gateway nên req.ip luôn là 127.0.0.1.
-  // Phải dùng X-Forwarded-For (IP thật của client) làm key, và skip /auth/verify
-  // vì gateway gọi endpoint đó cho mọi request protected.
-  if (process.env.NODE_ENV !== 'test') {
+  // Signed users have independent quotas even behind the same gateway/NAT.
+  // Credential operations remain IP-limited; verification probes are exempt.
+  if (process.env.NODE_ENV !== 'test' && process.env.DISABLE_RATE_LIMIT !== 'true') {
+    app.use(identifyQuotaUser);
     const limiter = rateLimit({
-      windowMs: 15 * 60 * 1000,  // 15 phút
-      max: parseInt(process.env.RATE_LIMIT_MAX) || 300,  // 300 req/IP/15 phút
+      windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000,
+      max: parseInt(process.env.RATE_LIMIT_MAX, 10) || 300,
+      keyGenerator: quotaKey,
       standardHeaders: true,
       legacyHeaders: false,
-      // Dùng real client IP từ X-Forwarded-For (gateway set header này)
-      // Skip các internal endpoints mà gateway gọi liên tục
+      // Gateway calls this verification endpoint for every signed-in request.
       skip: (req) => {
         const path = req.path;
         return (
@@ -98,7 +98,7 @@ const createApp = () => {
       // Message lỗi tiếng Việt
       message: {
         success: false,
-        message: 'Quá nhiều yêu cầu. Vui lòng thử lại sau 15 phút.',
+        message: 'Quá nhiều yêu cầu. Vui lòng thử lại sau.',
         statusCode: 429,
       },
     });

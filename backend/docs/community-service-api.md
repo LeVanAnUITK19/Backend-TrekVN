@@ -6,6 +6,8 @@ Swagger: `/api-docs`, OpenAPI JSON: `/api-docs.json` trên service.
 
 ## REST
 
+Hồ sơ công khai, tìm người/QR, chat riêng/nhóm và quản trị nhắn tin: [Community social API](community-social-api.md). Các API bên dưới dành cho bài viết/bình luận vẫn giữ tương thích.
+
 | Method | Path (sau `/api/v1`) | Hành vi |
 |---|---|---|
 | GET | `/posts` | Feed phân trang, mới nhất trước; public và private của chính mình |

@@ -17,10 +17,11 @@ const { createEventBus } = require('../src/realtime/eventBus');
 const { attachRealtime } = require('../src/realtime/websocket');
 
 test('gateway REST commits broadcast to authenticated gateway WebSocket clients', { timeout: 90000 }, async () => {
-  let db, authServer, communityServer, gatewayServer, realtime, socket, closeUpgrade;
+  let db, authServer, communityServer, gatewayServer, realtime, socket, outsider, closeUpgrade;
   const bus = createEventBus();
   const alice = new mongoose.Types.ObjectId().toString();
   const bob = new mongoose.Types.ObjectId().toString();
+  const charlie = new mongoose.Types.ObjectId().toString();
   const token = (id, role = 'USER') => jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: '5m' });
   const listen = (server) => new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   const message = (ws) => once(ws, 'message', { signal: AbortSignal.timeout(5000) }).then(([raw]) => JSON.parse(raw));
@@ -28,8 +29,15 @@ test('gateway REST commits broadcast to authenticated gateway WebSocket clients'
     db = await MongoMemoryReplSet.create({ replSet: { count: 1 }, binary: { version: '7.0.14' } });
     process.env.MONGODB_URI = db.getUri('community_gateway_e2e');
     await require('../src/config/database').connectDB();
-    authServer = http.createServer((req, res) => {
+    process.env.TREKVIET_INTERNAL_TOKEN = 'ephemeral-social-internal';
+    authServer = http.createServer(async (req, res) => {
       try {
+        if (req.url === '/internal/v1/users/community-lookup' && req.headers['x-service-token'] === process.env.TREKVIET_INTERNAL_TOKEN) {
+          const chunks = []; for await (const chunk of req) chunks.push(chunk);
+          const input = JSON.parse(Buffer.concat(chunks).toString());
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true, data: input.userIds.map(id => ({ id, name: 'Local Trekker', avatarUrl: null })) })); return;
+        }
         const user = jwt.verify((req.headers.authorization || '').slice(7), process.env.JWT_SECRET, { algorithms: ['HS256'] });
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: true, data: user }));
@@ -82,8 +90,29 @@ test('gateway REST commits broadcast to authenticated gateway WebSocket clients'
     assert.equal(detail.body.data.recentActions.length, 2);
     assert.equal((await request(gatewayServer).get(`/api/v1/posts/${postId}`).auth(token(alice), { type: 'bearer' })).status, 200);
     assert.equal((await request(gatewayServer).get('/api/v1/posts')).status, 401);
+    const conversationEvent = message(socket);
+    const direct = await request(gatewayServer).post('/api/v1/community/conversations/direct').auth(token(alice), { type: 'bearer' }).send({ userId: bob });
+    assert.equal(direct.status, 200, JSON.stringify(direct.body));
+    const conversationId = direct.body.data.conversationId;
+    assert.equal((await conversationEvent).conversationId, conversationId);
+    outsider = new WebSocket(`ws://127.0.0.1:${gatewayServer.address().port}/api/v1/community/ws`);
+    await once(outsider, 'open'); const outsiderReady = message(outsider);
+    outsider.send(JSON.stringify({ type: 'auth', token: token(charlie) })); await outsiderReady;
+    const outsiderEvents = []; outsider.on('message', raw => outsiderEvents.push(JSON.parse(raw)));
+    const chatEvent = message(socket);
+    const sent = await request(gatewayServer).post(`/api/v1/community/conversations/${conversationId}/messages`)
+      .auth(token(bob), { type: 'bearer' }).send({ content: 'Private gateway message', clientMessageId: 'gateway_social_retry' });
+    assert.equal(sent.status, 200, JSON.stringify(sent.body));
+    const receivedChat = await chatEvent;
+    assert.equal(receivedChat.type, 'message.created'); assert.equal(receivedChat.conversationId, conversationId);
+    assert.equal(receivedChat.content, undefined);
+    const history = await request(gatewayServer).get(`/api/v1/community/conversations/${conversationId}/messages`).auth(token(alice), { type: 'bearer' });
+    assert.equal(history.body.data.items[0].content, 'Private gateway message');
+    assert.equal((await request(gatewayServer).get(`/api/v1/community/conversations/${conversationId}/messages`).auth(token(charlie), { type: 'bearer' })).status, 404);
+    const marker = message(outsider); bus.publish({ type: 'post.updated', postId: 'marker', public: true }); await marker;
+    assert.equal(outsiderEvents.some(e => e.conversationId === conversationId), false);
   } finally {
-    socket?.terminate(); closeUpgrade?.(); await realtime?.close(); await bus.close();
+    outsider?.terminate(); socket?.terminate(); closeUpgrade?.(); await realtime?.close(); await bus.close();
     for (const server of [gatewayServer, communityServer, authServer]) {
       if (server) { server.closeAllConnections(); await new Promise((resolve) => server.close(resolve)); }
     }

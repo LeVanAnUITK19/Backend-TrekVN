@@ -122,7 +122,9 @@ describe('authMiddleware()', () => {
   // ---- Successful token verification ------------------------------------
 
   test('calls next() when Auth Service returns 200 (Req 1.5)', async () => {
-    global.fetch = jest.fn().mockResolvedValue({ ok: true, status: 200 });
+    global.fetch = jest.fn().mockResolvedValue({ ok: true, status: 200,
+      json: async () => ({ success: true, data: { id: 'user-a', role: 'USER' } }),
+    });
 
     const req = makeReq({
       method: 'GET',
@@ -136,13 +138,17 @@ describe('authMiddleware()', () => {
     expect(global.fetch).toHaveBeenCalledTimes(1);
     expect(next).toHaveBeenCalledTimes(1);
     expect(res._status).toBeNull();
+    expect(req.user.id).toBe('user-a');
+    expect(req.rateLimitUserId).toBe('user-a');
   });
 
   test('passes Authorization header to verify call', async () => {
     const capturedHeaders = {};
     global.fetch = jest.fn().mockImplementation((_url, options) => {
       Object.assign(capturedHeaders, options.headers);
-      return Promise.resolve({ ok: true, status: 200 });
+      return Promise.resolve({ ok: true, status: 200,
+        json: async () => ({ success: true, data: { id: 'user-a', role: 'USER' } }),
+      });
     });
 
     const req = makeReq({

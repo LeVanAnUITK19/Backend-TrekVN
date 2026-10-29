@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const { identifyQuotaUser, quotaKey } = require('./middlewares/requestQuota');
 const mongoose = require('mongoose');
 const { createRoutes } = require('./routes');
 const { createAdminRoutes } = require('./routes/admin.routes');
@@ -27,7 +28,9 @@ function createApp({ events = createEventBus() } = {}) {
     const ready = mongoose.connection.readyState === 1;
     res.status(ready ? 200 : 503).json({ status: ready ? 'ready' : 'not_ready' });
   });
-  app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: Number(process.env.RATE_LIMIT_MAX) || 600,
+  app.use(identifyQuotaUser);
+  app.use(rateLimit({ windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
+    max: Number(process.env.RATE_LIMIT_MAX) || 600, keyGenerator: quotaKey,
     standardHeaders: true, legacyHeaders: false,
     skip: () => process.env.NODE_ENV === 'test' || process.env.DISABLE_RATE_LIMIT === 'true',
     message: { success: false, error: { code: 'RATE_LIMITED', message: 'Vui lòng thử lại sau' } },
@@ -40,6 +43,11 @@ function createApp({ events = createEventBus() } = {}) {
   // Feed and viewer-specific reactions can contain private account data.
   app.use('/api/v1', (_req, res, next) => { res.set('Cache-Control', 'private, no-store'); next(); });
   app.use('/api/v1/admin/community', createAdminRoutes(createAdminService(events)));
+  const social = require('./services/social.service').createSocialService(events);
+  const { createSocialRoutes } = require('./routes/social.routes');
+  const { createSocialAdminRoutes } = require('./routes/social.admin.routes');
+  app.use('/api/v1/admin/community', createSocialAdminRoutes(social));
+  app.use('/api/v1/community', createSocialRoutes(social));
   app.use('/api/v1', createRoutes(createCommunityService(events)));
   app.use((_req, res) => res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Endpoint not found' } }));
   app.use(errorHandler);

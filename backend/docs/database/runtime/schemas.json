@@ -4023,6 +4023,457 @@
   ],
   "community-service": [
     {
+      "model": "CommunityProfile",
+      "collection": "community_profiles",
+      "fields": [
+        {
+          "name": "userId",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "bio",
+          "type": "String",
+          "required": false,
+          "default": ""
+        },
+        {
+          "name": "qrToken",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "userId": 1
+          },
+          "options": {
+            "unique": true,
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "qrToken": 1
+          },
+          "options": {
+            "unique": true,
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "Conversation",
+      "collection": "conversations",
+      "fields": [
+        {
+          "name": "kind",
+          "type": "String",
+          "required": true,
+          "enum": [
+            "DIRECT",
+            "GROUP"
+          ]
+        },
+        {
+          "name": "directKey",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "required": false,
+          "default": ""
+        },
+        {
+          "name": "ownerId",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "memberIds",
+          "type": "Array",
+          "required": true
+        },
+        {
+          "name": "sequence",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "lastMessageAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "disabled",
+          "type": "Boolean",
+          "required": false,
+          "default": false
+        },
+        {
+          "name": "moderationReason",
+          "type": "String",
+          "required": false,
+          "default": null
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "directKey": 1
+          },
+          "options": {
+            "unique": true,
+            "partialFilterExpression": {
+              "kind": "DIRECT"
+            },
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "memberIds": 1,
+            "lastMessageAt": -1,
+            "_id": -1
+          },
+          "options": {
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "ConversationMember",
+      "collection": "conversation_members",
+      "fields": [
+        {
+          "name": "conversationId",
+          "type": "ObjectId",
+          "required": true
+        },
+        {
+          "name": "userId",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "joinedSequence",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "readSequence",
+          "type": "Number",
+          "required": false,
+          "default": 0
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "conversationId": 1,
+            "userId": 1
+          },
+          "options": {
+            "unique": true,
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "Message",
+      "collection": "messages",
+      "fields": [
+        {
+          "name": "conversationId",
+          "type": "ObjectId",
+          "required": true
+        },
+        {
+          "name": "senderId",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "clientMessageId",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "sequence",
+          "type": "Number",
+          "required": true
+        },
+        {
+          "name": "content",
+          "type": "String",
+          "required": false,
+          "default": ""
+        },
+        {
+          "name": "deleted",
+          "type": "Boolean",
+          "required": false,
+          "default": false
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "conversationId": 1,
+            "sequence": -1
+          },
+          "options": {
+            "unique": true,
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "conversationId": 1,
+            "senderId": 1,
+            "clientMessageId": 1
+          },
+          "options": {
+            "unique": true,
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "MessageReport",
+      "collection": "message_reports",
+      "fields": [
+        {
+          "name": "reporterId",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "messageId",
+          "type": "ObjectId",
+          "required": true
+        },
+        {
+          "name": "conversationId",
+          "type": "ObjectId",
+          "required": true
+        },
+        {
+          "name": "senderId",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "contentSnapshot",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "reason",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "status",
+          "type": "String",
+          "required": false,
+          "enum": [
+            "OPEN",
+            "RESOLVED",
+            "DISMISSED"
+          ],
+          "default": "OPEN"
+        },
+        {
+          "name": "resolution",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "resolvedBy",
+          "type": "String",
+          "required": false
+        },
+        {
+          "name": "resolvedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": [
+        {
+          "keys": {
+            "reporterId": 1,
+            "messageId": 1
+          },
+          "options": {
+            "unique": true,
+            "background": true
+          }
+        },
+        {
+          "keys": {
+            "status": 1,
+            "createdAt": -1
+          },
+          "options": {
+            "background": true
+          }
+        }
+      ]
+    },
+    {
+      "model": "SocialModerationLog",
+      "collection": "social_moderation_logs",
+      "fields": [
+        {
+          "name": "adminId",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "entityId",
+          "type": "ObjectId",
+          "required": true
+        },
+        {
+          "name": "action",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "reason",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false
+        },
+        {
+          "name": "createdAt",
+          "type": "Date",
+          "required": false
+        },
+        {
+          "name": "__v",
+          "type": "Number",
+          "required": false
+        }
+      ],
+      "indexes": []
+    },
+    {
       "model": "Post",
       "collection": "posts",
       "fields": [

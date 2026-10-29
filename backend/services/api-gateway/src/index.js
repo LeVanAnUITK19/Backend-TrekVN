@@ -6,6 +6,9 @@ const env = require('./config/env');
 const PORT = env.PORT;
 
 const server = app.listen(PORT, () => {
+  if (process.env.NODE_ENV === 'production' && !process.env.TRUSTED_PROXIES) {
+    console.warn('[api-gateway] TRUSTED_PROXIES is unset: configure actual proxy IPs/CIDRs so public/login quotas use the client IP.');
+  }
   console.log(`[api-gateway] listening on port ${PORT}`);
   console.log(`[api-gateway] proxying /api/v1/* → ${env.AUTH_SERVICE_URL}`);
   console.log(

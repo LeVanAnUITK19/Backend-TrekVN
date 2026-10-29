@@ -14,6 +14,7 @@ const prefixes = [
   '/api/v1/contributions', '/api/v1/badges', '/api/v1/me', '/api/v1/uploads',
   '/api/v1/agent', '/api/v1/llm',
   '/api/v1/posts', '/api/v1/comments',
+  '/api/v1/community',
   '/api/v1/admin/community',
 ];
 
