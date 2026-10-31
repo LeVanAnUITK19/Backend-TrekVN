@@ -34,7 +34,7 @@
   "devDependencies": {
     "eslint": "^8.51.0",
     "jest": "^30.5.2",
-    "mongodb-memory-server": "^9.1.6",
+    "mongodb-memory-server": "^11.3.0",
     "supertest": "^6.3.3"
   },
   "jest": {
