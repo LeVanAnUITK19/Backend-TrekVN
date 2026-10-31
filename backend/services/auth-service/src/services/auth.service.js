@@ -7,6 +7,7 @@ const otpRepository = require('../repositories/otp.repository');
 const otpService = require('./otp.service');
 const PasswordResetToken = require('../models/PasswordResetToken');
 const {
+  AppError,
   BadRequestError,
   UnauthorizedError,
   NotFoundError,
@@ -209,7 +210,16 @@ const forgotPassword = async ({ email }) => {
     return { message: 'Nếu email tồn tại, OTP sẽ được gửi đến hộp thư của bạn' };
   }
 
-  const { expiresAt } = await otpService.sendOtp(email, 'RESET_PASSWORD', user._id);
+  let expiresAt;
+  try {
+    ({ expiresAt } = await otpService.sendOtp(email, 'RESET_PASSWORD', user._id));
+  } catch (err) {
+    // Password reset must not reveal whether an email exists when delivery fails.
+    if (err instanceof AppError && err.statusCode === 503) {
+      return { message: 'Nếu email tồn tại, OTP sẽ được gửi đến hộp thư của bạn' };
+    }
+    throw err;
+  }
   return { message: 'Nếu email tồn tại, OTP sẽ được gửi đến hộp thư của bạn', expiresAt };
 };
 

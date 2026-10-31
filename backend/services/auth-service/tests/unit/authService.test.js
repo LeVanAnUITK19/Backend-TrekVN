@@ -18,6 +18,7 @@ const refreshTokenRepo = require('../../src/repositories/refreshToken.repository
 const otpService = require('../../src/services/otp.service');
 const authService = require('../../src/services/auth.service');
 const {
+  AppError,
   BadRequestError,
   UnauthorizedError,
   ForbiddenError,
@@ -167,6 +168,13 @@ describe('authService.verifyToken', () => {
 // ─── forgotPassword ───────────────────────────────────────────────────────────
 
 describe('authService.forgotPassword', () => {
+  it('lỗi gửi mail không tiết lộ email có tồn tại hay không', async () => {
+    userRepo.findByEmail.mockResolvedValue(makeUser({ status: 'ACTIVE' }));
+    otpService.sendOtp.mockRejectedValueOnce(new AppError('Email unavailable', 503));
+    const result = await authService.forgotPassword({ email: 'found@x.com' });
+    expect(result).toEqual({ message: 'Nếu email tồn tại, OTP sẽ được gửi đến hộp thư của bạn' });
+  });
+
   it('email không tồn tại → trả về message mà không gửi OTP', async () => {
     userRepo.findByEmail.mockResolvedValue(null);
 
