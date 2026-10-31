@@ -224,6 +224,21 @@ describe('EmailJS HTTPS OTP delivery', () => {
       .rejects.toThrow('EmailJS rejected email (HTTP 403, non-browser API access disabled)');
   });
 
+  test.each([
+    ['API calls in strict mode, but no private key was passed', 'private key authorization required or invalid; check EMAILJS_PRIVATE_KEY'],
+    ['The accessToken is invalid', 'private key authorization required or invalid; check EMAILJS_PRIVATE_KEY'],
+    ['The origin is not in the allowlist', 'request origin rejected by EmailJS access settings'],
+    ['The Public Key is invalid', 'public key rejected; check EMAILJS_PUBLIC_KEY'],
+    ['Gmail_API: Request had insufficient authentication scopes', 'connected email service permissions missing'],
+  ])('classifies provider failure %s without exposing its body', async (reason, hint) => {
+    globalThis.fetch.mockResolvedValue({
+      ok: false, status: 403,
+      text: () => Promise.resolve(`${reason}; secret-public-value secret-private-value 012345`),
+    });
+    await expect(require('../../src/config/mailer').sendMail(otpMail))
+      .rejects.toThrow(`EmailJS rejected email (HTTP 403, ${hint})`);
+  });
+
   test('an aborted request fails without retry or provider fallback', async () => {
     globalThis.fetch.mockRejectedValue(new Error('request aborted'));
     await expect(require('../../src/config/mailer').sendMail(otpMail)).rejects.toThrow('request aborted');
