@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "amqplib": "^0.10.3",
-    "axios": "^1.6.0",
+    "axios": "^1.21.0",
     "cloudinary": "^2.11.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
