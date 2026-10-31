@@ -1,5 +1,8 @@
 # Gửi OTP bằng Brevo trên Render Free
 
+Nếu không hoàn tất được tài khoản Brevo và muốn dùng EmailJS, làm theo
+[hướng dẫn EmailJS](emailjs-otp-setup.md). Hai provider dùng key và cấu hình riêng.
+
 Backend hỗ trợ `EMAIL_PROVIDER=brevo` qua HTTPS API, giữ nguyên mẫu email và luồng
 đăng ký/xác minh OTP. Không cần cài SDK mới. Cấu hình nằm ở Auth service; app
 Flutter đã phát hành cũng dùng backend mới mà không cần build lại AAB.

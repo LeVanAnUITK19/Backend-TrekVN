@@ -1,7 +1,10 @@
 jest.mock('nodemailer', () => ({ createTransport: jest.fn() }));
 
 const originalFetch = globalThis.fetch;
-const emailVariables = ['EMAIL_PROVIDER', 'EMAIL_FROM', 'BREVO_API_KEY', 'RESEND_API_KEY', 'EMAIL_USER', 'EMAIL_PASS'];
+const emailVariables = [
+  'EMAIL_PROVIDER', 'EMAIL_FROM', 'BREVO_API_KEY', 'RESEND_API_KEY', 'EMAIL_USER', 'EMAIL_PASS',
+  'EMAILJS_SERVICE_ID', 'EMAILJS_TEMPLATE_ID', 'EMAILJS_PUBLIC_KEY', 'EMAILJS_PRIVATE_KEY',
+];
 const originalEmailEnv = Object.fromEntries(emailVariables.map((key) => [key, process.env[key]]));
 const mail = { to: 'recipient@example.com', subject: 'OTP', html: '<p>test-code</p>' };
 
@@ -149,5 +152,87 @@ describe('Brevo HTTPS email delivery', () => {
   test('an accepted response without a message ID is not treated as success', async () => {
     globalThis.fetch.mockResolvedValue({ ok: true, json: () => Promise.resolve({}) });
     await expect(require('../../src/config/mailer').sendMail(mail)).rejects.toThrow('Brevo returned no message ID');
+  });
+});
+
+describe('EmailJS HTTPS OTP delivery', () => {
+  const otpMail = { ...mail, otp: '012345', expiresMinutes: 10 };
+  beforeEach(() => {
+    process.env.EMAIL_PROVIDER = 'emailjs';
+    process.env.EMAILJS_SERVICE_ID = 'service_test';
+    process.env.EMAILJS_TEMPLATE_ID = 'template_test';
+    process.env.EMAILJS_PUBLIC_KEY = 'test-public-key';
+    delete process.env.EMAILJS_PRIVATE_KEY;
+  });
+
+  test('sends the server OTP to the requested recipient and accepts plain-text OK', async () => {
+    globalThis.fetch.mockResolvedValue({ ok: true, text: () => Promise.resolve('OK') });
+
+    await expect(require('../../src/config/mailer').sendMail(otpMail)).resolves.toEqual({ accepted: true });
+    const [url, options] = globalThis.fetch.mock.calls[0];
+    expect(url).toBe('https://api.emailjs.com/api/v1.0/email/send');
+    expect(options.method).toBe('POST');
+    expect(options.headers['Content-Type']).toBe('application/json');
+    expect(options.signal).toBeInstanceOf(globalThis.AbortSignal);
+    expect(JSON.parse(options.body)).toEqual({
+      service_id: 'service_test', template_id: 'template_test', user_id: 'test-public-key',
+      template_params: { email: mail.to, subject: mail.subject, passcode: '012345', time: '10 phút' },
+    });
+    expect(require('nodemailer').createTransport).not.toHaveBeenCalled();
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  test('includes the private accessToken only when configured', async () => {
+    process.env.EMAILJS_PRIVATE_KEY = 'test-private-key';
+    globalThis.fetch.mockResolvedValue({ ok: true, text: () => Promise.resolve('"OK"') });
+    await require('../../src/config/mailer').sendMail(otpMail);
+    expect(JSON.parse(globalThis.fetch.mock.calls[0][1].body).accessToken).toBe('test-private-key');
+  });
+
+  test.each(['EMAILJS_SERVICE_ID', 'EMAILJS_TEMPLATE_ID', 'EMAILJS_PUBLIC_KEY'])('missing %s fails before sending', async (key) => {
+    delete process.env[key];
+    await expect(require('../../src/config/mailer').sendMail(otpMail)).rejects.toThrow('EmailJS requires EMAILJS');
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    { otp: undefined }, { otp: 123456 }, { otp: '12345' }, { otp: 'abcdef' },
+    { expiresMinutes: 0 }, { expiresMinutes: undefined },
+  ])('invalid OTP parameters do not send a blank verification email: %j', async (invalid) => {
+    await expect(require('../../src/config/mailer').sendMail({ ...otpMail, ...invalid }))
+      .rejects.toThrow('six-digit OTP');
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  test.each([400, 401, 403, 422, 429, 500])('HTTP %s is a delivery failure without disclosing keys or OTPs', async (status) => {
+    globalThis.fetch.mockResolvedValue({
+      ok: false, status,
+      text: () => Promise.resolve('private response test-public-key test-private-key 012345'),
+    });
+    await expect(require('../../src/config/mailer').sendMail(otpMail))
+      .rejects.toThrow(`EmailJS rejected email (HTTP ${status})`);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    expect(require('nodemailer').createTransport).not.toHaveBeenCalled();
+  });
+
+  test('non-browser access failures add an actionable hint without the raw response', async () => {
+    globalThis.fetch.mockResolvedValue({
+      ok: false, status: 403,
+      text: () => Promise.resolve('API calls are disabled for non-browser applications. private response'),
+    });
+    await expect(require('../../src/config/mailer').sendMail(otpMail))
+      .rejects.toThrow('EmailJS rejected email (HTTP 403, non-browser API access disabled)');
+  });
+
+  test('an aborted request fails without retry or provider fallback', async () => {
+    globalThis.fetch.mockRejectedValue(new Error('request aborted'));
+    await expect(require('../../src/config/mailer').sendMail(otpMail)).rejects.toThrow('request aborted');
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    expect(require('nodemailer').createTransport).not.toHaveBeenCalled();
+  });
+
+  test('unexpected HTTP 200 content is not accepted as a successful send', async () => {
+    globalThis.fetch.mockResolvedValue({ ok: true, text: () => Promise.resolve('<html>unavailable</html>') });
+    await expect(require('../../src/config/mailer').sendMail(otpMail)).rejects.toThrow('unexpected success response');
   });
 });

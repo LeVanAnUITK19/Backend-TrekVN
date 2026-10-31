@@ -3,10 +3,53 @@ const addressParser = require('nodemailer/lib/addressparser');
 
 let smtpTransport;
 
-// Render Free blocks SMTP. Brevo and Resend deliver through HTTPS instead.
+// Render Free blocks SMTP. The API providers deliver through HTTPS instead.
 const sendMail = async (mail) => {
   const provider = (process.env.EMAIL_PROVIDER || 'smtp').trim().toLowerCase();
   const from = process.env.EMAIL_FROM || mail.from;
+
+  if (provider === 'emailjs') {
+    const serviceId = process.env.EMAILJS_SERVICE_ID?.trim();
+    const templateId = process.env.EMAILJS_TEMPLATE_ID?.trim();
+    const publicKey = process.env.EMAILJS_PUBLIC_KEY?.trim();
+    const privateKey = process.env.EMAILJS_PRIVATE_KEY?.trim();
+    if (!serviceId || !templateId || !publicKey) {
+      throw new Error('EmailJS requires EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID and EMAILJS_PUBLIC_KEY');
+    }
+    if (typeof mail.otp !== 'string' || !/^\d{6}$/.test(mail.otp) ||
+        !Number.isSafeInteger(mail.expiresMinutes) || mail.expiresMinutes <= 0) {
+      throw new Error('EmailJS requires a six-digit OTP and a positive expiry in minutes');
+    }
+    const payload = {
+      service_id: serviceId,
+      template_id: templateId,
+      user_id: publicKey,
+      template_params: {
+        email: mail.to,
+        subject: mail.subject,
+        passcode: mail.otp,
+        time: `${mail.expiresMinutes} phút`,
+      },
+    };
+    if (privateKey) { payload.accessToken = privateKey; }
+    const response = await globalThis.fetch('https://api.emailjs.com/api/v1.0/email/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: globalThis.AbortSignal.timeout(10_000),
+    });
+    const responseText = await response.text();
+    if (!response.ok) {
+      // Never log request keys, OTPs or provider response bodies.
+      const hint = /non-browser/i.test(responseText) ? ', non-browser API access disabled' : '';
+      throw new Error(`EmailJS rejected email (HTTP ${response.status}${hint})`);
+    }
+    // The documented response is plain text OK, not a JSON message ID.
+    if (!['OK', '"OK"'].includes(responseText.trim())) {
+      throw new Error('EmailJS returned an unexpected success response');
+    }
+    return { accepted: true };
+  }
 
   if (provider === 'brevo') {
     const apiKey = process.env.BREVO_API_KEY?.trim();

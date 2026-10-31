@@ -35,14 +35,16 @@ const getEmailTemplate = (purpose, otp) => {
 };
 
 /**
- * Gửi email thực qua nodemailer
+ * Gửi email qua provider đã chọn; OTP chỉ được sinh và kiểm tra ở backend.
  */
-const sendEmail = async (to, subject, html) => {
+const sendEmail = async (to, subject, html, otp) => {
   await transporter.sendMail({
     from: `"TrekVN" <${process.env.EMAIL_USER}>`,
     to,
     subject,
     html,
+    otp,
+    expiresMinutes: OTP_EXPIRES_MINUTES,
   });
 };
 
@@ -67,7 +69,7 @@ const sendOtp = async (email, purpose, userId = null) => {
   const record = await otpRepository.create({ userId, email, purpose, otpHash, expiresAt });
 
   try {
-    await sendEmail(email, subject, html);
+    await sendEmail(email, subject, html, otp);
     logger.info(`[OTP] Sent ${purpose} OTP to ${email}`);
   } catch (err) {
     logger.error(`[OTP] Failed to send email to ${email}: ${err.message}`);
