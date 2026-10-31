@@ -3,7 +3,7 @@ const crypto = require('crypto');
 const otpRepository = require('../repositories/otp.repository');
 const transporter = require('../config/mailer');
 const { registerOtpTemplate, resetPasswordOtpTemplate } = require('../utils/emailTemplates');
-const { BadRequestError, TooManyRequestsError } = require('../utils/errors');
+const { AppError, BadRequestError, TooManyRequestsError } = require('../utils/errors');
 const logger = require('../config/logger');
 
 const OTP_EXPIRES_MINUTES = 10;
@@ -55,23 +55,28 @@ const sendEmail = async (to, subject, html) => {
  * @param {string|null} userId
  */
 const sendOtp = async (email, purpose, userId = null) => {
+  const otp = generateOtp();
+  const { subject, html } = getEmailTemplate(purpose, otp);
+
   // Hủy tất cả OTP cũ còn active của email + purpose này
   await otpRepository.revokeAllActive(email, purpose);
 
-  const otp = generateOtp();
   const otpHash = await bcrypt.hash(otp, 10);
   const expiresAt = new Date(Date.now() + OTP_EXPIRES_MINUTES * 60 * 1000);
 
-  await otpRepository.create({ userId, email, purpose, otpHash, expiresAt });
-
-  const { subject, html } = getEmailTemplate(purpose, otp);
+  const record = await otpRepository.create({ userId, email, purpose, otpHash, expiresAt });
 
   try {
     await sendEmail(email, subject, html);
     logger.info(`[OTP] Sent ${purpose} OTP to ${email}`);
   } catch (err) {
-    // Log lỗi gửi mail nhưng không throw để tránh leak thông tin
     logger.error(`[OTP] Failed to send email to ${email}: ${err.message}`);
+    try {
+      await otpRepository.expireById(record._id);
+    } catch (cleanupError) {
+      logger.error(`[OTP] Failed to expire undelivered OTP: ${cleanupError.message}`);
+    }
+    throw new AppError('Chưa gửi được email OTP. Vui lòng thử lại sau.', 503);
   }
 
   return { expiresAt };

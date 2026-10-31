@@ -108,6 +108,29 @@ describe('POST /api/v1/auth/register — happy path', () => {
 
 // ─── Error path ───────────────────────────────────────────────────────────────
 
+describe('POST /api/v1/auth/register — email delivery recovery', () => {
+  it('failed delivery returns 503, expires the OTP, and allows the pending account to retry', async () => {
+    const mailer = require('../../src/config/mailer');
+    const User = require('../../src/models/User');
+    const OtpVerification = require('../../src/models/OtpVerification');
+    const registration = { email: 'retry@example.com', password: 'Pass@123', displayName: 'Retry User' };
+    mailer.sendMail.mockRejectedValueOnce(new Error('Resend rejected email (HTTP 503)'));
+
+    const failed = await request(app).post('/api/v1/auth/register').send(registration);
+    expect(failed.status).toBe(503);
+    expect(failed.body.success).toBe(false);
+    expect(failed.body.message).toContain('Chưa gửi được email OTP');
+    expect(failed.body.data).toBeUndefined();
+    expect((await User.findOne({ email: registration.email })).status).toBe('PENDING_VERIFICATION');
+    expect(await OtpVerification.countDocuments({ email: registration.email, status: 'ACTIVE' })).toBe(0);
+
+    const retry = await request(app).post('/api/v1/auth/register').send(registration);
+    expect(retry.status).toBe(201);
+    expect(await User.countDocuments({ email: registration.email })).toBe(1);
+    expect(await OtpVerification.countDocuments({ email: registration.email, status: 'ACTIVE' })).toBe(1);
+  });
+});
+
 describe('POST /api/v1/auth/register — email đã tồn tại', () => {
   it('email ACTIVE → 400', async () => {
     await createActiveUser({ email: 'existing@example.com' });

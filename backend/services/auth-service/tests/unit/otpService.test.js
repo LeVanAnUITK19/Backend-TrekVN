@@ -10,7 +10,7 @@ jest.mock('../../src/config/mailer', () => ({
 const otpRepo = require('../../src/repositories/otp.repository');
 const mailer = require('../../src/config/mailer');
 const otpService = require('../../src/services/otp.service');
-const { BadRequestError, TooManyRequestsError } = require('../../src/utils/errors');
+const { AppError, BadRequestError, TooManyRequestsError } = require('../../src/utils/errors');
 
 const bcrypt = require('bcryptjs');
 
@@ -33,14 +33,30 @@ describe('otpService.sendOtp', () => {
     expect(result.expiresAt).toBeInstanceOf(Date);
   });
 
-  it('gửi email thất bại → không ném lỗi (vẫn trả về expiresAt)', async () => {
+  it('gửi email thất bại → 503 và hết hiệu lực OTP chưa gửi', async () => {
     otpRepo.revokeAllActive.mockResolvedValue({});
-    otpRepo.create.mockResolvedValue({});
-    mailer.sendMail.mockRejectedValue(new Error('SMTP down'));
+    otpRepo.create.mockResolvedValue({ _id: 'failed-delivery-id' });
+    mailer.sendMail.mockRejectedValueOnce(new Error('SMTP down'));
 
     await expect(
       otpService.sendOtp('fail@example.com', 'REGISTER')
-    ).resolves.toBeDefined();
+    ).rejects.toMatchObject({
+      statusCode: 503,
+      message: 'Chưa gửi được email OTP. Vui lòng thử lại sau.',
+    });
+    expect(otpRepo.expireById).toHaveBeenCalledWith('failed-delivery-id');
+    // Cleanup must not revoke a newer OTP belonging to a concurrent retry.
+    expect(otpRepo.revokeAllActive).toHaveBeenCalledTimes(1);
+  });
+
+  it('cleanup lỗi vẫn trả về lỗi gửi mail đã kiểm soát', async () => {
+    otpRepo.create.mockResolvedValue({ _id: 'failed-delivery-id' });
+    otpRepo.expireById.mockRejectedValueOnce(new Error('DB unavailable'));
+    mailer.sendMail.mockRejectedValueOnce(new Error('Resend rejected email (HTTP 403)'));
+
+    await expect(
+      otpService.sendOtp('fail@example.com', 'RESET_PASSWORD')
+    ).rejects.toBeInstanceOf(AppError);
   });
 
   it('purpose không hợp lệ → ném Error', async () => {

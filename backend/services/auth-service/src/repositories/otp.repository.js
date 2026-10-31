@@ -37,4 +37,8 @@ const incrementAttempts = (id) =>
 const markUsed = (id) =>
   OtpVerification.findByIdAndUpdate(id, { status: 'USED', usedAt: new Date() }, { new: true });
 
-module.exports = { create, findActive, revokeAllActive, incrementAttempts, markUsed };
+// Only invalidate this delivery attempt; a concurrent retry may have a newer OTP.
+const expireById = (id) =>
+  OtpVerification.updateOne({ _id: id, status: 'ACTIVE' }, { status: 'EXPIRED' });
+
+module.exports = { create, findActive, revokeAllActive, incrementAttempts, markUsed, expireById };
