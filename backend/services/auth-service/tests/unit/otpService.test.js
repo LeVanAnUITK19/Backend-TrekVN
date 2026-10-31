@@ -30,6 +30,12 @@ describe('otpService.sendOtp', () => {
     expect(otpRepo.revokeAllActive).toHaveBeenCalledWith('user@example.com', 'REGISTER');
     expect(otpRepo.create).toHaveBeenCalledTimes(1);
     expect(mailer.sendMail).toHaveBeenCalledTimes(1);
+    const sentMail = mailer.sendMail.mock.calls[0][0];
+    expect(sentMail.otp).toMatch(/^\d{6}$/);
+    expect(sentMail.expiresMinutes).toBe(10);
+    expect(sentMail.to).toBe('user@example.com');
+    const storedOtp = otpRepo.create.mock.calls[0][0];
+    expect(await bcrypt.compare(sentMail.otp, storedOtp.otpHash)).toBe(true);
     expect(result.expiresAt).toBeInstanceOf(Date);
   });
 
