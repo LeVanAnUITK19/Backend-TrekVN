@@ -20,7 +20,7 @@
     "prom-client": "^15.1.0"
   },
   "devDependencies": {
-    "eslint": "^8.57.1",
+    "eslint": "^10.13.0",
     "jest": "^30.5.2",
     "supertest": "^6.3.3"
   },
