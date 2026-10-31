@@ -1,5 +1,9 @@
 # OTP trên Render Free qua Resend
 
+Nếu chuyển sang Brevo để thử nghiệm bằng sender Gmail đã xác minh, dùng
+[hướng dẫn Brevo](brevo-otp-setup.md). Backend chọn provider bằng `EMAIL_PROVIDER`;
+API key của hai dịch vụ không dùng thay thế cho nhau.
+
 ## Nguyên nhân
 
 Log Android ghi nhận `POST /api/v1/auth/register` hết thời gian chờ sau 30 giây.
