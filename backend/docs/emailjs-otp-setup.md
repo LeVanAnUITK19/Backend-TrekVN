@@ -113,6 +113,15 @@ Xem `[OTP] Failed to send email` trong Render → Auth service → Logs:
 
 - `EmailJS requires ...`: thiếu Service ID, Template ID hoặc Public Key.
 - `HTTP 403, non-browser API access disabled`: hoàn tất bước 3 trong Account/Security.
+- `private key authorization required or invalid; check EMAILJS_PRIVATE_KEY`:
+  Public Key không thay cho Private Key. Trong Account → General, lấy Private Key
+  của cùng tài khoản EmailJS, đặt `EMAILJS_PRIVATE_KEY` trên Auth service ở Render
+  rồi lưu/deploy lại. Kiểm tra key còn hoạt động và thuộc cùng tài khoản với Public
+  Key; không tắt xác thực hoặc giả mạo Origin để xử lý lỗi quyền truy cập.
+- `request origin rejected ...`: đối chiếu cấu hình truy cập trong Account/Security.
+- `public key rejected ...`: kiểm tra lại `EMAILJS_PUBLIC_KEY`.
+- `connected email service permissions missing`: kết nối lại Gmail trong Email
+  Services và cấp quyền gửi mail theo yêu cầu của EmailJS.
 - `HTTP 400/401/403`: đối chiếu key/ID, cấu hình Security và kết nối Gmail; xem
   chi tiết tại Email History. Nếu bật private-key authorization, kiểm tra biến
   `EMAILJS_PRIVATE_KEY` đã được lưu trên Render.
@@ -122,6 +131,10 @@ Xem `[OTP] Failed to send email` trong Render → Auth service → Logs:
 
 Các kiểm thử local giả lập EmailJS. Cần cấu hình tài khoản thật và kiểm tra hộp
 thư để xác nhận đã phát email thành công.
+
+Nếu không có bản ghi trong Email History, request có thể bị chặn trước khi tạo
+email. Chỉ HTTP 403 chưa xác định được chính xác cài đặt sai; đối chiếu thông báo
+phân loại ở trên thay vì đổi SMTP, database hoặc trạng thái tài khoản người dùng.
 
 ## Tài liệu chính thức
 

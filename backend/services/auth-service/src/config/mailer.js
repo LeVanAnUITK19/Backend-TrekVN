@@ -41,7 +41,15 @@ const sendMail = async (mail) => {
     const responseText = await response.text();
     if (!response.ok) {
       // Never log request keys, OTPs or provider response bodies.
-      const hint = /non-browser/i.test(responseText) ? ', non-browser API access disabled' : '';
+      const knownReasons = [
+        [/non-browser/i, 'non-browser API access disabled'],
+        [/strict mode|\b(?:private[ _-]?key|access[ _-]?token)\s+(?:is\s+)?(?:invalid|required|missing|not\s+(?:provided|passed|found))\b/i, 'private key authorization required or invalid; check EMAILJS_PRIVATE_KEY'],
+        [/origin|allowlist|white[ _-]?list/i, 'request origin rejected by EmailJS access settings'],
+        [/\b(?:public[ _-]?key|user[ _-]?id)\s+(?:is\s+)?(?:invalid|required|missing|not found)\b/i, 'public key rejected; check EMAILJS_PUBLIC_KEY'],
+        [/insufficient.*scope|insufficient.*permission/i, 'connected email service permissions missing'],
+      ];
+      const matchedReason = knownReasons.find(([pattern]) => pattern.test(responseText));
+      const hint = matchedReason ? `, ${matchedReason[1]}` : '';
       throw new Error(`EmailJS rejected email (HTTP ${response.status}${hint})`);
     }
     // The documented response is plain text OK, not a JSON message ID.
