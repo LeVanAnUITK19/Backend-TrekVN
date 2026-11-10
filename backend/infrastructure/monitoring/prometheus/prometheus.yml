@@ -8,9 +8,8 @@ global:
 rule_files:
   - alerts.yml
 
-# These Render hostnames come from the original repo configuration.
-# Replace them with the actual hostnames from your Render dashboard (no https://).
-# The secret file contains ONLY the METRICS_TOKEN shared by these five services.
+# Verify the target hostnames against your Render dashboard (no https://).
+# The secret file contains ONLY the METRICS_TOKEN shared by the monitored services.
 # No environment-variable substitution is performed by Prometheus.
 scrape_configs:
   - job_name: prometheus
@@ -81,3 +80,16 @@ scrape_configs:
       - targets: ['agent-service-trekvn.onrender.com']
         labels:
           service: agent-service
+
+  - job_name: community-service
+    honor_labels: true
+    metrics_path: /metrics
+    scheme: https
+    scrape_timeout: 10s
+    authorization:
+      type: Bearer
+      credentials_file: /etc/secrets/metrics_token
+    static_configs:
+      - targets: ['backend-trekvn-pkrq.onrender.com']
+        labels:
+          service: community-service
