@@ -1,21 +1,10 @@
 # TrekVN — Prometheus và Grafana
 
-## Kết quả kiểm tra và phần đã bổ sung
+## Phạm vi theo dõi
 
-Trước thay đổi này, chỉ API Gateway có `prom-client` và `GET /metrics`.
-Auth, Checkin, Trekking và Agent chưa có endpoint metrics. Có sẵn cấu hình
-Prometheus, Compose và provisioning Grafana, nhưng chưa có dashboard JSON.
-Middleware cũ của Gateway bọc `res.send`, vì thế bỏ sót phản hồi do `http-proxy`
-hoặc stream trả về bằng `res.end`.
-
-Hiện cả 5 service có `GET /metrics`, HTTP counter/histogram/gauge và metrics tiến trình.
+Cả 6 service có `GET /metrics`, HTTP counter/histogram/gauge và metrics tiến trình.
 Gateway đo bằng sự kiện `finish/close`; Agent đo tại ASGI để bao gồm response stream.
 Route labels dùng template hoặc nhóm prefix, tránh tạo một time series cho mỗi ID/query.
-`community-service` hiện chỉ có cấu hình Sonar, chưa có ứng dụng để instrument.
-
-**Đây là triển khai trong source code. Cần deploy lại service trên Render và khởi chạy
-monitoring để có dữ liệu thật. Các hostname bên dưới lấy từ cấu hình cũ của repo,
-chưa được xác nhận là hostname đang chạy của bạn.**
 
 ## Luồng kết nối
 
@@ -26,10 +15,11 @@ flowchart LR
   P -->|HTTPS GET /metrics| C[Checkin trên Render]
   P -->|HTTPS GET /metrics| T[Trekking trên Render]
   P -->|HTTPS GET /metrics| AI[Agent trên Render]
+  P -->|HTTPS GET /metrics| CO[Community trên Render]
   F[Grafana] -->|PromQL qua HTTP API| P
 ```
 
-Một Prometheus dùng chung thu thập và lưu lịch sử của cả 5 service.
+Một Prometheus dùng chung thu thập và lưu lịch sử của cả 6 service.
 Grafana kết nối tới **Prometheus**, không nhập URL `/metrics` của từng service
 vào ô URL của datasource Prometheus.
 
@@ -40,10 +30,10 @@ Nếu dùng dịch vụ metrics được quản lý, collector và storage có t
 
 ## 1. Deploy backend và kiểm tra API
 
-Đặt cùng một giá trị bí mật ngẫu nhiên `METRICS_TOKEN` cho cả 5 service trên Render.
+Đặt cùng một giá trị bí mật ngẫu nhiên `METRICS_TOKEN` cho cả 6 service trên Render.
 Token này dành cho monitoring, tách biệt JWT người dùng và token gọi API nội bộ.
-Có thể dùng Environment Group trên Render. Deploy lại cả 5 service để nhận code,
-dependency và biến môi trường mới.
+Có thể dùng Environment Group trên Render. Deploy lại những service vừa được cập nhật
+để nhận code và biến môi trường mới.
 
 Tạo token bằng PowerShell (chỉ tạo giá trị, không thay đổi dịch vụ Render):
 
@@ -61,6 +51,7 @@ Trên Render nên đặt token và chỉ truyền qua HTTPS.
 | Checkin | https://checkin-service-trekvn.onrender.com/metrics |
 | Trekking | https://trekking-service-trekvn.onrender.com/metrics |
 | Agent | https://agent-service-trekvn.onrender.com/metrics |
+| Community | https://backend-trekvn-pkrq.onrender.com/metrics |
 
 Gọi trực tiếp domain của từng service, đường dẫn ở root là `/metrics`,
 không có tiền tố `/api/v1`. Gateway chỉ xuất metrics của Gateway.
@@ -74,6 +65,7 @@ curl.exe -i -H "Authorization: Bearer $metricsToken" https://backend-trekvn.onre
 curl.exe -i -H "Authorization: Bearer $metricsToken" https://checkin-service-trekvn.onrender.com/metrics
 curl.exe -i -H "Authorization: Bearer $metricsToken" https://trekking-service-trekvn.onrender.com/metrics
 curl.exe -i -H "Authorization: Bearer $metricsToken" https://agent-service-trekvn.onrender.com/metrics
+curl.exe -i -H "Authorization: Bearer $metricsToken" https://backend-trekvn-pkrq.onrender.com/metrics
 ```
 
 Kỳ vọng HTTP 200, `Content-Type: text/plain`, nội dung bắt đầu bằng các dòng
@@ -93,7 +85,7 @@ Set-Content -LiteralPath secrets/metrics_token -Value $metricsToken -Encoding as
 ```
 
 File `secrets/metrics_token` chỉ chứa token, không có chữ `Bearer`, không có dấu nháy.
-Dùng token giống giá trị trên cả 5 service. `secrets/` và `.env` được Git bỏ qua.
+Dùng token giống giá trị trên cả 6 service. `secrets/` và `.env` được Git bỏ qua.
 
 Mở `.env`, điền mật khẩu mạnh vào `GRAFANA_ADMIN_PASSWORD`.
 Sửa `prometheus/prometheus.yml`, thay từng `targets` bằng hostname thật trên Render
@@ -109,9 +101,11 @@ docker compose up -d
 docker compose ps
 ```
 
-- Prometheus: http://localhost:9090/targets — cả 5 job cần hiển thị UP.
+- Prometheus: http://localhost:9090/targets — cả 6 job backend cần hiển thị UP sau khi cấu hình đủ hostname.
 - Grafana: http://localhost:3100 — đăng nhập bằng user/password trong `.env`.
 - Dashboard tự nạp: **Dashboards → TrekVN → TrekVN — Services Overview**.
+- Bộ lọc **Service** tự lấy nhãn `service` từ metric `up`. Sau khi Prometheus
+  chạy scrape cho target mới, tải lại dashboard và chọn `community-service`.
 - Nếu dùng Grafana có sẵn: thêm datasource kiểu Prometheus trỏ tới URL
   Prometheus mà máy Grafana truy cập được; sau đó import
   `grafana/dashboards/trekvn-services.json` và chọn datasource ở dropdown.
