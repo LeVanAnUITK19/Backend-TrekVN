@@ -1,0 +1,7 @@
+# Service-specific configuration, explicitly loaded before environment values.
+containerPort: 3000
+env:
+  - name: NODE_ENV
+    value: production
+  - name: PORT
+    value: "3000"

@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: trekvn-lab-gateway
+  namespace: argocd
+  # No cascading-deletion finalizer for this first manual learning exercise.
+spec:
+  project: trekvn-lab
+  source:
+    repoURL: https://github.com/LeVanAnUITK19/Backend-TrekVN.git
+    # Current working branch. Publish and review the chart commit before registration.
+    targetRevision: test
+    path: gitops/charts/microservice
+    helm:
+      # Keep existing resource/container/selector names despite a different Application name.
+      releaseName: api-gateway
+      valueFiles:
+        - ../../values/common/services/api-gateway.yaml
+        - ../../environments/lab/api-gateway.values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: trekvn-lab
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      name: api-gateway
+      namespace: trekvn-lab
+      jsonPointers:
+        - /spec/replicas
+  # No automated policy: first sync must be requested manually after reviewing the diff.
+  syncPolicy:
+    syncOptions:
+      - RespectIgnoreDifferences=true
+      - FailOnSharedResource=true

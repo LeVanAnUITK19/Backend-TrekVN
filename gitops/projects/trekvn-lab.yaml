@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: trekvn-lab
+  namespace: argocd
+spec:
+  description: Gateway learning project restricted to the existing TrekVN Lab namespace
+  sourceRepos:
+    - https://github.com/LeVanAnUITK19/Backend-TrekVN.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: trekvn-lab
+  # AppProject allow-list; this does not change the controller's Kubernetes RBAC.
+  clusterResourceWhitelist: []
+  namespaceResourceWhitelist:
+    - group: apps
+      kind: Deployment
+    - group: ""
+      kind: Service
+    - group: autoscaling
+      kind: HorizontalPodAutoscaler
+    # Also allow child kinds so Pods/ReplicaSets are visible in the resource tree.
+    - group: apps
+      kind: ReplicaSet
+    - group: ""
+      kind: Pod
